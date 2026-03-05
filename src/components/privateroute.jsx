@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Navigate } from "react-router-dom"
+import { Navigate, Outlet } from "react-router-dom"
 import { supabase } from "../supabase"
 
 export default function PrivateRoute({ children }) {
@@ -11,7 +11,13 @@ export default function PrivateRoute({ children }) {
     })
   }, [])
 
-  if (session === undefined) return <p className="text-center mt-10 text-gray-400">Chargement...</p>
+  if (session === undefined) return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+      <p className="text-zinc-400 text-sm">Chargement...</p>
+    </div>
+  )
+
   if (!session) return <Navigate to="/login" />
-  return children
+
+  return children ? children : <Outlet />
 }

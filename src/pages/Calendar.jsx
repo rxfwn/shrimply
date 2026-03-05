@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
@@ -97,6 +98,7 @@ function MealSlot({ date, mealType, meal, onRemove, isToday }) {
 }
 
 export default function Calendar() {
+  const navigate = useNavigate()
   const [monday, setMonday] = useState(getMonday(new Date()))
   const [mealPlan, setMealPlan] = useState([])
   const [recipes, setRecipes] = useState([])
@@ -202,15 +204,18 @@ export default function Calendar() {
           {/* Topbar */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <h1 className="text-xl font-semibold text-zinc-900">Mon planning</h1>
+              <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Mon planning</h1>
               <div className="flex items-center gap-1">
                 <button onClick={prevWeek} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">◀</button>
-                <span className="text-sm font-medium text-zinc-700 px-2 min-w-48 text-center">{weekLabel}</span>
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 px-2 min-w-48 text-center">{weekLabel}</span>
                 <button onClick={nextWeek} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">▶</button>
               </div>
             </div>
-            <button className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition">
-              🛒 Générer courses
+            <button
+              onClick={() => navigate("/shopping")}
+              className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition"
+            >
+              🛒 Courses
             </button>
           </div>
 
@@ -220,7 +225,7 @@ export default function Calendar() {
             {days.map((day, i) => (
               <div key={i} className="text-center py-1">
                 <div className="text-xs uppercase tracking-wide text-zinc-400 font-medium">{DAY_NAMES[i]}</div>
-                <div className={`text-base font-semibold mt-0.5 ${formatDate(day) === today ? "bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm" : "text-zinc-800"}`}>
+                <div className={`text-base font-semibold mt-0.5 ${formatDate(day) === today ? "bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm" : "text-zinc-800 dark:text-zinc-200"}`}>
                   {day.getDate()}
                 </div>
               </div>

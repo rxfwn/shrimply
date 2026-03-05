@@ -7,6 +7,8 @@ import PrivateRoute from "./components/privateroute"
 import Layout from "./components/layout"
 import Calendar from "./pages/calendar"
 import Recipes from "./pages/recipes"
+import RecipeDetail from "./pages/recipedetail"
+import RecipeEdit from "./pages/recipeedit"
 import Shopping from "./pages/shopping"
 import Fridge from "./pages/fridge"
 import Friends from "./pages/friends"
@@ -29,6 +31,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route element={<Layout />}>
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/recipes" element={<Recipes />} />
+            <Route path="/recipes/:id" element={<RecipeDetail />} />
+            <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
             <Route path="/shopping" element={<Shopping />} />
             <Route path="/fridge" element={<Fridge />} />
             <Route path="/friends" element={<Friends />} />

@@ -23,7 +23,7 @@ export default function Layout() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-3 flex flex-col gap-1">
+        <nav className="flex-1 px-3 py-3 flex flex-col gap-1 overflow-y-auto">
           <p className="text-xs text-zinc-400 uppercase tracking-widest px-2 py-1 font-medium">Menu</p>
           <NavLink to="/calendar" className={({ isActive }) =>
             `flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${isActive ? "bg-orange-50 text-orange-500 font-medium" : "text-zinc-400 hover:bg-gray-50 hover:text-zinc-800"}`
@@ -65,7 +65,7 @@ export default function Layout() {
       </div>
 
       {/* CONTENU */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-zinc-50">
+      <div className="flex-1 flex flex-col overflow-y-auto bg-zinc-50">
         <Outlet />
       </div>
     </div>

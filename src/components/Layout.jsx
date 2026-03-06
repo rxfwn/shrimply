@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { NavLink, useNavigate, Outlet } from "react-router-dom"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
@@ -5,6 +6,17 @@ import { useTheme } from "../context/ThemeContext"
 export default function Layout() {
   const navigate = useNavigate()
   const { darkMode } = useTheme()
+  const [profile, setProfile] = useState(null)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => { fetchProfile() }, [])
+
+  const fetchProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user)
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+    if (data) setProfile(data)
+  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -22,6 +34,26 @@ export default function Layout() {
           <span className="font-serif text-xl font-semibold text-zinc-900 dark:text-white">
             🦐 Shrim<em className="text-orange-500 not-italic">ply</em>
           </span>
+        </div>
+
+        {/* Profil */}
+        <div
+          className="flex items-center gap-2.5 px-3 py-3 mx-3 mt-2 rounded-lg bg-zinc-50 dark:bg-zinc-800 cursor-pointer hover:bg-orange-50 dark:hover:bg-zinc-700 transition"
+          onClick={() => navigate("/settings")}
+        >
+          <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-orange-200">
+            {profile?.avatar_url ? (
+              <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm">👤</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
+              {profile?.username || user?.email?.split("@")[0] || "Mon profil"}
+            </p>
+            <p className="text-xs text-zinc-400 truncate">Voir le profil</p>
+          </div>
         </div>
 
         {/* Nav */}

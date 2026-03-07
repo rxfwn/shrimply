@@ -14,9 +14,16 @@ export default function Login() {
     else navigate("/home")
   }
 
-  const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: "google" })
-  }
+const handleGoogle = async () => {
+  console.log("google clicked")
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin + "/auth/callback"
+    }
+  })
+  console.log("data:", data, "error:", error)
+}
 
   return (
     <div className="min-h-screen bg-orange-50 flex items-center justify-center">

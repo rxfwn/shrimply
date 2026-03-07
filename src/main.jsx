@@ -5,6 +5,7 @@ import { ThemeProvider } from "./context/ThemeContext"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import PrivateRoute from "./components/PrivateRoute"
+import AuthCallback from "./pages/AuthCallback"
 import Layout from "./components/Layout"
 import Calendar from "./pages/Calendar"
 import Recipes from "./pages/Recipes"
@@ -28,7 +29,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <Route path="/home" element={<Navigate to="/calendar" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/auth/callback" element={<Navigate to="/calendar" />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route element={<PrivateRoute />}>
             <Route element={<Layout />}>
               <Route path="/calendar" element={<Calendar />} />

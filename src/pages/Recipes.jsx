@@ -50,6 +50,7 @@ export default function Recipes() {
       prep_time: parseInt(prepTime) || null,
       servings: parseInt(servings) || null,
       tags: selectedTags,
+      is_public: false,
     }).select().single()
 
     if (!error && recipe) {
@@ -88,10 +89,15 @@ export default function Recipes() {
     setLoading(false)
   }
 
+  const togglePublic = async (e, recipe) => {
+    e.stopPropagation()
+    await supabase.from("recipes").update({ is_public: !recipe.is_public }).eq("id", recipe.id)
+    fetchRecipes()
+  }
+
   return (
     <div className="p-6 max-w-3xl">
 
-      {/* POPUP SUCCESS */}
       {success && (
         <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2">
           ✅ Recette ajoutée avec succès !
@@ -99,29 +105,29 @@ export default function Recipes() {
       )}
 
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-zinc-900">📖 Mes recettes</h1>
+        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white">📖 Mes recettes</h1>
         <button onClick={() => setShowForm(!showForm)} className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition">
           + Nouvelle recette
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white border border-gray-100 rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-900 mb-4">Nouvelle recette</h2>
+        <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-6 mb-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Nouvelle recette</h2>
 
           <div className="flex flex-col gap-4">
-            <input className="border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-orange-400" placeholder="Nom de la recette *" value={name} onChange={e => setName(e.target.value)} />
-            <textarea className="border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-orange-400 resize-none" placeholder="Description (optionnel)" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
+            <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-3 text-sm outline-none focus:border-orange-400" placeholder="Nom de la recette *" value={name} onChange={e => setName(e.target.value)} />
+            <textarea className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-3 text-sm outline-none focus:border-orange-400 resize-none" placeholder="Description (optionnel)" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
             <div className="flex gap-3">
-              <input className="border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-orange-400 flex-1" placeholder="Temps (min)" type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} />
-              <input className="border border-gray-200 rounded-lg p-3 text-sm outline-none focus:border-orange-400 flex-1" placeholder="Portions" type="number" value={servings} onChange={e => setServings(e.target.value)} />
+              <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-3 text-sm outline-none focus:border-orange-400 flex-1" placeholder="Temps (min)" type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} />
+              <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-3 text-sm outline-none focus:border-orange-400 flex-1" placeholder="Portions" type="number" value={servings} onChange={e => setServings(e.target.value)} />
             </div>
 
             <div>
               <p className="text-xs font-medium text-zinc-500 mb-2 uppercase tracking-wide">Tags</p>
               <div className="flex flex-wrap gap-2">
                 {TAGS.map(tag => (
-                  <button key={tag} onClick={() => toggleTag(tag)} className={`text-xs px-3 py-1.5 rounded-full border transition ${selectedTags.includes(tag) ? "bg-orange-500 border-orange-500 text-white" : "bg-white border-gray-200 text-zinc-500 hover:border-orange-300"}`}>
+                  <button key={tag} onClick={() => toggleTag(tag)} className={`text-xs px-3 py-1.5 rounded-full border transition ${selectedTags.includes(tag) ? "bg-orange-500 border-orange-500 text-white" : "bg-white dark:bg-zinc-700 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-orange-300"}`}>
                     {tag}
                   </button>
                 ))}
@@ -133,10 +139,10 @@ export default function Recipes() {
               <div className="flex flex-col gap-2">
                 {ingredients.map((ing, index) => (
                   <div key={index} className="flex gap-2 items-center">
-                    <input className="border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 flex-[2]" placeholder="Ingrédient" value={ing.name} onChange={e => updateIngredient(index, "name", e.target.value)} />
-                    <input className="border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 w-16" placeholder="Qté" type="number" value={ing.quantity} onChange={e => updateIngredient(index, "quantity", e.target.value)} />
-                    <input className="border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 w-16" placeholder="Unité" value={ing.unit} onChange={e => updateIngredient(index, "unit", e.target.value)} />
-                    <input className="border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 w-20" placeholder="kcal" type="number" value={ing.calories} onChange={e => updateIngredient(index, "calories", e.target.value)} />
+                    <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 flex-[2]" placeholder="Ingrédient" value={ing.name} onChange={e => updateIngredient(index, "name", e.target.value)} />
+                    <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 w-16" placeholder="Qté" type="number" value={ing.quantity} onChange={e => updateIngredient(index, "quantity", e.target.value)} />
+                    <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 w-16" placeholder="Unité" value={ing.unit} onChange={e => updateIngredient(index, "unit", e.target.value)} />
+                    <input className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 w-20" placeholder="kcal" type="number" value={ing.calories} onChange={e => updateIngredient(index, "calories", e.target.value)} />
                     {ingredients.length > 1 && (
                       <button onClick={() => removeIngredient(index)} className="text-zinc-300 hover:text-red-400 transition text-lg leading-none">×</button>
                     )}
@@ -154,7 +160,7 @@ export default function Recipes() {
                 {steps.map((step, index) => (
                   <div key={index} className="flex gap-2 items-start">
                     <span className="text-xs font-bold text-orange-500 mt-3 w-5 flex-shrink-0">{index + 1}.</span>
-                    <textarea className="border border-gray-200 rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 flex-1 resize-none" placeholder={`Étape ${index + 1}...`} rows={2} value={step.description} onChange={e => updateStep(index, e.target.value)} />
+                    <textarea className="border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-orange-400 flex-1 resize-none" placeholder={`Étape ${index + 1}...`} rows={2} value={step.description} onChange={e => updateStep(index, e.target.value)} />
                     {steps.length > 1 && (
                       <button onClick={() => removeStep(index)} className="text-zinc-300 hover:text-red-400 transition text-lg leading-none mt-2">×</button>
                     )}
@@ -183,20 +189,26 @@ export default function Recipes() {
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {recipes.map(recipe => (
-            <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition cursor-pointer">
-              <h3 className="font-semibold text-zinc-900 mb-1">{recipe.name}</h3>
+            <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)} className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-4 shadow-sm hover:shadow-md transition cursor-pointer">
+              <h3 className="font-semibold text-zinc-900 dark:text-white mb-1">{recipe.name}</h3>
               {recipe.description && <p className="text-xs text-zinc-400 mb-2 line-clamp-2">{recipe.description}</p>}
               <div className="flex items-center gap-3 text-xs text-zinc-400 mb-2">
                 {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
                 {recipe.servings && <span>🍽 {recipe.servings} portions</span>}
               </div>
               {recipe.tags && recipe.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 mb-2">
                   {recipe.tags.map(tag => (
                     <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
                   ))}
                 </div>
               )}
+              <button
+                onClick={(e) => togglePublic(e, recipe)}
+                className={`text-xs px-2 py-1 rounded-full border transition ${recipe.is_public ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100" : "bg-zinc-50 text-zinc-400 border-gray-200 hover:border-orange-300 dark:bg-zinc-700 dark:border-zinc-600"}`}
+              >
+                {recipe.is_public ? "🌍 Public" : "🔒 Privé"}
+              </button>
             </div>
           ))}
         </div>

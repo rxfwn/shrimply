@@ -103,7 +103,7 @@ export default function Layout() {
           {navItem("/discover", "✨", "Découvrir")}
           <p className="text-xs font-semibold px-3 py-2 mt-2 uppercase tracking-widest text-brand-cream/30">IA</p>
           {navItem("/nutrition", "🤖", "Bilan nutrition")}
-          {navItem("/suggestions", "🌈", "Suggestions")}
+          {navItem("/suggestions", "🌈", "Améliorations à venir")}
         </nav>
 
         {/* Bottom */}

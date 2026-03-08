@@ -67,35 +67,54 @@ function RecipeCard({ recipe }) {
   )
 }
 
-function MealSlot({ date, mealType, meal, onRemove, isToday, compact }) {
+function MealSlot({ date, mealType, meal, onRemove, isToday }) {
   const slotId = `slot-${date}-${mealType}`
   const { setNodeRef, isOver } = useDroppable({ id: slotId, data: { date, mealType } })
-  if (compact) {
-    return (
-      <div ref={setNodeRef}
-        className={`rounded px-1 py-0.5 text-xs truncate mb-0.5 transition
-          ${meal ? "bg-orange-100 text-orange-700" : isOver ? "bg-orange-50 border border-dashed border-orange-300" : "bg-transparent"}`}
-      >
-        {meal ? meal.recipes?.name : ""}
-      </div>
-    )
+
+  const mealColors = {
+    "Matin": meal ? "bg-amber-50 border-amber-200 shadow-amber-100" : "",
+    "Midi": meal ? "bg-blue-50 border-blue-200 shadow-blue-100" : "",
+    "Soir": meal ? "bg-purple-50 border-purple-200 shadow-purple-100" : "",
   }
+
+  const textColors = {
+    "Matin": "text-amber-700",
+    "Midi": "text-blue-700",
+    "Soir": "text-purple-700",
+  }
+
+  const timeColors = {
+    "Matin": "text-amber-400",
+    "Midi": "text-blue-400",
+    "Soir": "text-purple-400",
+  }
+
   return (
     <div ref={setNodeRef} style={{ height: "76px" }}
-      className={`rounded-lg border transition relative overflow-hidden
-        ${meal ? `bg-white shadow-sm ${isToday ? "border-orange-200 bg-orange-50" : "border-gray-100"}` : isOver ? "border-orange-400 bg-orange-50 border-dashed" : "border-dashed border-gray-200 bg-white hover:border-orange-300"}`}
+      className={`rounded-lg border transition relative overflow-hidden shadow-sm
+        ${meal
+          ? `${mealColors[mealType]} ${isToday ? "ring-2 ring-brand-orange" : ""}`
+          : isOver
+            ? "border-brand-orange bg-brand-orange/5 border-dashed"
+            : "border-dashed border-gray-200 bg-white hover:border-brand-orange/40"
+        }`}
     >
       {meal ? (
         <div className="p-2 h-full flex flex-col justify-between">
-          <div className="text-xs font-semibold text-zinc-800 line-clamp-2 leading-tight">{meal.recipes?.name}</div>
+          <div className={`text-xs font-semibold line-clamp-2 leading-tight ${textColors[mealType]}`}>
+            {meal.recipes?.name}
+          </div>
           <div className="flex items-center justify-between">
-            {meal.recipes?.prep_time && <span className="text-xs text-zinc-400">⏱ {meal.recipes.prep_time}m</span>}
-            <button onClick={() => onRemove(meal.id)} className="text-zinc-300 hover:text-red-400 transition text-base leading-none ml-auto">×</button>
+            {meal.recipes?.prep_time && (
+              <span className={`text-xs ${timeColors[mealType]}`}>⏱ {meal.recipes.prep_time}m</span>
+            )}
+            <button onClick={() => onRemove(meal.id)}
+              className={`${timeColors[mealType]} hover:text-red-400 transition text-base leading-none ml-auto opacity-50 hover:opacity-100`}>×</button>
           </div>
         </div>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <span className={`text-lg ${isOver ? "text-orange-400" : "text-gray-200"}`}>+</span>
+          <span className={`text-lg ${isOver ? "text-brand-orange" : "text-gray-200"}`}>+</span>
         </div>
       )}
     </div>

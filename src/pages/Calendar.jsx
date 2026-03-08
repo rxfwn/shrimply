@@ -348,7 +348,7 @@ export default function Calendar() {
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm
                   ${cooldown > 0 ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-brand-orange/10 text-brand-orange hover:bg-brand-orange hover:text-white'}`}
               >
-                {loadingIA ? "🪄..." : cooldown > 0 ? `⏳ ${cooldown}s` : "🪄 Équilibrer"}
+                {loadingIA ? "🪄..." : cooldown > 0 ? `⏳ ${cooldown}s` : "💡 Équilibrer"}
               </button>
 
               <button onClick={() => navigate("/shopping")} className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition">

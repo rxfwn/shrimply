@@ -13,20 +13,39 @@ export default function Discover() {
 
   useEffect(() => { fetchRecipes() }, [])
 
-  const fetchRecipes = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setCurrentUser(user)
+ const fetchRecipes = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  setCurrentUser(user)
 
-    const { data } = await supabase
-      .from("recipes")
-      .select("*, profiles(username, avatar_url)")
-      .eq("is_public", true)
-      .neq("user_id", user.id)
-      .order("created_at", { ascending: false })
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("*")
+    .eq("is_public", true)
+    .neq("user_id", user.id)
+    .order("created_at", { ascending: false })
 
-    if (data) setRecipes(data)
-    setLoading(false)
+  console.log("recipes:", data, "error:", error)
+
+  if (data) {
+    // Récupérer les profils séparément
+    const userIds = [...new Set(data.map(r => r.user_id))]
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, username, avatar_url")
+      .in("id", userIds)
+
+    const profileMap = {}
+    profiles?.forEach(p => { profileMap[p.id] = p })
+
+    const recipesWithProfiles = data.map(r => ({
+      ...r,
+      profiles: profileMap[r.user_id] || null
+    }))
+
+    setRecipes(recipesWithProfiles)
   }
+  setLoading(false)
+}
 
   const handleAddToMyRecipes = async (recipe) => {
     const { data: { user } } = await supabase.auth.getUser()

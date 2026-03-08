@@ -45,42 +45,56 @@ const handleGenerate = async () => {
   setGenerating(true)
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: meals, error: mealsError } = await supabase
+  const { data: meals } = await supabase
     .from("meal_plan")
     .select("recipe_id")
     .eq("user_id", user.id)
     .gte("date", formatDate(monday))
     .lte("date", formatDate(sunday))
 
-  console.log("meals:", meals, "error:", mealsError)
-
   if (!meals || meals.length === 0) {
     setGenerating(false)
     return alert("Aucun repas planifié cette semaine !")
   }
 
-  const recipeIds = [...new Set(meals.map(m => m.recipe_id))]
-  console.log("recipeIds:", recipeIds)
+  // Compter combien de fois chaque recette apparaît
+  const recipeCount = {}
+  meals.forEach(m => {
+    recipeCount[m.recipe_id] = (recipeCount[m.recipe_id] || 0) + 1
+  })
 
-  const { data: ingredients, error: ingError } = await supabase
+  const recipeIds = Object.keys(recipeCount)
+
+  // Récupérer les infos des recettes (notamment servings)
+  const { data: recipesData } = await supabase
+    .from("recipes")
+    .select("id, servings")
+    .in("id", recipeIds)
+
+  const recipeServings = {}
+  recipesData?.forEach(r => { recipeServings[r.id] = r.servings || 1 })
+
+  const { data: ingredients } = await supabase
     .from("ingredients")
     .select("*")
     .in("recipe_id", recipeIds)
-
-  console.log("ingredients:", ingredients, "error:", ingError)
 
   if (!ingredients || ingredients.length === 0) {
     setGenerating(false)
     return alert("Aucun ingrédient trouvé pour ces recettes !")
   }
 
+  // Fusionner les ingrédients en multipliant par le nombre d'occurrences
   const merged = {}
   ingredients.forEach(ing => {
     const key = ing.name.toLowerCase().trim()
+    const occurrences = recipeCount[ing.recipe_id] || 1
+    const totalQty = (ing.quantity || 0) * occurrences
+
     if (merged[key]) {
-      merged[key].quantity = (merged[key].quantity || 0) + (ing.quantity || 0)
+      merged[key].quantity = (merged[key].quantity || 0) + totalQty
     } else {
-      merged[key] = { name: ing.name, quantity: ing.quantity, unit: ing.unit }
+      merged[key] = { name: ing.name, quantity: totalQty, unit: ing.unit }
     }
   })
 
@@ -90,7 +104,7 @@ const handleGenerate = async () => {
     .eq("user_id", user.id)
     .eq("week_start", formatDate(monday))
 
-  const { error: insertError } = await supabase.from("shopping_list").insert(
+  await supabase.from("shopping_list").insert(
     Object.values(merged).map(item => ({
       user_id: user.id,
       name: item.name,
@@ -100,8 +114,6 @@ const handleGenerate = async () => {
       week_start: formatDate(monday),
     }))
   )
-
-  console.log("insertError:", insertError)
 
   await fetchItems()
   setGenerating(false)

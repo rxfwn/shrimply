@@ -4,6 +4,14 @@ import { supabase } from "../supabase"
 
 const TAGS = ["🌿 Végé", "🍝 Italien", "🥢 Asiatique", "🇫🇷 Français", "⚡ Rapide", "💪 Protéiné", "🥗 Léger", "🍰 Dessert"]
 
+// AJOUT : La liste des unités disponibles
+const UNITS = [
+  "g", "kg", "ml", "cl", "L", 
+  "c. à café", "c. à soupe", 
+  "pincée", "poignée", 
+  "paquet", "boîte", "tranche", "pièce"
+]
+
 export default function Recipes() {
   const navigate = useNavigate()
   const [showForm, setShowForm] = useState(false)
@@ -18,6 +26,9 @@ export default function Recipes() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [errors, setErrors] = useState({})
+  
+  // État pour stocker le mot interdit trouvé
+  const [bannedPopup, setBannedPopup] = useState(null) 
 
   useEffect(() => { fetchRecipes() }, [])
 
@@ -25,6 +36,18 @@ export default function Recipes() {
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
     if (data) setRecipes(data)
+  }
+
+  // Fonction qui vérifie les mots interdits dans Supabase
+  const checkBannedWords = async (textsToCheck) => {
+    const { data: banned } = await supabase.from("banned_words").select("word")
+    if (!banned) return null
+    const fullText = textsToCheck.join(" ").toLowerCase()
+    for (const { word } of banned) {
+      const regex = new RegExp(`\\b${word.toLowerCase()}\\b`, "i")
+      if (regex.test(fullText)) return word
+    }
+    return null
   }
 
   const toggleTag = (tag) => {
@@ -71,6 +94,21 @@ export default function Recipes() {
   const handleSubmit = async () => {
     if (!validate()) return
     setLoading(true)
+
+    // On vérifie les mots interdits AVANT d'envoyer à Supabase
+    const textsToCheck = [
+      name,
+      description,
+      ...ingredients.map(i => i.name),
+      ...steps.map(s => s.description)
+    ]
+    const found = await checkBannedWords(textsToCheck)
+    if (found) {
+      setBannedPopup(found) // Affiche le popup
+      setLoading(false)     // Arrête le chargement
+      return                // Bloque l'envoi de la recette
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
 
     const { data: recipe, error } = await supabase.from("recipes").insert({
@@ -82,6 +120,8 @@ export default function Recipes() {
       tags: selectedTags,
       is_public: false,
     }).select().single()
+
+    if (error) console.error("Erreur d'insertion Supabase:", error)
 
     if (!error && recipe) {
       const validIngredients = ingredients.filter(i => i.name.trim())
@@ -128,6 +168,48 @@ export default function Recipes() {
   return (
     <div className="p-6 max-w-3xl">
 
+      {/* POPUP MODÉRATION */}
+      {bannedPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm transition-opacity">
+          <div className="bg-white dark:bg-zinc-800 rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden border border-red-100 dark:border-red-900/30 transform transition-all scale-100">
+            
+            <div className="bg-red-50 dark:bg-red-900/10 pt-8 pb-6 px-6 flex flex-col items-center border-b border-red-100 dark:border-red-900/20">
+              <div className="w-16 h-16 bg-white dark:bg-zinc-800 shadow-sm rounded-full flex items-center justify-center text-3xl mb-4 border border-red-100 dark:border-red-800/50">
+                🚨
+              </div>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white text-center">
+                Contenu bloqué
+              </h2>
+            </div>
+
+            <div className="p-6 text-center">
+              <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">
+                Cette recette contient un terme qui ne respecte pas notre charte communautaire :
+              </p>
+              
+              <div className="inline-block bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 px-5 py-2.5 rounded-xl font-bold tracking-wide mb-6 shadow-inner">
+                « {bannedPopup} »
+              </div>
+
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 px-2">
+                Merci de modifier ton contenu pour qu'il reste respectueux et approprié.
+              </p>
+              <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 italic mb-6">
+                (bien essayé petit malin 😎)
+              </p>
+
+              <button
+                onClick={() => setBannedPopup(null)}
+                className="w-full bg-red-500 hover:bg-red-600 text-white py-3.5 rounded-xl text-sm font-semibold transition-colors shadow-sm shadow-red-500/20 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800"
+              >
+                J'ai compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP SUCCÈS */}
       {success && (
         <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
           ✅ Recette ajoutée !
@@ -222,11 +304,18 @@ export default function Recipes() {
                         onChange={e => updateIngredient(index, "quantity", e.target.value)} />
                       {errors[`ing_${index}_quantity`] && <p className="text-xs text-red-400 mt-0.5">Requis</p>}
                     </div>
-                    <div className="w-20">
-                      <input
+                    {/* LE NOUVEAU SELECT POUR LES UNITÉS */}
+                    <div className="w-24">
+                      <select
                         className={inputClass(errors[`ing_${index}_unit`])}
-                        placeholder="Unité *" value={ing.unit}
-                        onChange={e => updateIngredient(index, "unit", e.target.value)} />
+                        value={ing.unit}
+                        onChange={e => updateIngredient(index, "unit", e.target.value)}
+                      >
+                        <option value="" disabled>Unité *</option>
+                        {UNITS.map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
                       {errors[`ing_${index}_unit`] && <p className="text-xs text-red-400 mt-0.5">Requis</p>}
                     </div>
                     {ingredients.length > 1 && (
@@ -278,7 +367,7 @@ export default function Recipes() {
               </button>
               <button onClick={handleSubmit} disabled={loading}
                 className="flex-1 bg-brand-orange hover:bg-brand-orange/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition disabled:opacity-50">
-                {loading ? "Enregistrement..." : "Enregistrer"}
+                {loading ? "Vérification..." : "Enregistrer"}
               </button>
             </div>
           </div>

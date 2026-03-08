@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
@@ -8,6 +8,7 @@ const MEAL_TYPES = ["Matin", "Midi", "Soir"]
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
 const MONTH_NAMES = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
 
+// --- FONCTIONS UTILITAIRES ---
 function getWeekDays(startDate) {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(startDate)
@@ -29,11 +30,9 @@ function getMonthDays(year, month) {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
   const days = []
-  // Jours vides avant le 1er
   let startDow = firstDay.getDay()
   if (startDow === 0) startDow = 7
   for (let i = 1; i < startDow; i++) days.push(null)
-  // Jours du mois
   for (let i = 1; i <= lastDay.getDate(); i++) {
     days.push(new Date(year, month, i))
   }
@@ -44,6 +43,7 @@ function formatDate(date) {
   return date.toISOString().split("T")[0]
 }
 
+// --- COMPOSANTS DRAG & DROP ---
 function RecipeCard({ recipe }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `recipe-${recipe.id}`,
@@ -129,6 +129,7 @@ function MonthDayCell({ date, meals, onRemove, isToday }) {
   )
 }
 
+// --- COMPOSANT PRINCIPAL ---
 export default function Calendar() {
   const navigate = useNavigate()
   const [view, setView] = useState("week")
@@ -139,12 +140,24 @@ export default function Calendar() {
   const [recipes, setRecipes] = useState([])
   const [search, setSearch] = useState("")
   const [activeRecipe, setActiveRecipe] = useState(null)
+  
+  // États IA
+  const [loadingIA, setLoadingIA] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
 
   const days = getWeekDays(monday)
   const today = formatDate(new Date())
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   useEffect(() => { fetchData() }, [monday, currentMonth, currentYear, view])
+
+  // Timer pour le cooldown
+  useEffect(() => {
+    if (cooldown > 0) {
+      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [cooldown])
 
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -173,6 +186,81 @@ export default function Calendar() {
 
     if (planData) setMealPlan(planData)
     if (recipesData) setRecipes(recipesData)
+  }
+
+  // --- LOGIQUE IA PLANNING ---
+  const handleAutoFill = async () => {
+    if (loadingIA || cooldown > 0 || recipes.length === 0) return
+    setLoadingIA(true)
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      // On identifie les slots vides pour la semaine en cours
+      const emptySlots = []
+      days.forEach(day => {
+        const dateStr = formatDate(day)
+        MEAL_TYPES.forEach(type => {
+          const exists = mealPlan.find(m => m.date === dateStr && m.meal_type === type)
+          if (!exists) emptySlots.push({ date: dateStr, type })
+        })
+      })
+
+      if (emptySlots.length === 0) {
+        alert("Ton planning est déjà plein ! ✨")
+        setLoadingIA(false)
+        return
+      }
+
+      const prompt = `J'ai ces recettes : ${recipes.map(r => r.name).join(", ")}. 
+      Remplis ces créneaux vides : ${emptySlots.map(s => `${s.date} (${s.type})`).join(", ")}.
+      Propose un planning équilibré (varie les recettes).
+      Réponds UNIQUEMENT un JSON : [{"date": "YYYY-MM-DD", "meal_type": "Matin/Midi/Soir", "recipe_name": "..."}]`
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        }
+      )
+
+      if (response.status === 429) {
+        setCooldown(60)
+        throw new Error("L'IA est un peu fatiguée. Attends une minute ! ⏳")
+      }
+
+      const resJson = await response.json()
+      const suggestions = JSON.parse(resJson.candidates[0].content.parts[0].text)
+
+      // Insertion dans Supabase
+      const inserts = suggestions.map(s => {
+        const recipe = recipes.find(r => r.name === s.recipe_name)
+        if (!recipe) return null
+        return {
+          user_id: user.id,
+          recipe_id: recipe.id,
+          date: s.date,
+          meal_type: s.meal_type
+        }
+      }).filter(Boolean)
+
+      if (inserts.length > 0) {
+        await supabase.from("meal_plan").insert(inserts)
+        await fetchData()
+      }
+      
+      setCooldown(60)
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    } finally {
+      setLoadingIA(false)
+    }
   }
 
   const getMeal = (date, mealType) => mealPlan.find(m => m.date === formatDate(date) && m.meal_type === mealType)
@@ -226,7 +314,6 @@ export default function Calendar() {
   }
 
   const filteredRecipes = recipes.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
-
   const weekLabel = `${days[0].getDate()} — ${days[6].getDate()} ${days[6].toLocaleString("fr-FR", { month: "long" })} ${days[6].getFullYear()}`
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`
   const monthDays = getMonthDays(currentYear, currentMonth)
@@ -235,45 +322,41 @@ export default function Calendar() {
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
 
-        {/* CALENDRIER */}
         <div style={{ flex: 1, overflow: "auto", padding: "1.25rem" }}>
-
-          {/* Topbar */}
+          
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Mon planning</h1>
 
-              {/* Toggle Semaine/Mois */}
               <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5">
-                <button
-                  onClick={() => setView("week")}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "week" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}
-                >
-                  Semaine
-                </button>
-                <button
-                  onClick={() => setView("month")}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "month" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}
-                >
-                  Mois
-                </button>
+                <button onClick={() => setView("week")} className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "week" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}>Semaine</button>
+                <button onClick={() => setView("month")} className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "month" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}>Mois</button>
               </div>
 
-              {/* Navigation */}
               <div className="flex items-center gap-1">
                 <button onClick={prevPeriod} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">◀</button>
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 px-2 min-w-48 text-center">
-                  {view === "week" ? weekLabel : monthLabel}
-                </span>
+                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 px-2 min-w-48 text-center">{view === "week" ? weekLabel : monthLabel}</span>
                 <button onClick={nextPeriod} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">▶</button>
               </div>
             </div>
-            <button onClick={() => navigate("/shopping")} className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition">
-              🛒 Courses
-            </button>
+
+            <div className="flex gap-2">
+              {/* BOUTON IA MAGIQUE */}
+              <button 
+                onClick={handleAutoFill}
+                disabled={loadingIA || cooldown > 0}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm
+                  ${cooldown > 0 ? 'bg-zinc-100 text-zinc-400 cursor-not-allowed' : 'bg-brand-orange/10 text-brand-orange hover:bg-brand-orange hover:text-white'}`}
+              >
+                {loadingIA ? "🪄..." : cooldown > 0 ? `⏳ ${cooldown}s` : "🪄 Équilibrer"}
+              </button>
+
+              <button onClick={() => navigate("/shopping")} className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-orange-600 transition">
+                🛒 Courses
+              </button>
+            </div>
           </div>
 
-          {/* VUE SEMAINE */}
           {view === "week" && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "56px repeat(7, 1fr)", gap: "5px", marginBottom: "5px" }}>
@@ -281,9 +364,7 @@ export default function Calendar() {
                 {days.map((day, i) => (
                   <div key={i} className="text-center py-1">
                     <div className="text-xs uppercase tracking-wide text-zinc-400 font-medium">{DAY_NAMES[i]}</div>
-                    <div className={`text-base font-semibold mt-0.5 ${formatDate(day) === today ? "bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm" : "text-zinc-800 dark:text-zinc-200"}`}>
-                      {day.getDate()}
-                    </div>
+                    <div className={`text-base font-semibold mt-0.5 ${formatDate(day) === today ? "bg-orange-500 text-white w-7 h-7 rounded-full flex items-center justify-center mx-auto text-sm" : "text-zinc-800 dark:text-zinc-200"}`}>{day.getDate()}</div>
                   </div>
                 ))}
               </div>
@@ -304,7 +385,6 @@ export default function Calendar() {
             </>
           )}
 
-          {/* VUE MOIS */}
           {view === "month" && (
             <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "5px", marginBottom: "5px" }}>
@@ -325,23 +405,13 @@ export default function Calendar() {
           )}
         </div>
 
-        {/* PANEL RECETTES */}
         <div style={{ width: "240px", borderLeft: "1px solid #EBEBEB", background: "white", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <div className="p-3 border-b border-gray-100">
             <div className="text-sm font-semibold text-zinc-900 mb-2">📖 Mes recettes</div>
-            <input
-              className="w-full bg-zinc-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-orange-400"
-              placeholder="Rechercher..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+            <input className="w-full bg-zinc-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-orange-400" placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div style={{ flex: 1, overflowY: "auto", padding: "0.5rem" }}>
-            {filteredRecipes.length === 0 ? (
-              <div className="text-xs text-zinc-400 text-center mt-4">Aucune recette trouvée</div>
-            ) : (
-              filteredRecipes.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} />)
-            )}
+            {filteredRecipes.length === 0 ? <div className="text-xs text-zinc-400 text-center mt-4">Aucune recette trouvée</div> : filteredRecipes.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} />)}
           </div>
           <div className="p-3 border-t border-gray-100">
             <p className="text-xs text-zinc-400 text-center">⠿ Glisse une recette sur un créneau</p>

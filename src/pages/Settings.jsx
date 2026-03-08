@@ -20,7 +20,10 @@ export default function Settings() {
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
-    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+    
+    // CORRECTION ICI : maybeSingle() au lieu de single()
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
+    
     if (data) {
       setUsername(data.username || "")
       setAvatarUrl(data.avatar_url || "")
@@ -33,20 +36,20 @@ export default function Settings() {
   }
 
   const handleAvatarUpload = async (e) => {
-  const file = e.target.files[0]
-  if (!file) return
-  setUploading(true)
-  const path = `${user.id}`
-  const { error } = await supabase.storage.from("avatars").upload(path, file, { 
-    upsert: true,
-    contentType: file.type
-  })
-  console.log("upload error:", error)
-  const { data } = supabase.storage.from("avatars").getPublicUrl(path)
-  console.log("public url:", data.publicUrl)
-  setAvatarUrl(data.publicUrl)
-  setUploading(false)
-}
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    const path = `${user.id}`
+    const { error } = await supabase.storage.from("avatars").upload(path, file, { 
+      upsert: true,
+      contentType: file.type
+    })
+    console.log("upload error:", error)
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path)
+    console.log("public url:", data.publicUrl)
+    setAvatarUrl(data.publicUrl)
+    setUploading(false)
+  }
 
   const handleSave = async () => {
     setSaving(true)

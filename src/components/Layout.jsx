@@ -15,7 +15,10 @@ export default function Layout() {
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
-    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+    
+    // CORRECTION ICI : On utilise maybeSingle() au lieu de single()
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
+    
     if (data) setProfile(data)
   }
 

@@ -16,49 +16,64 @@ export default function Friends() {
     const { data: { user } } = await supabase.auth.getUser()
     setCurrentUser(user)
 
-    const { data: followingData } = await supabase
+    // On récupère les abonnements
+    const { data: followingData, error: followError } = await supabase
       .from("follows")
       .select("following_id, profiles!follows_following_id_fkey(id, username, avatar_url)")
       .eq("follower_id", user.id)
 
-    const { data: followersData } = await supabase
+    // On récupère les abonnés
+    const { data: followersData, error: followerError } = await supabase
       .from("follows")
       .select("follower_id, profiles!follows_follower_id_fkey(id, username, avatar_url)")
       .eq("following_id", user.id)
 
-    if (followingData) setFollowing(followingData)
-    if (followersData) setFollowers(followersData)
+    if (followError) console.error("Erreur abonnements:", followError)
+    if (followerError) console.error("Erreur abonnés:", followerError)
+
+    // On filtre pour éviter les erreurs si un profil lié est null (406 protection)
+    if (followingData) setFollowing(followingData.filter(f => f.profiles !== null))
+    if (followersData) setFollowers(followersData.filter(f => f.profiles !== null))
   }
 
   const handleSearch = async () => {
     if (!search.trim()) return
     setLoading(true)
-    const { data } = await supabase
+    
+    // Recherche de profils avec une sécurité simple
+    const { data, error } = await supabase
       .from("profiles")
       .select("id, username, avatar_url")
       .ilike("username", `%${search}%`)
       .neq("id", currentUser.id)
       .limit(10)
+
+    if (error) console.error("Erreur recherche:", error)
+    
     setSearchResults(data || [])
     setLoading(false)
   }
 
   const handleFollow = async (userId) => {
-    await supabase.from("follows").insert({
+    const { error } = await supabase.from("follows").insert({
       follower_id: currentUser.id,
       following_id: userId,
     })
-    setSuccess("Utilisateur suivi !")
-    setTimeout(() => setSuccess(""), 2000)
-    await fetchData()
+
+    if (!error) {
+      setSuccess("Utilisateur suivi !")
+      setTimeout(() => setSuccess(""), 2000)
+      await fetchData()
+    }
   }
 
   const handleUnfollow = async (userId) => {
-    await supabase.from("follows")
+    const { error } = await supabase.from("follows")
       .delete()
       .eq("follower_id", currentUser.id)
       .eq("following_id", userId)
-    await fetchData()
+    
+    if (!error) await fetchData()
   }
 
   const isFollowing = (userId) => {

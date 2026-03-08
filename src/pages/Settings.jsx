@@ -12,7 +12,7 @@ export default function Settings() {
   const [success, setSuccess] = useState(false)
   const fileRef = useRef()
 
-  const PREFERENCES = ["🌿 Végétarien", "🌱 Vegan", "🐟 Pescétarien", "🥩 Sans restrictions", "🚫 Sans gluten", "🥛 Sans lactose", "🥜 Sans arachides"]
+  const PREFERENCES = ["🌿 Végétarien", "🌱 Vegan", "🐟 Pescétarien", "🥩 Sans restrictions", "🚫 Sans gluten", "🥛 Sans lactose", "🥜 Sans arachides", "💰 Économique"]
   const [selectedPrefs, setSelectedPrefs] = useState([])
 
   useEffect(() => { fetchProfile() }, [])

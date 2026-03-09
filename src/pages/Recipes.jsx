@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
+import ImageUploadCropper from "./ImageUploadCropper"
 
 const TAGS = ["🌿 Végé", "🍝 Italien", "🥢 Asiatique", "🇫🇷 Français", "⚡ Rapide", "💪 Protéiné", "🥗 Léger", "🍰 Dessert", "💰 Économique"]
 
@@ -23,6 +24,7 @@ export default function Recipes() {
   const [selectedTags, setSelectedTags] = useState([])
   const [ingredients, setIngredients] = useState([{ name: "", quantity: "", unit: "" }])
   const [steps, setSteps] = useState([{ description: "" }])
+  const [photoUrl, setPhotoUrl] = useState("")
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -33,11 +35,12 @@ export default function Recipes() {
   const [draftRestored, setDraftRestored] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
 
+  const [search, setSearch] = useState("")
+  const [activeFilter, setActiveFilter] = useState("all")
   const DRAFT_KEY = "recipe_draft"
 
-  const saveDraft = (data) => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
-  }
+  const saveDraft = (data) => localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
+  const clearDraft = () => localStorage.removeItem(DRAFT_KEY)
 
   const loadDraft = () => {
     try {
@@ -57,8 +60,6 @@ export default function Recipes() {
     } catch {}
   }
 
-  const clearDraft = () => localStorage.removeItem(DRAFT_KEY)
-
   useEffect(() => { fetchRecipes() }, [])
 
   const fetchRecipes = async () => {
@@ -69,7 +70,6 @@ export default function Recipes() {
 
   const hasShownDraftPopup = useRef(false)
 
-  // Autosave : 2s pour la première fois (avec popup), 5s ensuite (silencieux)
   useEffect(() => {
     if (!showForm) return
     const delay = hasShownDraftPopup.current ? 5000 : 2000
@@ -128,6 +128,7 @@ export default function Recipes() {
         prep_time: recipe.prep_time,
         servings: recipe.servings,
         tags: recipe.tags,
+        photo_url: recipe.photo_url || null,
         is_public: false,
         duplicated_from: sourceId,
       }).select().single()
@@ -223,6 +224,7 @@ export default function Recipes() {
       servings: parseInt(servings),
       tags: selectedTags,
       is_public: false,
+      photo_url: photoUrl || null,
     }).select().single()
 
     if (!error && recipe) {
@@ -238,7 +240,7 @@ export default function Recipes() {
       setSuccess(true)
       setName(""); setDescription(""); setPrepTime(""); setServings("")
       setSelectedTags([]); setIngredients([{ name: "", quantity: "", unit: "" }])
-      setSteps([{ description: "" }]); setErrors({})
+      setSteps([{ description: "" }]); setErrors({}); setPhotoUrl("")
       clearDraft()
       setShowForm(false)
       fetchRecipes()
@@ -258,6 +260,14 @@ export default function Recipes() {
       ? "border-red-400 bg-red-50 dark:bg-red-900/20"
       : "border-gray-200 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white focus:border-brand-blue"}`
 
+  const resetForm = () => {
+    setShowForm(false)
+    setErrors({})
+    clearDraft()
+    hasShownDraftPopup.current = false
+    setPhotoUrl("")
+  }
+
   return (
     <div className="p-6">
 
@@ -270,9 +280,9 @@ export default function Recipes() {
               <h2 className="text-xl font-bold text-zinc-900 dark:text-white text-center">Contenu bloqué</h2>
             </div>
             <div className="p-6 text-center">
-              <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">Cette recette contient un terme qui ne respecte pas notre charte communautaire :</p>
+              <p className="text-sm text-zinc-600 dark:text-zinc-300 mb-4">Cette recette contient un terme qui ne respecte pas notre charte :</p>
               <div className="inline-block bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 px-5 py-2.5 rounded-xl font-bold tracking-wide mb-6 shadow-inner">« {bannedPopup} »</div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 px-2">Merci de modifier ton contenu pour qu'il reste respectueux et approprié.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1 px-2">Merci de modifier ton contenu pour qu'il reste respectueux.</p>
               <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 italic mb-6">(bien essayé petit malin 😎)</p>
               <button onClick={() => setBannedPopup(null)} className="w-full bg-red-500 hover:bg-red-600 text-white py-3.5 rounded-xl text-sm font-semibold transition">J'ai compris</button>
             </div>
@@ -280,19 +290,16 @@ export default function Recipes() {
         </div>
       )}
 
-      {/* BROUILLON RESTAURÉ */}
+      {/* TOASTS */}
       {draftRestored && (
         <div className="fixed top-6 right-6 z-50 bg-blue-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
           📝 Brouillon restauré !
         </div>
       )}
-
-      {/* AUTOSAVE INDICATOR */}
       {draftSaved && (name || description || ingredients[0]?.name) && (
-        <div className="fixed top-6 right-6 z-50 bg-zinc-800/95 dark:bg-zinc-700/95 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium backdrop-blur-sm overflow-hidden w-52">
+        <div className="fixed top-6 right-6 z-50 bg-zinc-800/95 dark:bg-zinc-700/95 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium backdrop-blur-sm w-52">
           <div className="flex items-center gap-2 mb-1.5">
-            <span>💾</span>
-            <span>Brouillon sauvegardé</span>
+            <span>💾</span><span>Brouillon sauvegardé</span>
           </div>
           <div className="w-full h-1 bg-zinc-600 rounded-full overflow-hidden">
             <div className="h-full bg-brand-orange rounded-full animate-[shrink_2s_linear_forwards]" style={{ width: "100%" }} />
@@ -304,19 +311,15 @@ export default function Recipes() {
           ✅ {typeof success === "string" ? success : "Recette ajoutée !"}
         </div>
       )}
-
-      {/* ERREUR DUPLICATION */}
       {dupError && (
         <div className="fixed top-6 right-6 z-50 bg-red-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
           ⚠️ {dupError}
         </div>
       )}
 
-      {/* VUE FORMULAIRE */}
+      {/* ── FORMULAIRE ─────────────────────────────────────────────────────────── */}
       {showForm ? (
         <div className="max-w-2xl mx-auto">
-
-          {/* Header formulaire */}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold text-zinc-900 dark:text-brand-cream">✏️ Nouvelle recette</h1>
             <div className="flex items-center gap-3">
@@ -326,7 +329,7 @@ export default function Recipes() {
                     clearDraft()
                     setName(""); setDescription(""); setPrepTime(""); setServings("")
                     setSelectedTags([]); setIngredients([{ name: "", quantity: "", unit: "" }])
-                    setSteps([{ description: "" }])
+                    setSteps([{ description: "" }]); setPhotoUrl("")
                   }}
                   className="text-xs text-zinc-400 hover:text-red-400 transition flex items-center gap-1"
                 >
@@ -335,7 +338,7 @@ export default function Recipes() {
               )}
               <button
                 onClick={() => { setShowForm(false); setErrors({}) }}
-                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-medium transition flex items-center gap-1"
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-sm font-medium transition"
               >
                 ← Retour
               </button>
@@ -343,8 +346,15 @@ export default function Recipes() {
           </div>
 
           <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-2xl p-6 shadow-sm">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
 
+              {/* Photo */}
+              <ImageUploadCropper
+                onImageSaved={(url) => setPhotoUrl(url || "")}
+                recipeId={null}
+              />
+
+              {/* Nom */}
               <div>
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1 block">Nom de la recette <span className="text-red-400">*</span></label>
                 <input className={inputClass(errors.name)} placeholder="Ex: Pâtes carbonara"
@@ -352,6 +362,7 @@ export default function Recipes() {
                 {errors.name && <p className="text-xs text-red-400 mt-1">Le nom est obligatoire</p>}
               </div>
 
+              {/* Description */}
               <div>
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1 block">Description</label>
                 <textarea
@@ -361,6 +372,7 @@ export default function Recipes() {
                 />
               </div>
 
+              {/* Temps + Portions */}
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1 block">Temps (min) <span className="text-red-400">*</span></label>
@@ -376,6 +388,7 @@ export default function Recipes() {
                 </div>
               </div>
 
+              {/* Tags */}
               <div>
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">Tags</label>
                 <div className="flex flex-wrap gap-2">
@@ -390,6 +403,7 @@ export default function Recipes() {
                 </div>
               </div>
 
+              {/* Ingrédients */}
               <div>
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">Ingrédients <span className="text-red-400">*</span></label>
                 {errors.noIngredients && <p className="text-xs text-red-400 mb-2">Au moins un ingrédient est obligatoire</p>}
@@ -428,6 +442,7 @@ export default function Recipes() {
                 </div>
               </div>
 
+              {/* Étapes */}
               <div>
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">Étapes <span className="text-red-400">*</span></label>
                 {errors.noSteps && <p className="text-xs text-red-400 mb-2">Au moins une étape est obligatoire</p>}
@@ -463,7 +478,7 @@ export default function Recipes() {
               <div className="sticky bottom-8 z-40 flex justify-center mt-4">
                 <div className="flex gap-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-8 py-3 rounded-2xl shadow-2xl border border-gray-100 dark:border-zinc-700 w-full max-w-sm">
                   <button
-                    onClick={() => { setShowForm(false); setErrors({}); clearDraft(); hasShownDraftPopup.current = false }}
+                    onClick={resetForm}
                     className="flex-1 border border-gray-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 px-5 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition"
                   >
                     Annuler
@@ -484,67 +499,123 @@ export default function Recipes() {
 
       ) : (
 
-        /* VUE LISTE */
-        <div className="max-w-3xl">
-          <div className="relative flex items-center mb-6">
+        /* ── LISTE DES RECETTES ──────────────────────────────────────────────── */
+        <div className="max-w-5xl">
+
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
             <h1 className="text-2xl font-semibold text-zinc-900 dark:text-brand-cream">📖 Mes recettes</h1>
             <button
               onClick={() => { setShowForm(true); loadDraft() }}
-              className="fixed right-6 top-6 z-30 bg-brand-orange hover:bg-brand-orange/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md"
+              className="bg-brand-orange hover:bg-brand-orange/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md"
             >
               + Nouvelle recette
             </button>
           </div>
 
-          {recipes.length === 0 ? (
-            <div className="text-zinc-400 text-sm">Aucune recette pour l'instant — ajoutes-en une !</div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {recipes.map(recipe => (
-                <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)}
-                  className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-2xl p-4 shadow-sm hover:shadow-md transition cursor-pointer">
-
-                  <h3 className="font-semibold text-zinc-900 dark:text-brand-cream mb-1">{recipe.name}</h3>
-
-                  {recipe.duplicated_from && (
-                    <p className="text-[10px] text-zinc-400 italic mb-1">📋 Copie</p>
-                  )}
-
-                  {recipe.description && <p className="text-xs text-zinc-400 mb-2 line-clamp-2">{recipe.description}</p>}
-
-                  <div className="flex items-center gap-3 text-xs text-zinc-400 mb-2">
-                    {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
-                    {recipe.servings && <span>🍽 {recipe.servings} portions</span>}
-                    {recipe.estimated_cost && <span className="text-green-600">💰 ~{recipe.estimated_cost.toFixed(2)}€</span>}
-                  </div>
-
-                  {recipe.tags && recipe.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {recipe.tags.map(tag => (
-                        <span key={tag} className="text-xs bg-brand-orange/10 text-brand-orange px-2 py-0.5 rounded-full">{tag}</span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <button onClick={(e) => togglePublic(e, recipe)}
-                      className={`text-xs px-2 py-1 rounded-full border transition ${recipe.is_public
-                        ? "bg-green-50 text-green-600 border-green-200 hover:bg-green-100"
-                        : "bg-zinc-50 dark:bg-zinc-700 text-zinc-400 border-gray-200 dark:border-zinc-600 hover:border-brand-orange"}`}>
-                      {recipe.is_public ? "🌍 Public" : "🔒 Privé"}
-                    </button>
-                    <button
-                      onClick={(e) => handleDuplicate(e, recipe)}
-                      disabled={duplicating === recipe.id}
-                      className="text-xs px-2 py-1 rounded-full border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-400 hover:text-brand-orange hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-200 transition disabled:opacity-40"
-                    >
-                      {duplicating === recipe.id ? "⏳" : "📝 Dupliquer"}
-                    </button>
-                  </div>
-                </div>
+          {/* Recherche + Filtres */}
+          <div className="flex flex-col gap-3 mb-5">
+            <input
+              className="w-full max-w-sm border border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-orange transition"
+              placeholder="🔍 Rechercher une recette..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setActiveFilter("all")}
+                className={`text-xs px-3 py-1.5 rounded-full border transition ${activeFilter === "all" ? "bg-brand-orange border-brand-orange text-white" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange"}`}
+              >
+                Toutes
+              </button>
+              {TAGS.map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setActiveFilter(activeFilter === tag ? "all" : tag)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition ${activeFilter === tag ? "bg-brand-orange border-brand-orange text-white" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-brand-orange"}`}
+                >
+                  {tag}
+                </button>
               ))}
             </div>
-          )}
+          </div>
+
+          {/* Grille */}
+          {(() => {
+            const filtered = recipes.filter(r => {
+              const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
+              const matchFilter = activeFilter === "all" || (r.tags && r.tags.includes(activeFilter))
+              return matchSearch && matchFilter
+            })
+
+            if (recipes.length === 0) return (
+              <div className="text-zinc-400 text-sm">Aucune recette pour l'instant — ajoutes-en une !</div>
+            )
+            if (filtered.length === 0) return (
+              <div className="text-zinc-400 text-sm">Aucune recette ne correspond à ta recherche.</div>
+            )
+
+            return (
+              <div className="grid grid-cols-3 gap-3">
+                {filtered.map(recipe => (
+                  <div
+                    key={recipe.id}
+                    onClick={() => navigate(`/recipes/${recipe.id}`)}
+                    className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
+                  >
+                    {/* Photo */}
+                    {recipe.photo_url ? (
+                      <img src={recipe.photo_url} alt={recipe.name} className="w-full aspect-[4/3] object-cover" />
+                    ) : (
+                      <div className="w-full aspect-[4/3] bg-gradient-to-br from-orange-50 to-amber-50 dark:from-zinc-700 dark:to-zinc-600 flex items-center justify-center">
+                        <span className="text-3xl opacity-20">🍽</span>
+                      </div>
+                    )}
+
+                    {/* Contenu */}
+                    <div className="p-3">
+                      <h3 className="font-semibold text-zinc-900 dark:text-brand-cream text-sm mb-1 truncate">{recipe.name}</h3>
+
+                      {recipe.duplicated_from && (
+                        <p className="text-[10px] text-zinc-400 italic mb-1">📋 Copie</p>
+                      )}
+
+                      <div className="flex items-center gap-2 text-xs text-zinc-400 mb-2">
+                        {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
+                        {recipe.servings && <span>🍽 {recipe.servings}p</span>}
+                      </div>
+
+                      {recipe.tags && recipe.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {recipe.tags.slice(0, 2).map(tag => (
+                            <span key={tag} className="text-[10px] bg-brand-orange/10 text-brand-orange px-1.5 py-0.5 rounded-full">{tag}</span>
+                          ))}
+                          {recipe.tags.length > 2 && <span className="text-[10px] text-zinc-400">+{recipe.tags.length - 2}</span>}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => togglePublic(e, recipe)}
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition ${recipe.is_public
+                            ? "bg-green-50 text-green-600 border-green-200"
+                            : "bg-zinc-50 dark:bg-zinc-700 text-zinc-400 border-gray-200 dark:border-zinc-600"}`}>
+                          {recipe.is_public ? "🌍" : "🔒"}
+                        </button>
+                        <button
+                          onClick={(e) => handleDuplicate(e, recipe)}
+                          disabled={duplicating === recipe.id}
+                          className="text-[10px] px-2 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-400 hover:text-brand-orange hover:border-orange-200 transition disabled:opacity-40"
+                        >
+                          {duplicating === recipe.id ? "⏳" : "📝"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       )}
     </div>

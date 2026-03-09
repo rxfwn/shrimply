@@ -18,6 +18,7 @@ import Discover from "./pages/Discover"
 import Nutrition from "./pages/Nutrition"
 import Suggestions from "./pages/Suggestions"
 import Settings from "./pages/Settings"
+import Profile from "./pages/Profile"
 import "./index.css"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -42,6 +43,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/nutrition" element={<Nutrition />} />
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
         </Route>
       </Routes>

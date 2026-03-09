@@ -16,30 +16,16 @@ const STATUS = {
 
 const ROADMAP = [
 
-  // 🍳 Cuisine
-  { icon: "🖨️", title: "Imprimer une recette", desc: "Un bouton pour imprimer facilement la recette en cuisine." },
-  { icon: "👨‍🍳", title: "Calculateur de portions", desc: "Adapter automatiquement les quantités pour 2, 4 ou 6 personnes." },
   { icon: "📸", title: "Photos de recettes", desc: "Ajouter une ou plusieurs photos à chaque recette." },
-  { icon: "🥦", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
-  { icon: "🔄", title: "Dupliquer une recette", desc: "Créer rapidement une variante d'une recette existante." },
-
-  // 🧠 IA
+  { icon: "🖨️", title: "Imprimer une recette", desc: "Un bouton pour imprimer facilement la recette en cuisine." },
+  { icon: "👨‍🍳", title: "Refaire la partie Profil", desc: "Mettre en avant les plats réalisées avec les recettes." },
+  { icon: "📤", title: "Partager une recette", desc: "Envoyer une recette à ses amis ou sur les réseaux." },
+  { icon: "👨‍🍳", title: "Calculateur de portions", desc: "Adapter automatiquement les quantités pour 2, 4 ou 6 personnes." },
   { icon: "💰", title: "Estimation du prix d'une recette", desc: "Calcul automatique du coût total avec l'IA." },
   { icon: "🔄", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
-
-  // 🛒 Courses
   { icon: "📝", title: "Envoyer la liste dans ses notes", desc: "Exporter la liste de courses en TODO dans son téléphone." },
-
-  // ⭐ UX
-  { icon: "💾", title: "Sauvegarde automatique", desc: "La recette se sauvegarde automatiquement pendant l'édition." },
-  { icon: "👁️", title: "Prévisualiser une recette", desc: "Voir le rendu avant de l'enregistrer." },
-  { icon: "⬆️", title: "Bouton enregistrer en haut", desc: "Pour éviter d'oublier de sauvegarder." },
-
-  // 👤 Profil
+  { icon: "🥦", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
   { icon: "👑", title: "Couronne sur le profil", desc: "Badge spécial pour un utilisateur qui partage beaucoup de recettes." },
-
-  // 🌍 Social / partage
-  { icon: "📤", title: "Partager une recette", desc: "Envoyer une recette à ses amis ou sur les réseaux." },
   { icon: "🗺️", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." }
 
 ]

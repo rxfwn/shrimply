@@ -257,9 +257,11 @@ export default function Calendar() {
   const handleAutoFill = async () => {
     if (loadingIA || cooldown > 0 || recipes.length === 0) return
     setLoadingIA(true)
+    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       const emptySlots = []
+      
       days.forEach(day => {
         const dateStr = formatDate(day)
         MEAL_TYPES.forEach(type => {
@@ -267,28 +269,42 @@ export default function Calendar() {
           if (!exists) emptySlots.push({ date: dateStr, type })
         })
       })
-      if (emptySlots.length === 0) { alert("Ton planning est déjà plein ! ✨"); setLoadingIA(false); return }
+
+      if (emptySlots.length === 0) {
+        alert("Ton planning est déjà plein ! ✨")
+        setLoadingIA(false)
+        return
+      }
+
       const prompt = `J'ai ces recettes : ${recipes.map(r => r.name).join(", ")}. 
       Remplis ces créneaux vides : ${emptySlots.map(s => `${s.date} (${s.type})`).join(", ")}.
       Propose un planning équilibré (varie les recettes).
       Réponds UNIQUEMENT un JSON : [{"date": "YYYY-MM-DD", "meal_type": "Matin/Midi/Soir", "recipe_name": "..."}]`
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-        { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }) }
-      )
-      if (response.status === 429) { setCooldown(60); throw new Error("L'IA est fatiguée, attends une minute ! ⏳") }
-      const resJson = await response.json()
-      const suggestions = JSON.parse(resJson.candidates[0].content.parts[0].text)
+
+      const { data: suggestions, error: funcError } = await supabase.functions.invoke('auto-fill-plan', {
+        body: { prompt }
+      })
+
+      if (funcError) throw new Error("L'IA Shrimply ne répond pas.")
+
       const inserts = suggestions.map(s => {
         const recipe = recipes.find(r => r.name === s.recipe_name)
         if (!recipe) return null
         return { user_id: user.id, recipe_id: recipe.id, date: s.date, meal_type: s.meal_type }
       }).filter(Boolean)
-      if (inserts.length > 0) { await supabase.from("meal_plan").insert(inserts); await fetchData() }
+
+      if (inserts.length > 0) {
+        await supabase.from("meal_plan").insert(inserts)
+        await fetchData()
+      }
+      
       setCooldown(60)
-    } catch (err) { console.error(err); alert(err.message) }
-    finally { setLoadingIA(false) }
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    } finally {
+      setLoadingIA(false)
+    }
   }
 
   const getMeal = (date, mealType) => mealPlan.find(m => m.date === formatDate(date) && m.meal_type === mealType)
@@ -318,12 +334,8 @@ export default function Calendar() {
     await fetchData()
   }
 
-  // Tap sur une case vide en mobile → ouvre la modal
-  const handleMobileTap = (date, mealType) => {
-    setMobileModal({ date, mealType })
-  }
+  const handleMobileTap = (date, mealType) => setMobileModal({ date, mealType })
 
-  // Sélection d'une recette depuis la modal mobile
   const handleMobileSelect = async (recipe) => {
     if (!mobileModal) return
     const existing = mealPlan.find(m => m.date === mobileModal.date && m.meal_type === mobileModal.mealType)
@@ -396,11 +408,14 @@ export default function Calendar() {
             </div>
 
             <div className="flex gap-2">
-              <button onClick={handleAutoFill} disabled={loadingIA || cooldown > 0}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition
-                  ${cooldown > 0 ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-brand-orange/10 text-brand-orange hover:bg-brand-orange hover:text-white"}`}>
-                {loadingIA ? "🪄..." : cooldown > 0 ? `⏳ ${cooldown}s` : "💡 Équilibrer"}
-              </button>
+              {/* TODO: bouton à réactiver quand la Edge Function auto-fill-plan sera prête */}
+              {false && (
+                <button onClick={handleAutoFill} disabled={loadingIA || cooldown > 0}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition
+                    ${cooldown > 0 ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-brand-orange/10 text-brand-orange hover:bg-brand-orange hover:text-white"}`}>
+                  {loadingIA ? "🪄..." : cooldown > 0 ? `⏳ ${cooldown}s` : "💡 Équilibrer"}
+                </button>
+              )}
               <button onClick={() => navigate("/shopping")} className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition">
                 🛒 Courses
               </button>
@@ -424,7 +439,7 @@ export default function Calendar() {
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "32px repeat(7, 1fr)" : "56px repeat(7, 1fr)", gap: "4px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   {MEAL_TYPES.map(type => (
-                    <div key={type} style={{ height: isMobile ? "60px" : "76px" }}
+                    <div key={type}
                       className="flex items-center justify-end pr-1 text-zinc-400 font-medium"
                       style={{ fontSize: isMobile ? "8px" : "12px", height: isMobile ? "60px" : "76px" }}>
                       {isMobile ? type[0] : type}

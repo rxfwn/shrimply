@@ -3,9 +3,10 @@ import { supabase } from "../supabase"
 
 function getMonday(date) {
   const d = new Date(date)
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
+  const day = d.getDay() // 0=dim, 1=lun...
+  // Si dimanche (0), on recule de 6 jours pour avoir le lundi de CETTE semaine
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
   d.setHours(0, 0, 0, 0)
   return d
 }

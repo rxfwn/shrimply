@@ -95,7 +95,13 @@ export default function RecipeDetail() {
         }
 
         const data = await response.json()
-        const gemini_prices = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text)
+console.log("Réponse Gemini brute:", data)
+
+const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+console.log("Texte extrait:", text)
+
+const gemini_prices = JSON.parse(text)
+console.log("Prix parsés:", gemini_prices)
 
         if (gemini_prices.length > 0) {
           await supabase.from("ingredient_prices").upsert(

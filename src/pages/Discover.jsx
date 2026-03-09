@@ -8,7 +8,11 @@ export default function Discover() {
   const [success, setSuccess] = useState("")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
-  const [bannedPopup, setBannedPopup] = useState(null) // 1️⃣ AJOUT : État pour le popup de modération
+  const [bannedPopup, setBannedPopup] = useState(null)
+  const [previewRecipe, setPreviewRecipe] = useState(null)
+  const [previewIngredients, setPreviewIngredients] = useState([])
+  const [previewSteps, setPreviewSteps] = useState([])
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   const TAGS = ["🌿 Végé", "🍝 Italien", "🥢 Asiatique", "🇫🇷 Français", "⚡ Rapide", "💪 Protéiné", "🥗 Léger", "🍰 Dessert", "💰 Économique"]
 
@@ -18,7 +22,7 @@ export default function Discover() {
     const { data: { user } } = await supabase.auth.getUser()
     setCurrentUser(user)
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("recipes")
       .select("*")
       .eq("is_public", true)
@@ -35,17 +39,36 @@ export default function Discover() {
       const profileMap = {}
       profiles?.forEach(p => { profileMap[p.id] = p })
 
-      const recipesWithProfiles = data.map(r => ({
-        ...r,
-        profiles: profileMap[r.user_id] || null
-      }))
+      // Charger les prix depuis ingredient_prices
+      const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
 
-      setRecipes(recipesWithProfiles)
+      // Calculer le prix total pour chaque recette
+      const recipeIds = data.map(r => r.id)
+      const { data: allIngredients } = await supabase
+        .from("ingredients")
+        .select("*")
+        .in("recipe_id", recipeIds)
+
+      const recipesWithData = data.map(r => {
+        const ings = allIngredients?.filter(i => i.recipe_id === r.id) || []
+        const total = ings.reduce((sum, i) => {
+          const match = prices?.find(p => p.name.toLowerCase() === i.name.toLowerCase())
+          const qty = parseFloat(i.quantity) || 1
+          return sum + (match ? match.price * qty : 0)
+        }, 0)
+        const hasPrice = ings.some(i => prices?.find(p => p.name.toLowerCase() === i.name.toLowerCase()))
+        return {
+          ...r,
+          profiles: profileMap[r.user_id] || null,
+          estimatedTotal: hasPrice ? total : null
+        }
+      })
+
+      setRecipes(recipesWithData)
     }
     setLoading(false)
   }
 
-  // 2️⃣ AJOUT : Fonction pour vérifier les mots interdits
   const checkBannedWords = async (textsToCheck) => {
     const { data: banned } = await supabase.from("banned_words").select("word")
     if (!banned) return null
@@ -57,10 +80,25 @@ export default function Discover() {
     return null
   }
 
+  const openPreview = async (recipe) => {
+    setPreviewRecipe(recipe)
+    setPreviewLoading(true)
+    const { data: ingredients } = await supabase.from("ingredients").select("*").eq("recipe_id", recipe.id)
+    const { data: steps } = await supabase.from("steps").select("*").eq("recipe_id", recipe.id).order("step_number")
+    setPreviewIngredients(ingredients || [])
+    setPreviewSteps(steps || [])
+    setPreviewLoading(false)
+  }
+
+  const closePreview = () => {
+    setPreviewRecipe(null)
+    setPreviewIngredients([])
+    setPreviewSteps([])
+  }
+
   const handleAddToMyRecipes = async (recipe) => {
     const { data: { user } } = await supabase.auth.getUser()
 
-    // 3️⃣ AJOUT : On récupère d'abord les ingrédients et étapes de la recette pour tout vérifier
     const { data: ingredients } = await supabase.from("ingredients").select("*").eq("recipe_id", recipe.id)
     const { data: steps } = await supabase.from("steps").select("*").eq("recipe_id", recipe.id).order("step_number")
 
@@ -73,11 +111,10 @@ export default function Discover() {
 
     const found = await checkBannedWords(textsToCheck)
     if (found) {
-      setBannedPopup(found) // Affiche le popup si la recette originale contient un mot interdit
+      setBannedPopup(found)
       return
     }
 
-    // 4️⃣ On insère la recette SEULEMENT SI elle passe la modération
     const { data: newRecipe, error: recipeError } = await supabase.from("recipes").insert({
       user_id: user.id,
       name: recipe.name,
@@ -85,39 +122,22 @@ export default function Discover() {
       prep_time: recipe.prep_time,
       servings: recipe.servings,
       tags: recipe.tags,
-      is_public: false, // Elle devient privée chez toi par défaut
+      is_public: false,
     }).select().single()
 
-    if (recipeError) {
-      console.error("Erreur lors du clonage de la recette :", recipeError)
-      return
-    }
+    if (recipeError) { console.error("Erreur clonage :", recipeError); return }
 
     if (newRecipe) {
       if (ingredients?.length > 0) {
-        const { error: ingError } = await supabase.from("ingredients").insert(
-          ingredients.map(i => ({
-            recipe_id: newRecipe.id,
-            name: i.name,
-            quantity: i.quantity,
-            unit: i.unit,
-            calories: i.calories,
-          }))
+        await supabase.from("ingredients").insert(
+          ingredients.map(i => ({ recipe_id: newRecipe.id, name: i.name, quantity: i.quantity, unit: i.unit, calories: i.calories }))
         )
-        if (ingError) console.error("Erreur Ingrédients :", ingError)
       }
-
       if (steps?.length > 0) {
-        const { error: stepError } = await supabase.from("steps").insert(
-          steps.map(s => ({
-            recipe_id: newRecipe.id,
-            step_number: s.step_number,
-            description: s.description,
-          }))
+        await supabase.from("steps").insert(
+          steps.map(s => ({ recipe_id: newRecipe.id, step_number: s.step_number, description: s.description }))
         )
-        if (stepError) console.error("Erreur Étapes :", stepError)
       }
-
       setSuccess(`"${recipe.name}" ajoutée à tes recettes !`)
       setTimeout(() => setSuccess(""), 3000)
     }
@@ -125,13 +145,7 @@ export default function Discover() {
 
   const handleLike = async (recipeId) => {
     const { data: { user } } = await supabase.auth.getUser()
-    const existing = await supabase
-      .from("recipe_likes")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("recipe_id", recipeId)
-      .single()
-
+    const existing = await supabase.from("recipe_likes").select("id").eq("user_id", user.id).eq("recipe_id", recipeId).single()
     if (existing.data) {
       await supabase.from("recipe_likes").delete().eq("id", existing.data.id)
     } else {
@@ -149,25 +163,117 @@ export default function Discover() {
   return (
     <div className="p-6">
 
-      {/* 5️⃣ AJOUT : Popup si on tente d'importer une recette avec un mot interdit */}
+      {/* POPUP MODERATION */}
       {bannedPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4 border border-red-200 dark:border-red-800">
             <div className="text-center">
               <div className="text-4xl mb-3">⚠️</div>
               <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">Importation bloquée</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">
-                Cette recette contient un mot non autorisé par notre charte :
-              </p>
-              <p className="text-sm font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl mb-4 inline-block">
-                « {bannedPopup} »
-              </p>
-              <p className="text-xs text-zinc-400 mb-5">
-                Tu ne peux pas ajouter cette recette à ton portefeuille. L'auteur a été signalé.
-              </p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Cette recette contient un mot non autorisé :</p>
+              <p className="text-sm font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl mb-4 inline-block">« {bannedPopup} »</p>
+              <p className="text-xs text-zinc-400 mb-5">Tu ne peux pas ajouter cette recette. L'auteur a été signalé.</p>
+              <button onClick={() => setBannedPopup(null)} className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition">Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS TOAST */}
+      {success && (
+        <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
+          ✅ {success}
+        </div>
+      )}
+
+      {/* MODAL PREVIEW */}
+      {previewRecipe && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closePreview}>
+          <div
+            className="bg-white dark:bg-zinc-800 rounded-2xl p-6 shadow-2xl max-w-lg w-full mx-4 border border-gray-200 dark:border-zinc-700 max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{previewRecipe.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {previewRecipe.profiles?.avatar_url
+                      ? <img src={previewRecipe.profiles.avatar_url} className="w-full h-full object-cover" />
+                      : <span className="text-xs">👤</span>}
+                  </div>
+                  <span className="text-xs text-zinc-400">{previewRecipe.profiles?.username || "Utilisateur"}</span>
+                </div>
+              </div>
+              <button onClick={closePreview} className="text-zinc-400 hover:text-zinc-600 text-xl font-bold leading-none">✕</button>
+            </div>
+
+            {previewRecipe.description && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">{previewRecipe.description}</p>
+            )}
+
+            <div className="flex gap-4 text-xs text-zinc-400 mb-3">
+              {previewRecipe.prep_time && <span>⏱ {previewRecipe.prep_time} min</span>}
+              {previewRecipe.servings && <span>🍽 {previewRecipe.servings} portions</span>}
+            </div>
+
+            {previewRecipe.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-5">
+                {previewRecipe.tags.map(tag => (
+                  <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
+                ))}
+              </div>
+            )}
+
+            {previewLoading ? (
+              <p className="text-sm text-zinc-400 text-center py-6">Chargement...</p>
+            ) : (
+              <>
+                {/* Ingrédients */}
+                {previewIngredients.length > 0 && (
+                  <div className="mb-5">
+                    <h3 className="font-bold text-zinc-800 dark:text-white text-sm mb-2">🛒 Ingrédients</h3>
+                    <div className="flex flex-col">
+                      {previewIngredients.map((ing, i) => (
+                        <div key={i} className="flex justify-between text-sm py-2 border-b border-zinc-50 dark:border-zinc-700/50">
+                          <span className="text-zinc-600 dark:text-zinc-300">{ing.name}</span>
+                          <span className="text-zinc-400">{ing.quantity} {ing.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Étapes */}
+                {previewSteps.length > 0 && (
+                  <div className="mb-5">
+                    <h3 className="font-bold text-zinc-800 dark:text-white text-sm mb-3">👨‍🍳 Préparation</h3>
+                    <div className="space-y-3">
+                      {previewSteps.map((step, i) => (
+                        <div key={i} className="flex gap-3">
+                          <span className="text-orange-500 font-black text-sm w-5 flex-shrink-0">{i + 1}.</span>
+                          <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">{step.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-700">
               <button
-                onClick={() => setBannedPopup(null)}
-                className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition">
+                onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition"
+              >
+                + Ajouter à mes recettes
+              </button>
+              <button
+                onClick={closePreview}
+                className="flex-1 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-700 dark:text-white py-2.5 rounded-xl text-sm font-medium transition"
+              >
                 Fermer
               </button>
             </div>
@@ -175,16 +281,11 @@ export default function Discover() {
         </div>
       )}
 
-      {success && (
-        <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
-          ✅ {success}
-        </div>
-      )}
-
+      {/* HEADER */}
       <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-2">✨ Découvrir</h1>
       <p className="text-sm text-zinc-400 mb-5">Recettes partagées par la communauté</p>
 
-      {/* Recherche + filtres */}
+      {/* RECHERCHE + FILTRES */}
       <div className="flex flex-col gap-3 mb-5">
         <input
           className="w-full max-w-md border border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange-400"
@@ -211,6 +312,7 @@ export default function Discover() {
         </div>
       </div>
 
+      {/* CONTENU */}
       {loading ? (
         <div className="text-zinc-400 text-sm">Chargement...</div>
       ) : filteredRecipes.length === 0 ? (
@@ -221,27 +323,31 @@ export default function Discover() {
       ) : (
         <div className="grid grid-cols-3 gap-4 max-w-5xl">
           {filteredRecipes.map(recipe => (
-            <div key={recipe.id} className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+            <div key={recipe.id} className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-4 shadow-sm hover:shadow-md transition flex flex-col">
+
+              {/* Auteur */}
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {recipe.profiles?.avatar_url ? (
-                    <img src={recipe.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs">👤</span>
-                  )}
+                  {recipe.profiles?.avatar_url
+                    ? <img src={recipe.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    : <span className="text-xs">👤</span>}
                 </div>
                 <span className="text-xs text-zinc-400">{recipe.profiles?.username || "Utilisateur"}</span>
               </div>
 
+              {/* Infos */}
               <h3 className="font-semibold text-zinc-900 dark:text-white mb-1 text-sm">{recipe.name}</h3>
               {recipe.description && <p className="text-xs text-zinc-400 mb-2 line-clamp-2">{recipe.description}</p>}
 
               <div className="flex items-center gap-3 text-xs text-zinc-400 mb-2">
                 {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
                 {recipe.servings && <span>🍽 {recipe.servings} portions</span>}
+                {recipe.estimatedTotal !== null && (
+                  <span className="text-green-600 dark:text-green-400 font-semibold">💰 {recipe.estimatedTotal.toFixed(2)}€</span>
+                )}
               </div>
 
-              {recipe.tags && recipe.tags.length > 0 && (
+              {recipe.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                   {recipe.tags.map(tag => (
                     <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
@@ -249,12 +355,21 @@ export default function Discover() {
                 </div>
               )}
 
-              <button
-                onClick={() => handleAddToMyRecipes(recipe)}
-                className="w-full bg-orange-50 hover:bg-orange-500 text-orange-500 hover:text-white border border-orange-200 hover:border-orange-500 py-1.5 rounded-lg text-xs font-medium transition"
-              >
-                + Ajouter à mes recettes
-              </button>
+              {/* Boutons */}
+              <div className="flex gap-2 mt-auto pt-2">
+                <button
+                  onClick={() => openPreview(recipe)}
+                  className="flex-1 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-600 py-1.5 rounded-lg text-xs font-medium transition"
+                >
+                  En Voir +
+                </button>
+                <button
+                  onClick={() => handleAddToMyRecipes(recipe)}
+                  className="flex-1 bg-orange-50 hover:bg-orange-500 text-orange-500 hover:text-white border border-orange-200 hover:border-orange-500 py-1.5 rounded-lg text-xs font-medium transition"
+                >
+                  + Ajouter
+                </button>
+              </div>
             </div>
           ))}
         </div>

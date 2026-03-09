@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+@keyframes shrink {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,6 +15,7 @@
   --purple: #2D1B8E;
   --cyan: #5BC8C8;
   --cream: #F5F0E8;
+  
 }
 
 * { box-sizing: border-box; }
@@ -19,6 +25,7 @@ body {
   font-family: 'Inter', sans-serif;
   background: #F5F0E8;
   color: #0F0D2E;
+  font-family: 'Inter', 'Noto Color Emoji', sans-serif;
 }
 
 .dark body {

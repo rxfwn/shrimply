@@ -86,8 +86,6 @@ export default function Layout() {
         {navItem("/fridge", "🧊", "Mon frigo")}
         {navItem("/friends", "👥", "Amis")}
         {navItem("/discover", "✨", "Découvrir")}
-        {navItem("/inspirations", "💡", "Inspirations")}
-        <p className="text-xs font-semibold px-3 py-2 mt-2 uppercase tracking-widest text-brand-cream/30">IA</p>
         {navItem("/nutrition", "🤖", "Bilan nutrition")}
         {navItem("/suggestions", "🌈", "Améliorations à venir")}
       </nav>

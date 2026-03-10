@@ -11,7 +11,6 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
   const [checkedSteps, setCheckedSteps] = useState({})
-  const [checkedIngredients, setCheckedIngredients] = useState({})
 
   const [estimating, setEstimating] = useState(false)
   const [costDetails, setCostDetails] = useState(null)
@@ -108,6 +107,106 @@ export default function RecipeDetail() {
     navigate("/recipes")
   }
 
+  const handlePrint = () => {
+    const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
+
+    const tagsHtml = recipe.tags?.length
+      ? recipe.tags.map(t => `<span class="tag">${t}</span>`).join("")
+      : ""
+
+    const ingredientsHtml = displayIngredients.map(item => `
+      <li>
+        <span class="ing-name">${item.name}</span>
+        <span class="ing-qty">${item.quantity || ""} ${item.unit || ""}</span>
+      </li>`).join("")
+
+    const stepsHtml = steps.map((step, i) => `
+      <div class="step">
+        <div class="step-num">${i + 1}</div>
+        <p>${step.description}</p>
+      </div>`).join("")
+
+    const budgetHtml = costDetails ? `
+      <div class="budget">
+        <span class="budget-label">💰 Budget estimé</span>
+        <span class="budget-total">${costDetails.total.toFixed(2)}€ total</span>
+        <span class="budget-per">— ${costDetails.per_serving.toFixed(2)}€ / pers.</span>
+      </div>` : ""
+
+    const photoHtml = recipe.photo_url
+      ? `<img src="${recipe.photo_url}" class="photo" alt="${recipe.name}" />`
+      : ""
+
+    const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Recette</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Georgia', serif; color: #1a1a1a; background: white; padding: 40px 48px; max-width: 800px; margin: 0 auto; }
+    .header { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 28px; padding-bottom: 24px; border-bottom: 2px solid #f97316; }
+    .photo { width: 180px; height: 135px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+    .header-info { flex: 1; }
+    h1 { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; line-height: 1.2; }
+    .description { font-size: 13px; color: #555; margin-bottom: 12px; font-style: italic; line-height: 1.5; }
+    .meta { display: flex; gap: 16px; margin-bottom: 10px; }
+    .meta-pill { font-size: 12px; font-family: 'Arial', sans-serif; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag { font-size: 11px; font-family: 'Arial', sans-serif; background: #fff7ed; color: #ea580c; padding: 3px 8px; border-radius: 20px; }
+    .budget { display: flex; align-items: center; gap: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; margin-bottom: 28px; font-family: 'Arial', sans-serif; }
+    .budget-label { font-size: 12px; font-weight: 700; color: #166534; }
+    .budget-total { font-size: 14px; font-weight: 800; color: #16a34a; }
+    .budget-per { font-size: 12px; color: #4ade80; }
+    .columns { display: grid; grid-template-columns: 1fr 1.6fr; gap: 32px; }
+    h2 { font-size: 13px; font-family: 'Arial', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #ea580c; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #fed7aa; }
+    ul { list-style: none; }
+    ul li { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+    ul li:last-child { border-bottom: none; }
+    .ing-name { color: #333; }
+    .ing-qty { color: #888; font-size: 12px; font-family: 'Arial', sans-serif; }
+    .step { display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start; }
+    .step-num { flex-shrink: 0; width: 24px; height: 24px; background: #f97316; color: white; border-radius: 50%; font-size: 12px; font-family: 'Arial', sans-serif; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .step p { font-size: 13px; line-height: 1.65; color: #333; }
+    .footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-family: 'Arial', sans-serif; font-size: 11px; color: #aaa; }
+    @media print { body { padding: 20px 28px; } @page { margin: 1cm; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    ${photoHtml}
+    <div class="header-info">
+      <h1>${recipe.name}</h1>
+      ${recipe.description ? `<p class="description">${recipe.description}</p>` : ""}
+      <div class="meta">
+        ${recipe.prep_time ? `<span class="meta-pill">⏱ ${recipe.prep_time} min</span>` : ""}
+        ${recipe.servings ? `<span class="meta-pill">🍽 ${recipe.servings} pers.</span>` : ""}
+        ${ingredients.length ? `<span class="meta-pill">🛒 ${ingredients.length} ingr.</span>` : ""}
+      </div>
+      ${tagsHtml ? `<div class="tags">${tagsHtml}</div>` : ""}
+    </div>
+  </div>
+  ${budgetHtml}
+  <div class="columns">
+    <div>
+      <h2>Ingrédients</h2>
+      <ul>${ingredientsHtml}</ul>
+    </div>
+    <div>
+      <h2>Préparation</h2>
+      ${stepsHtml}
+    </div>
+  </div>
+  <div class="footer"><span>Shrímply 🍤</span></div>
+  <script>window.onload = () => { window.print() }<\/script>
+</body>
+</html>`
+
+    const win = window.open("", "_blank")
+    win.document.write(html)
+    win.document.close()
+  }
+
   if (loading) return <div className="p-6 text-zinc-400 font-medium text-center">Chargement...</div>
   if (!recipe) return <div className="p-6 text-zinc-400 font-medium text-center">Recette introuvable.</div>
 
@@ -122,16 +221,11 @@ export default function RecipeDetail() {
         ← Retour
       </button>
 
-      {/* ═══════════════════════════════════════════════════
-          DESKTOP LAYOUT (md+) — magazine 16/9 style
-      ═══════════════════════════════════════════════════ */}
+      {/* DESKTOP */}
       <div className="hidden md:block">
         <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-zinc-700">
 
-          {/* TOP SECTION — photo gauche + infos droite */}
           <div className="grid grid-cols-[5fr_4fr] min-h-[340px]">
-
-            {/* Photo */}
             <div className="relative overflow-hidden">
               {recipe.photo_url ? (
                 <img src={recipe.photo_url} alt={recipe.name} className="w-full h-full object-cover" />
@@ -140,14 +234,10 @@ export default function RecipeDetail() {
                   <span className="text-8xl opacity-15">🍽</span>
                 </div>
               )}
-              {/* Overlay gradient vers la droite */}
               <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-r from-transparent to-white dark:to-zinc-800" />
             </div>
 
-            {/* Infos droite */}
             <div className="flex flex-col justify-between p-8 border-l border-gray-100 dark:border-zinc-700">
-
-              {/* Titre + actions */}
               <div>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1 pr-3">
@@ -157,15 +247,9 @@ export default function RecipeDetail() {
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-white leading-tight">{recipe.name}</h1>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => navigate(`/recipes/${id}/edit`)}
-                      className="p-2 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 rounded-xl transition text-base"
-                    >✏️</button>
-                    <button
-                      onClick={handleDelete}
-                      disabled={deleting}
-                      className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 rounded-xl transition disabled:opacity-50 text-base"
-                    >🗑️</button>
+                    <button onClick={handlePrint} className="p-2 bg-zinc-50 dark:bg-zinc-700 hover:bg-orange-50 hover:text-orange-500 rounded-xl transition text-base" title="Imprimer">🖨️</button>
+                    <button onClick={() => navigate(`/recipes/${id}/edit`)} className="p-2 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 rounded-xl transition text-base">✏️</button>
+                    <button onClick={handleDelete} disabled={deleting} className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 rounded-xl transition disabled:opacity-50 text-base">🗑️</button>
                   </div>
                 </div>
 
@@ -173,7 +257,6 @@ export default function RecipeDetail() {
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4">{recipe.description}</p>
                 )}
 
-                {/* Stats pills */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {recipe.prep_time && (
                     <div className="flex items-center gap-1.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-1.5 rounded-full text-xs font-semibold">
@@ -206,7 +289,6 @@ export default function RecipeDetail() {
                 )}
               </div>
 
-              {/* Budget block */}
               <div className="mt-5 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30 rounded-2xl p-4">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">💰 Budget estimé</span>
@@ -234,39 +316,32 @@ export default function RecipeDetail() {
                   <p className="text-xs text-zinc-400 text-center py-1">Clique sur Recalculer pour estimer le coût</p>
                 )}
               </div>
-
             </div>
           </div>
 
-          {/* BOTTOM SECTION — ingrédients gauche + étapes droite */}
+          {/* Ingrédients + Étapes */}
           <div className="grid grid-cols-[2fr_3fr] border-t border-gray-100 dark:border-zinc-700">
 
-            {/* Ingrédients */}
+            {/* Ingrédients — sans coches */}
             <div className="p-8 border-r border-gray-100 dark:border-zinc-700">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-5 flex items-center gap-2 text-base uppercase tracking-wide">
                 <span className="w-6 h-6 bg-brand-orange/10 rounded-lg flex items-center justify-center text-sm">🛒</span>
                 Ingrédients
               </h3>
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col">
                 {displayIngredients.map((item, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setCheckedIngredients(prev => ({ ...prev, [i]: !prev[i] }))}
-                    className={`flex justify-between items-center py-2.5 border-b border-zinc-50 dark:border-zinc-700/50 cursor-pointer group transition-opacity ${checkedIngredients[i] ? "opacity-40" : ""}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all ${checkedIngredients[i] ? "bg-brand-orange border-brand-orange" : "border-zinc-200 dark:border-zinc-600 group-hover:border-brand-orange"}`}>
-                        {checkedIngredients[i] && <svg viewBox="0 0 10 10" className="w-full p-0.5 text-white" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>}
-                      </div>
-                      <span className={`text-sm text-zinc-700 dark:text-zinc-300 ${checkedIngredients[i] ? "line-through" : ""}`}>{item.name}</span>
+                  <div key={i} className="flex justify-between items-baseline py-2.5 border-b border-zinc-50 dark:border-zinc-700/50 last:border-0">
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">{item.name}</span>
+                    <div className="flex items-baseline gap-3 flex-shrink-0 ml-4">
+                      <span className="text-xs text-zinc-400">{item.quantity} {item.unit}</span>
+                      {item.found && <span className="text-xs font-semibold text-green-500 w-10 text-right">{item.estimated_price.toFixed(2)}€</span>}
                     </div>
-                    <span className="text-xs text-zinc-400 font-medium">{item.quantity} {item.unit}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Étapes */}
+            {/* Étapes — avec coches */}
             <div className="p-8">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2 text-base uppercase tracking-wide">
                 <span className="w-6 h-6 bg-brand-orange/10 rounded-lg flex items-center justify-center text-sm">👨‍🍳</span>
@@ -291,14 +366,11 @@ export default function RecipeDetail() {
                 ))}
               </div>
             </div>
-
           </div>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════
-          MOBILE LAYOUT (< md) — layout original conservé
-      ═══════════════════════════════════════════════════ */}
+      {/* MOBILE */}
       <div className="block md:hidden">
         <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-zinc-700">
 
@@ -330,6 +402,7 @@ export default function RecipeDetail() {
                 )}
               </div>
               <div className="flex gap-2 flex-shrink-0 ml-4">
+                <button onClick={handlePrint} className="p-2.5 bg-zinc-50 dark:bg-zinc-700 hover:bg-orange-50 rounded-xl transition" title="Imprimer">🖨️</button>
                 <button onClick={() => navigate(`/recipes/${id}/edit`)} className="p-2.5 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 rounded-xl transition">✏️</button>
                 <button onClick={handleDelete} disabled={deleting} className="p-2.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition disabled:opacity-50">🗑️</button>
               </div>
@@ -363,20 +436,19 @@ export default function RecipeDetail() {
               )}
             </div>
 
+            {/* Ingrédients mobile — sans coches */}
             <div className="mb-10">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-5 flex items-center gap-2 text-lg">
                 <span className="text-brand-orange">🛒</span> Ingrédients
               </h3>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 {displayIngredients.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center py-3 border-b border-zinc-50 dark:border-zinc-700/50 text-sm">
-                    <div className="flex gap-2">
-                      <span className="text-zinc-600 dark:text-zinc-300 font-medium">{item.name}</span>
-                      <span className="text-zinc-400">({item.quantity} {item.unit})</span>
+                  <div key={i} className="flex justify-between items-baseline py-3 border-b border-zinc-50 dark:border-zinc-700/50 last:border-0">
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300">{item.name}</span>
+                    <div className="flex items-baseline gap-3 flex-shrink-0 ml-4">
+                      <span className="text-xs text-zinc-400">{item.quantity} {item.unit}</span>
+                      {item.found && <span className="text-xs font-semibold text-green-500 w-10 text-right">{item.estimated_price.toFixed(2)}€</span>}
                     </div>
-                    <span className="font-bold text-green-600 dark:text-green-400">
-                      {item.found ? `${item.estimated_price.toFixed(2)}€` : "—"}
-                    </span>
                   </div>
                 ))}
               </div>

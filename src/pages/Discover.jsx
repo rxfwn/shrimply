@@ -1,6 +1,72 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 
+// ── Moteur de matching simplifié (cohérent avec RecipeDetail) ──────────────
+function normalizeStr(str) {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+const STOP_WORDS_D = new Set([
+  "frais","fraiche","fraiches","vert","verts","verte","vertes","jaune","rouge","blanc","blanche",
+  "selon","gout","bio","petit","petite","grand","grande","extra","vierge","guerande",
+  "en","de","du","la","le","les","un","une","des","au","aux","pour","avec","par",
+  "sachet","paquet","boite","bouteille","bocal","brique","bouquet","botte","buche",
+  "pot","filet","barquette","conserve","tube","mache","iceberg","romaine","batavia",
+  "frisee","roquette","arborio","basmati","jasmin","long","ronde","himalaya","iode",
+  "10","x","poudre",
+])
+function stem(w) { return w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w }
+function getMatchWords(name) {
+  return normalizeStr(name).split(" ").filter(w => w.length > 1 && !STOP_WORDS_D.has(w)).map(stem)
+}
+function findBestMatch(ingredientName, prices) {
+  const ingredientWords = getMatchWords(ingredientName)
+  if (!ingredientWords.length) return null
+  let bestMatch = null, bestScore = 0, bestNameLen = Infinity
+  for (const p of prices) {
+    const priceWords = getMatchWords(p.name)
+    if (!priceWords.length) continue
+    const common = ingredientWords.filter(w => priceWords.includes(w))
+    const score = common.length
+    if (score === 0) continue
+    const covR = score / ingredientWords.length
+    const covP = score / priceWords.length
+    if (covR === 1 || covP === 1) {
+      const nl = priceWords.length
+      if (score > bestScore || (score === bestScore && nl < bestNameLen)) {
+        bestScore = score; bestMatch = p; bestNameLen = nl
+      }
+    }
+  }
+  return bestMatch
+}
+
+const UNIT_CONV = {
+  g:{base:"kg",factor:0.001},kg:{base:"kg",factor:1},
+  ml:{base:"l",factor:0.001},cl:{base:"l",factor:0.01},l:{base:"l",factor:1},
+  "c. à soupe":{base:"l",factor:0.015},"c. à café":{base:"l",factor:0.005},
+  piece:{base:"piece",factor:1},"pièce":{base:"piece",factor:1},
+}
+function calcIngredientPrice(ing, match) {
+  const qty = parseFloat(ing.quantity) || 0
+  const ru = (ing.unit||"").toLowerCase().trim()
+  const pu = (match.unit||"").toLowerCase().trim()
+  const rb = UNIT_CONV[ru]?.base
+  const pb = UNIT_CONV[pu]?.base || (match.unit==="piece"?"piece":null)
+  if (rb && rb === pb) {
+    const from = UNIT_CONV[ru], to = UNIT_CONV[pu]
+    if (from && to) { const q = qty * from.factor / to.factor; return q * match.price }
+    return qty * match.price
+  }
+  if (!rb || rb === "piece") return qty * match.price
+  return 0
+}
+
 export default function Discover() {
   const [recipes, setRecipes] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
@@ -14,56 +80,33 @@ export default function Discover() {
   const [previewSteps, setPreviewSteps] = useState([])
   const [previewLoading, setPreviewLoading] = useState(false)
 
-  const TAGS = ["🌿 Végé", "🍝 Italien", "🥢 Asiatique", "🇫🇷 Français", "⚡ Rapide", "💪 Protéiné", "🥗 Léger", "🍰 Dessert", "💰 Économique"]
+  const TAGS = ["🌿 Végé","🍝 Italien","🥢 Asiatique","🇫🇷 Français","⚡ Rapide","💪 Protéiné","🥗 Léger","🍰 Dessert","💰 Économique"]
 
   useEffect(() => { fetchRecipes() }, [])
 
   const fetchRecipes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setCurrentUser(user)
-
-    const { data } = await supabase
-      .from("recipes")
-      .select("*")
-      .eq("is_public", true)
-      .neq("user_id", user.id)
-      .order("created_at", { ascending: false })
-
+    const { data } = await supabase.from("recipes").select("*").eq("is_public", true).neq("user_id", user.id).order("created_at", { ascending: false })
     if (data) {
       const userIds = [...new Set(data.map(r => r.user_id))]
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .in("id", userIds)
-
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", userIds)
       const profileMap = {}
       profiles?.forEach(p => { profileMap[p.id] = p })
-
-      // Charger les prix depuis ingredient_prices
       const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
-
-      // Calculer le prix total pour chaque recette
       const recipeIds = data.map(r => r.id)
-      const { data: allIngredients } = await supabase
-        .from("ingredients")
-        .select("*")
-        .in("recipe_id", recipeIds)
-
+      const { data: allIngredients } = await supabase.from("ingredients").select("*").in("recipe_id", recipeIds)
       const recipesWithData = data.map(r => {
         const ings = allIngredients?.filter(i => i.recipe_id === r.id) || []
-        const total = ings.reduce((sum, i) => {
-          const match = prices?.find(p => p.name.toLowerCase() === i.name.toLowerCase())
-          const qty = parseFloat(i.quantity) || 1
-          return sum + (match ? match.price * qty : 0)
-        }, 0)
-        const hasPrice = ings.some(i => prices?.find(p => p.name.toLowerCase() === i.name.toLowerCase()))
-        return {
-          ...r,
-          profiles: profileMap[r.user_id] || null,
-          estimatedTotal: hasPrice ? total : null
+        let total = 0, found = false
+        if (prices?.length) {
+          ings.forEach(ing => {
+            const match = findBestMatch(ing.name, prices)
+            if (match) { total += calcIngredientPrice(ing, match); found = true }
+          })
         }
+        return { ...r, profiles: profileMap[r.user_id] || null, estimatedTotal: found ? total : null }
       })
-
       setRecipes(recipesWithData)
     }
     setLoading(false)
@@ -74,8 +117,7 @@ export default function Discover() {
     if (!banned) return null
     const fullText = textsToCheck.join(" ").toLowerCase()
     for (const { word } of banned) {
-      const regex = new RegExp(`\\b${word.toLowerCase()}\\b`, "i")
-      if (regex.test(fullText)) return word
+      if (new RegExp(`\\b${word.toLowerCase()}\\b`, "i").test(fullText)) return word
     }
     return null
   }
@@ -90,68 +132,25 @@ export default function Discover() {
     setPreviewLoading(false)
   }
 
-  const closePreview = () => {
-    setPreviewRecipe(null)
-    setPreviewIngredients([])
-    setPreviewSteps([])
-  }
+  const closePreview = () => { setPreviewRecipe(null); setPreviewIngredients([]); setPreviewSteps([]) }
 
   const handleAddToMyRecipes = async (recipe) => {
     const { data: { user } } = await supabase.auth.getUser()
-
     const { data: ingredients } = await supabase.from("ingredients").select("*").eq("recipe_id", recipe.id)
     const { data: steps } = await supabase.from("steps").select("*").eq("recipe_id", recipe.id).order("step_number")
-
-    const textsToCheck = [
-      recipe.name,
-      recipe.description || "",
-      ...(ingredients || []).map(i => i.name),
-      ...(steps || []).map(s => s.description)
-    ]
-
-    const found = await checkBannedWords(textsToCheck)
-    if (found) {
-      setBannedPopup(found)
-      return
-    }
-
-    const { data: newRecipe, error: recipeError } = await supabase.from("recipes").insert({
-      user_id: user.id,
-      name: recipe.name,
-      description: recipe.description,
-      prep_time: recipe.prep_time,
-      servings: recipe.servings,
-      tags: recipe.tags,
-      is_public: false,
+    const found = await checkBannedWords([recipe.name, recipe.description||"", ...(ingredients||[]).map(i=>i.name), ...(steps||[]).map(s=>s.description)])
+    if (found) { setBannedPopup(found); return }
+    const { data: newRecipe, error } = await supabase.from("recipes").insert({
+      user_id: user.id, name: recipe.name, description: recipe.description,
+      prep_time: recipe.prep_time, servings: recipe.servings, tags: recipe.tags, is_public: false,
     }).select().single()
-
-    if (recipeError) { console.error("Erreur clonage :", recipeError); return }
-
+    if (error) { console.error(error); return }
     if (newRecipe) {
-      if (ingredients?.length > 0) {
-        await supabase.from("ingredients").insert(
-          ingredients.map(i => ({ recipe_id: newRecipe.id, name: i.name, quantity: i.quantity, unit: i.unit, calories: i.calories }))
-        )
-      }
-      if (steps?.length > 0) {
-        await supabase.from("steps").insert(
-          steps.map(s => ({ recipe_id: newRecipe.id, step_number: s.step_number, description: s.description }))
-        )
-      }
-      setSuccess(`"${recipe.name}" ajoutée à tes recettes !`)
+      if (ingredients?.length > 0) await supabase.from("ingredients").insert(ingredients.map(i => ({ recipe_id: newRecipe.id, name: i.name, quantity: i.quantity, unit: i.unit, calories: i.calories })))
+      if (steps?.length > 0) await supabase.from("steps").insert(steps.map(s => ({ recipe_id: newRecipe.id, step_number: s.step_number, description: s.description })))
+      setSuccess(`"${recipe.name}" ajoutée !`)
       setTimeout(() => setSuccess(""), 3000)
     }
-  }
-
-  const handleLike = async (recipeId) => {
-    const { data: { user } } = await supabase.auth.getUser()
-    const existing = await supabase.from("recipe_likes").select("id").eq("user_id", user.id).eq("recipe_id", recipeId).single()
-    if (existing.data) {
-      await supabase.from("recipe_likes").delete().eq("id", existing.data.id)
-    } else {
-      await supabase.from("recipe_likes").insert({ user_id: user.id, recipe_id: recipeId })
-    }
-    await fetchRecipes()
   }
 
   const filteredRecipes = recipes.filter(r => {
@@ -161,142 +160,149 @@ export default function Discover() {
   })
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
 
-      {/* POPUP MODERATION */}
+      {/* ── POPUP MODÉRATION ── */}
       {bannedPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 shadow-2xl max-w-sm w-full mx-4 border border-red-200 dark:border-red-800">
-            <div className="text-center">
-              <div className="text-4xl mb-3">⚠️</div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">Importation bloquée</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Cette recette contient un mot non autorisé :</p>
-              <p className="text-sm font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl mb-4 inline-block">« {bannedPopup} »</p>
-              <p className="text-xs text-zinc-400 mb-5">Tu ne peux pas ajouter cette recette. L'auteur a été signalé.</p>
-              <button onClick={() => setBannedPopup(null)} className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition">Fermer</button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 shadow-2xl max-w-sm w-full border border-red-200 dark:border-red-800 text-center">
+            <div className="text-4xl mb-3">⚠️</div>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2">Importation bloquée</h2>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-1">Mot non autorisé détecté :</p>
+            <p className="text-sm font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-xl mb-4 inline-block">« {bannedPopup} »</p>
+            <p className="text-xs text-zinc-400 mb-5">Tu ne peux pas ajouter cette recette.</p>
+            <button onClick={() => setBannedPopup(null)} className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition">Fermer</button>
           </div>
         </div>
       )}
 
-      {/* SUCCESS TOAST */}
+      {/* ── TOAST ── */}
       {success && (
-        <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
+        <div className="fixed top-4 right-4 md:top-6 md:right-6 z-50 bg-green-500 text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium">
           ✅ {success}
         </div>
       )}
 
-      {/* MODAL PREVIEW */}
+      {/* ── MODAL PREVIEW ── */}
       {previewRecipe && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closePreview}>
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closePreview}>
           <div
-            className="bg-white dark:bg-zinc-800 rounded-2xl p-6 shadow-2xl max-w-lg w-full mx-4 border border-gray-200 dark:border-zinc-700 max-h-[85vh] overflow-y-auto"
+            className="bg-white dark:bg-zinc-800 rounded-t-3xl md:rounded-2xl shadow-2xl w-full md:max-w-lg md:mx-4 border border-gray-200 dark:border-zinc-700 max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h2 className="text-xl font-bold text-zinc-900 dark:text-white">{previewRecipe.name}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-5 h-5 rounded-full bg-orange-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                    {previewRecipe.profiles?.avatar_url
-                      ? <img src={previewRecipe.profiles.avatar_url} className="w-full h-full object-cover" />
-                      : <span className="text-xs">👤</span>}
+            {/* Drag handle mobile */}
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div className="w-10 h-1 bg-zinc-300 dark:bg-zinc-600 rounded-full" />
+            </div>
+
+            <div className="p-5 md:p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex-1 pr-3">
+                  <h2 className="text-lg md:text-xl font-bold text-zinc-900 dark:text-white leading-tight">{previewRecipe.name}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-5 h-5 rounded-full bg-orange-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                      {previewRecipe.profiles?.avatar_url
+                        ? <img src={previewRecipe.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                        : <span className="text-xs">👤</span>}
+                    </div>
+                    <span className="text-xs text-zinc-400">{previewRecipe.profiles?.username || "Utilisateur"}</span>
                   </div>
-                  <span className="text-xs text-zinc-400">{previewRecipe.profiles?.username || "Utilisateur"}</span>
                 </div>
+                <button onClick={closePreview} className="text-zinc-400 hover:text-zinc-600 text-xl font-bold leading-none p-1">✕</button>
               </div>
-              <button onClick={closePreview} className="text-zinc-400 hover:text-zinc-600 text-xl font-bold leading-none">✕</button>
-            </div>
 
-            {previewRecipe.description && (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">{previewRecipe.description}</p>
-            )}
+              {previewRecipe.description && <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">{previewRecipe.description}</p>}
 
-            <div className="flex gap-4 text-xs text-zinc-400 mb-3">
-              {previewRecipe.prep_time && <span>⏱ {previewRecipe.prep_time} min</span>}
-              {previewRecipe.servings && <span>🍽 {previewRecipe.servings} portions</span>}
-            </div>
-
-            {previewRecipe.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-5">
-                {previewRecipe.tags.map(tag => (
-                  <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
-                ))}
+              <div className="flex flex-wrap gap-3 text-xs text-zinc-400 mb-3">
+                {previewRecipe.prep_time && <span>⏱ {previewRecipe.prep_time} min</span>}
+                {previewRecipe.servings && <span>🍽 {previewRecipe.servings} portions</span>}
+                {previewRecipe.estimatedTotal !== null && (
+                  <span className="text-green-600 dark:text-green-400 font-semibold">💰 {previewRecipe.estimatedTotal.toFixed(2)}€</span>
+                )}
               </div>
-            )}
 
-            {previewLoading ? (
-              <p className="text-sm text-zinc-400 text-center py-6">Chargement...</p>
-            ) : (
-              <>
-                {/* Ingrédients */}
-                {previewIngredients.length > 0 && (
-                  <div className="mb-5">
-                    <h3 className="font-bold text-zinc-800 dark:text-white text-sm mb-2">🛒 Ingrédients</h3>
-                    <div className="flex flex-col">
-                      {previewIngredients.map((ing, i) => (
-                        <div key={i} className="flex justify-between text-sm py-2 border-b border-zinc-50 dark:border-zinc-700/50">
-                          <span className="text-zinc-600 dark:text-zinc-300">{ing.name}</span>
-                          <span className="text-zinc-400">{ing.quantity} {ing.unit}</span>
-                        </div>
-                      ))}
+              {previewRecipe.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-5">
+                  {previewRecipe.tags.map(tag => (
+                    <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              {previewLoading ? (
+                <p className="text-sm text-zinc-400 text-center py-6">Chargement...</p>
+              ) : (
+                <>
+                  {previewIngredients.length > 0 && (
+                    <div className="mb-5">
+                      <h3 className="font-bold text-zinc-800 dark:text-white text-sm mb-2">🛒 Ingrédients</h3>
+                      <div className="flex flex-col">
+                        {previewIngredients.map((ing, i) => (
+                          <div key={i} className="flex justify-between text-sm py-2.5 border-b border-zinc-50 dark:border-zinc-700/50 last:border-0">
+                            <span className="text-zinc-600 dark:text-zinc-300">{ing.name}</span>
+                            <span className="text-zinc-400 ml-3 flex-shrink-0">{ing.quantity} {ing.unit}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Étapes */}
-                {previewSteps.length > 0 && (
-                  <div className="mb-5">
-                    <h3 className="font-bold text-zinc-800 dark:text-white text-sm mb-3">👨‍🍳 Préparation</h3>
-                    <div className="space-y-3">
-                      {previewSteps.map((step, i) => (
-                        <div key={i} className="flex gap-3">
-                          <span className="text-orange-500 font-black text-sm w-5 flex-shrink-0">{i + 1}.</span>
-                          <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">{step.description}</p>
-                        </div>
-                      ))}
+                  )}
+                  {previewSteps.length > 0 && (
+                    <div className="mb-5">
+                      <h3 className="font-bold text-zinc-800 dark:text-white text-sm mb-3">👨‍🍳 Préparation</h3>
+                      <div className="space-y-3">
+                        {previewSteps.map((step, i) => (
+                          <div key={i} className="flex gap-3">
+                            <span className="text-orange-500 font-black text-sm w-5 flex-shrink-0">{i + 1}.</span>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">{step.description}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                </>
+              )}
 
-            {/* Actions */}
-            <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-700">
-              <button
-                onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold transition"
-              >
-                + Ajouter à mes recettes
-              </button>
-              <button
-                onClick={closePreview}
-                className="flex-1 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-700 dark:text-white py-2.5 rounded-xl text-sm font-medium transition"
-              >
-                Fermer
-              </button>
+              <div className="flex gap-2 pt-4 border-t border-zinc-100 dark:border-zinc-700">
+                <button
+                  onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white py-3 rounded-xl text-sm font-semibold transition"
+                >
+                  + Ajouter à mes recettes
+                </button>
+                <button
+                  onClick={closePreview}
+                  className="flex-1 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-700 dark:text-white py-3 rounded-xl text-sm font-medium transition"
+                >
+                  Fermer
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-2">✨ Découvrir</h1>
-      <p className="text-sm text-zinc-400 mb-5">Recettes partagées par la communauté</p>
+      {/* ── HEADER ── */}
+      <div className="mb-5">
+        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-1">✨ Découvrir</h1>
+        <p className="text-sm text-zinc-400">Recettes partagées par la communauté</p>
+      </div>
 
-      {/* RECHERCHE + FILTRES */}
-      <div className="flex flex-col gap-3 mb-5">
+      {/* ── RECHERCHE ── */}
+      <div className="mb-4">
         <input
-          className="w-full max-w-md border border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-lg px-3 py-2.5 text-sm outline-none focus:border-orange-400"
-          placeholder="Rechercher une recette..."
+          className="w-full md:max-w-md border border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-orange-400 transition"
+          placeholder="🔍 Rechercher une recette..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <div className="flex flex-wrap gap-2">
+      </div>
+
+      {/* ── FILTRES — scroll horizontal sur mobile ── */}
+      <div className="mb-5 -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 md:flex-wrap md:overflow-visible scrollbar-hide">
           <button
             onClick={() => setFilter("all")}
-            className={`text-xs px-3 py-1.5 rounded-full border transition ${filter === "all" ? "bg-orange-500 border-orange-500 text-white" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-orange-300"}`}
+            className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition ${filter === "all" ? "bg-orange-500 border-orange-500 text-white" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-orange-300"}`}
           >
             Toutes
           </button>
@@ -304,7 +310,7 @@ export default function Discover() {
             <button
               key={tag}
               onClick={() => setFilter(filter === tag ? "all" : tag)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition ${filter === tag ? "bg-orange-500 border-orange-500 text-white" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-orange-300"}`}
+              className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition ${filter === tag ? "bg-orange-500 border-orange-500 text-white" : "bg-white dark:bg-zinc-800 border-gray-200 dark:border-zinc-600 text-zinc-500 hover:border-orange-300"}`}
             >
               {tag}
             </button>
@@ -312,7 +318,7 @@ export default function Discover() {
         </div>
       </div>
 
-      {/* CONTENU */}
+      {/* ── CONTENU ── */}
       {loading ? (
         <div className="text-zinc-400 text-sm">Chargement...</div>
       ) : filteredRecipes.length === 0 ? (
@@ -321,54 +327,71 @@ export default function Discover() {
           <p className="text-zinc-300 text-xs">Partage tes recettes pour qu'elles apparaissent ici !</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-4 max-w-5xl">
+        // 1 col mobile → 2 col tablette → 3 col desktop → 4 col grand écran
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {filteredRecipes.map(recipe => (
-            <div key={recipe.id} className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-4 shadow-sm hover:shadow-md transition flex flex-col">
-
-              {/* Auteur */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {recipe.profiles?.avatar_url
-                    ? <img src={recipe.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                    : <span className="text-xs">👤</span>}
-                </div>
-                <span className="text-xs text-zinc-400">{recipe.profiles?.username || "Utilisateur"}</span>
-              </div>
-
-              {/* Infos */}
-              <h3 className="font-semibold text-zinc-900 dark:text-white mb-1 text-sm">{recipe.name}</h3>
-              {recipe.description && <p className="text-xs text-zinc-400 mb-2 line-clamp-2">{recipe.description}</p>}
-
-              <div className="flex items-center gap-3 text-xs text-zinc-400 mb-2">
-                {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
-                {recipe.servings && <span>🍽 {recipe.servings} portions</span>}
-                {recipe.estimatedTotal !== null && (
-                  <span className="text-green-600 dark:text-green-400 font-semibold">💰 {recipe.estimatedTotal.toFixed(2)}€</span>
-                )}
-              </div>
-
-              {recipe.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {recipe.tags.map(tag => (
-                    <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
-                  ))}
+            <div
+              key={recipe.id}
+              className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col"
+            >
+              {/* Photo ou placeholder */}
+              {recipe.photo_url ? (
+                <img src={recipe.photo_url} alt={recipe.name} className="w-full aspect-[4/3] object-cover" />
+              ) : (
+                <div className="w-full aspect-[4/3] bg-gradient-to-br from-orange-50 to-amber-50 dark:from-zinc-700 dark:to-zinc-600 flex items-center justify-center">
+                  <span className="text-4xl opacity-20">🍽</span>
                 </div>
               )}
 
-              {/* Boutons */}
-              <div className="flex gap-2 mt-auto pt-2">
-                <button
-                  onClick={() => openPreview(recipe)}
-                  className="flex-1 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-600 py-1.5 rounded-lg text-xs font-medium transition"
-                >
-                  En Voir +
-                </button>
-                <button
-                  onClick={() => handleAddToMyRecipes(recipe)}
-                  className="flex-1 bg-orange-50 hover:bg-orange-500 text-orange-500 hover:text-white border border-orange-200 hover:border-orange-500 py-1.5 rounded-lg text-xs font-medium transition"
-                >
-                  + Ajouter
-                </button>
+              <div className="p-4 flex flex-col flex-1">
+                {/* Auteur */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {recipe.profiles?.avatar_url
+                      ? <img src={recipe.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                      : <span className="text-xs">👤</span>}
+                  </div>
+                  <span className="text-xs text-zinc-400 truncate">{recipe.profiles?.username || "Utilisateur"}</span>
+                </div>
+
+                {/* Nom */}
+                <h3 className="font-semibold text-zinc-900 dark:text-white text-sm leading-snug mb-1 line-clamp-2">{recipe.name}</h3>
+                {recipe.description && <p className="text-xs text-zinc-400 mb-2 line-clamp-2">{recipe.description}</p>}
+
+                {/* Méta */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400 mb-2">
+                  {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
+                  {recipe.servings && <span>🍽 {recipe.servings}p</span>}
+                  {recipe.estimatedTotal !== null && (
+                    <span className="text-green-600 dark:text-green-400 font-semibold">💰 {recipe.estimatedTotal.toFixed(2)}€</span>
+                  )}
+                </div>
+
+                {/* Tags */}
+                {recipe.tags?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {recipe.tags.slice(0, 2).map(tag => (
+                      <span key={tag} className="text-xs bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full">{tag}</span>
+                    ))}
+                    {recipe.tags.length > 2 && <span className="text-xs text-zinc-400">+{recipe.tags.length - 2}</span>}
+                  </div>
+                )}
+
+                {/* Boutons — plus grands sur mobile pour le tap */}
+                <div className="flex gap-2 mt-auto pt-2">
+                  <button
+                    onClick={() => openPreview(recipe)}
+                    className="flex-1 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-600 py-2.5 md:py-1.5 rounded-xl text-xs font-medium transition active:scale-95"
+                  >
+                    Voir +
+                  </button>
+                  <button
+                    onClick={() => handleAddToMyRecipes(recipe)}
+                    className="flex-1 bg-orange-50 hover:bg-orange-500 text-orange-500 hover:text-white border border-orange-200 hover:border-orange-500 py-2.5 md:py-1.5 rounded-xl text-xs font-medium transition active:scale-95"
+                  >
+                    + Ajouter
+                  </button>
+                </div>
               </div>
             </div>
           ))}

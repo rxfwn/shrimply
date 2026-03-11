@@ -503,24 +503,28 @@ export default function Recipes() {
         <div className="max-w-5xl">
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-brand-cream">📖 Mes recettes</h1>
-            <button
-              onClick={() => { setShowForm(true); loadDraft() }}
-              className="bg-brand-orange hover:bg-brand-orange/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md"
-            >
-              + Nouvelle recette
-            </button>
+          <div className="mb-5">
+            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-brand-cream mb-4">📖 Mes recettes</h1>
+
+            {/* Recherche + Bouton nouvelle recette */}
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                className="flex-1 max-w-sm border border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-orange transition"
+                placeholder="🔍 Rechercher une recette..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              <button
+                onClick={() => { setShowForm(true); loadDraft() }}
+                className="bg-brand-orange hover:bg-brand-orange/80 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md whitespace-nowrap"
+              >
+                + Nouvelle recette
+              </button>
+            </div>
           </div>
 
-          {/* Recherche + Filtres */}
+          {/* Filtres */}
           <div className="flex flex-col gap-3 mb-5">
-            <input
-              className="w-full max-w-sm border border-gray-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-white rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-orange transition"
-              placeholder="🔍 Rechercher une recette..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveFilter("all")}
@@ -556,12 +560,16 @@ export default function Recipes() {
             )
 
             return (
-              <div className="grid grid-cols-3 gap-3">
+              // ─── SEULE LIGNE MODIFIÉE ───
+              // Avant : grid-cols-3
+              // Après : 4 colonnes sur grand écran, 3 sur medium, 2 sur petit
+              //         Les cartes orphelines sont centrées grâce à justify-items-center
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 justify-items-center">
                 {filtered.map(recipe => (
                   <div
                     key={recipe.id}
                     onClick={() => navigate(`/recipes/${recipe.id}`)}
-                    className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
+                    className="w-full bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
                   >
                     {/* Photo */}
                     {recipe.photo_url ? (

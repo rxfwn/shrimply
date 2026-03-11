@@ -1,3 +1,238 @@
+// ===============================
+// MOTEUR DE CONVERSION D'UNITÉS
+// ===============================
+
+const UNIT_CONVERSIONS = {
+
+  // poids
+  g: { base: "kg", factor: 0.001 },
+  gramme: { base: "kg", factor: 0.001 },
+  grammes: { base: "kg", factor: 0.001 },
+
+  kg: { base: "kg", factor: 1 },
+
+  mg: { base: "kg", factor: 0.000001 },
+
+  // volume
+  ml: { base: "l", factor: 0.001 },
+  millilitre: { base: "l", factor: 0.001 },
+  millilitres: { base: "l", factor: 0.001 },
+
+  cl: { base: "l", factor: 0.01 },
+
+  l: { base: "l", factor: 1 },
+  litre: { base: "l", factor: 1 },
+  litres: { base: "l", factor: 1 },
+
+  // cuillères — toutes les variantes de saisie possibles
+  "c.à.s": { base: "l", factor: 0.015 },
+  "c. à soupe": { base: "l", factor: 0.015 },
+  "c.à soupe": { base: "l", factor: 0.015 },
+  "càs": { base: "l", factor: 0.015 },
+  soupe: { base: "l", factor: 0.015 },
+  "cuillère à soupe": { base: "l", factor: 0.015 },
+  "cuillères à soupe": { base: "l", factor: 0.015 },
+  cuillere: { base: "l", factor: 0.015 },
+
+  "c.à.c": { base: "l", factor: 0.005 },
+  "c. à café": { base: "l", factor: 0.005 },
+  "c.à café": { base: "l", factor: 0.005 },
+  "càc": { base: "l", factor: 0.005 },
+  cafe: { base: "l", factor: 0.005 },
+  café: { base: "l", factor: 0.005 },
+  "cuillère à café": { base: "l", factor: 0.005 },
+  "cuillères à café": { base: "l", factor: 0.005 },
+
+  // unités cuisine
+  pincée: { base: "kg", factor: 0.0005 },
+  pincee: { base: "kg", factor: 0.0005 },
+
+  piece: { base: "piece", factor: 1 },
+  pièce: { base: "piece", factor: 1 },
+  pièces: { base: "piece", factor: 1 },
+  pieces: { base: "piece", factor: 1 },
+  unite: { base: "piece", factor: 1 },
+  unité: { base: "piece", factor: 1 },
+  tranche: { base: "piece", factor: 1 },
+  tranches: { base: "piece", factor: 1 },
+  botte: { base: "piece", factor: 1 },
+  bottes: { base: "piece", factor: 1 },
+  tete: { base: "piece", factor: 1 },
+  tête: { base: "piece", factor: 1 },
+}
+
+function convertUnit(quantity, fromUnit, toUnit) {
+  if (!fromUnit || !toUnit) return quantity
+
+  const normalizedFrom = fromUnit.toLowerCase().trim()
+  const normalizedTo = toUnit.toLowerCase().trim()
+
+  if (normalizedFrom === normalizedTo) return quantity
+
+  const from = UNIT_CONVERSIONS[normalizedFrom]
+  const to = UNIT_CONVERSIONS[normalizedTo]
+
+  if (!from || !to) return quantity
+  if (from.base !== to.base) return quantity
+
+  const baseQty = quantity * from.factor
+  return baseQty / to.factor
+}
+
+// Normalise une chaîne pour la comparaison : minuscules, sans accents, sans ponctuation
+function normalizeStr(str) {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+// Mots à ignorer dans le matching
+const STOP_WORDS = new Set([
+  // qualificatifs
+  "frais", "fraiche", "fraiche", "fraiches", "fraiches",
+  "vert", "verts", "verte", "vertes",
+  "jaune", "jaunes", "rouge", "rouges", "blanc", "blanche",
+  "selon", "gout", "gout",
+  "bio", "petit", "petite", "grand", "grande",
+  "extra", "vierge", "arborio", "guerande",
+  // articles / prépositions
+  "en", "de", "du", "la", "le", "les", "un", "une", "des", "au", "aux",
+  "pour", "avec", "par",
+  // contenants — clé du fix
+  "sachet", "paquet", "boite", "bouteille", "bocal", "brique",
+  "bouquet", "botte", "buche", "pot", "filet", "barquette",
+  "boite", "conserve", "tube",
+  // variétés spécifiques (ne doivent pas bloquer le match)
+  "mache", "iceberg", "romaine", "batavia", "frisee", "roquette",
+  "arborio", "basmati", "jasmin", "long", "ronde",
+  "guerande", "himalaya", "iode",
+  // variantes de conditionnement
+  "varietes", "assortiment",
+])
+
+// ===============================
+// RÈGLES DE CATÉGORIE D'UNITÉ
+// Détermine l'unité de vente standard d'un ingrédient
+// indépendamment de ce que la recette indique
+// ===============================
+const CATEGORY_UNIT_RULES = [
+  // Légumes entiers → piece
+  { keywords: ["salade", "laitue", "mache", "roquette", "epinard", "endive", "cresson", "scarole"], unit: "piece" },
+  { keywords: ["tomate", "poivron", "courgette", "aubergine", "concombre", "fenouil", "brocoli", "chou"], unit: "piece" },
+  { keywords: ["oignon", "echalote", "poireau", "navet", "betterave", "radis", "carotte", "panais"], unit: "piece" },
+  { keywords: ["avocat", "mangue", "citron", "orange", "pamplemousse", "pomme", "poire", "peche", "abricot", "banane"], unit: "piece" },
+  // Ail → piece
+  { keywords: ["ail"], unit: "piece" },
+  // Herbes fraîches → piece (botte)
+  { keywords: ["persil", "basilic", "coriandre", "menthe", "ciboulette", "thym", "romarin", "aneth", "estragon", "laurier"], unit: "piece" },
+  // Bouillon cube → piece
+  { keywords: ["cube", "bouillon"], unit: "piece" },
+  // Œufs → piece
+  { keywords: ["oeuf", "oeufs"], unit: "piece" },
+  // Huiles → l
+  { keywords: ["huile"], unit: "l" },
+  // Fromages → kg
+  { keywords: ["chevre", "feta", "camembert", "brie", "roquefort", "comté", "comte", "parmesan", "gruyere", "fromage"], unit: "kg" },
+  // Condiments/sauces → kg
+  { keywords: ["pesto", "moutarde", "ketchup", "mayonnaise", "sauce"], unit: "kg" },
+  // Féculents → kg
+  { keywords: ["riz", "pate", "farine", "semoule", "boulgour", "quinoa", "lentille", "pois"], unit: "kg" },
+  // Épices / sel / sucre → kg
+  { keywords: ["sel", "poivre", "sucre", "cannelle", "curcuma", "paprika", "cumin", "curry", "epice"], unit: "kg" },
+]
+
+function getCategoryUnit(ingredientName) {
+  const normalized = normalizeStr(ingredientName)
+  for (const rule of CATEGORY_UNIT_RULES) {
+    if (rule.keywords.some(k => normalized.includes(k))) {
+      return rule.unit
+    }
+  }
+  return null // unité inconnue, on laisse Gemini décider
+}
+
+// Stemming léger : retire le 's' final pour gérer pluriels (cubes->cube, légumes->légume)
+function stem(word) {
+  if (word.length > 3 && word.endsWith("s")) return word.slice(0, -1)
+  return word
+}
+
+// Synonymes : ramène certains mots vers un mot canonique avant matching
+const SYNONYMS = {
+  laitue: "salade",
+  mache: "salade",
+  roquette: "salade",
+  epinard: "salade",
+  endive: "salade",
+  cresson: "salade",
+}
+
+function applySynonyms(words) {
+  return words.map(w => SYNONYMS[w] || w)
+}
+
+function getMatchWords(name) {
+  return applySynonyms(
+    normalizeStr(name)
+      .split(" ")
+      .filter(w => w.length > 1 && !STOP_WORDS.has(w))
+      .map(stem)
+  )
+}
+
+// Trouve le meilleur match dans la liste de prix
+// Stratégie : score = nombre de mots de l'ingrédient trouvés dans le nom du prix
+// On prend le match avec le score le plus élevé, et en cas d'égalité, le plus court (plus précis)
+function findBestMatch(ingredientName, prices) {
+  const ingredientWords = getMatchWords(ingredientName)
+  if (!ingredientWords.length) return null
+
+  let bestMatch = null
+  let bestScore = 0
+  let bestNameLen = Infinity
+
+  for (const p of prices) {
+    const priceWords = getMatchWords(p.name)
+    if (!priceWords.length) continue
+
+    // Mots communs entre recette et prix (après suppression des stopwords des deux côtés)
+    const commonWords = ingredientWords.filter(w => priceWords.includes(w))
+    const score = commonWords.length
+
+    if (score === 0) continue
+
+    // Couverture dans les deux sens :
+    // - tous les mots de la recette sont dans le prix (ex: "riz risotto" dans "paquet riz arborio risotto")
+    // - OU tous les mots du prix sont dans la recette (ex: "persil" dans "persil frais")
+    const coverageRecipe = score / ingredientWords.length
+    const coveragePrice = score / priceWords.length
+
+    if (coverageRecipe === 1 || coveragePrice === 1) {
+      const nameLen = priceWords.length
+      if (score > bestScore || (score === bestScore && nameLen < bestNameLen)) {
+        bestScore = score
+        bestMatch = p
+        bestNameLen = nameLen
+      }
+    }
+  }
+
+  return bestMatch
+}
+
+// Détermine l'unité de base d'un ingrédient dans la recette
+// Si l'unité est vide ou "piece/pièce", on retourne "piece"
+function getIngredientBaseUnit(unit) {
+  if (!unit) return null
+  const u = unit.toLowerCase().trim()
+  const conv = UNIT_CONVERSIONS[u]
+  return conv ? conv.base : null
+}
+
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
@@ -41,24 +276,95 @@ export default function RecipeDetail() {
     await loadCostDetails(recipeData, ingredientsData)
   }
 
+  // ===============================
+  // CALCULATEUR DE COÛT AMÉLIORÉ
+  // ===============================
   const loadCostDetails = async (recipeData, ingredientsData) => {
     try {
-      const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
+      const { data: prices } = await supabase
+        .from("ingredient_prices")
+        .select("name, price, unit")
+
       const details = ingredientsData.map(i => {
-        const match = prices?.find(p => p.name.toLowerCase() === i.name.toLowerCase())
-        const quantity = parseFloat(i.quantity) || 1
+        const quantity = parseFloat(i.quantity) || 0
+        let estimatedPrice = 0
+        let found = false
+
+        if (prices?.length) {
+          const match = findBestMatch(i.name, prices)
+
+          if (match) {
+            const recipeUnit = (i.unit || "").toLowerCase().trim()
+            const priceUnit = (match.unit || "").toLowerCase().trim()
+
+            const recipeBase = getIngredientBaseUnit(recipeUnit)
+            const priceBase = getIngredientBaseUnit(priceUnit) || (match.unit === "piece" ? "piece" : null)
+
+            if (recipeBase !== null && recipeBase === priceBase) {
+              // Unités compatibles : conversion directe
+              const convertedQty = convertUnit(quantity, recipeUnit, priceUnit)
+              estimatedPrice = convertedQty * match.price
+              found = true
+            } else if (recipeBase === "l" && priceBase === "kg") {
+              // Recette en volume (c. à café/soupe), prix au kg
+              // Pour les ingrédients secs mesurés en cuillères (sucre, sel, farine, épices...)
+              // Densité approximative : 1 litre ≈ 0.8 kg (sucre/farine), 1.2 kg (sel)
+              const DENSITY_KG_PER_L = {
+                sucre: 0.85, farine: 0.55, sel: 1.20, poivre: 0.50,
+                cannelle: 0.50, curcuma: 0.50, paprika: 0.50, cumin: 0.50,
+                curry: 0.50, levure: 0.55, cacao: 0.50, maizena: 0.60,
+              }
+              const normalized = normalizeStr(i.name)
+              const density = Object.entries(DENSITY_KG_PER_L).find(([k]) => normalized.includes(k))?.[1] || 0.80
+              const qtyL = convertUnit(quantity, recipeUnit, "l")
+              estimatedPrice = qtyL * density * match.price
+              found = true
+            } else if (recipeBase === "kg" && priceBase === "piece") {
+              // Recette en grammes, prix à la pièce (ex: persil en g, botte en piece)
+              // On utilise les poids moyens par catégorie
+              const PIECE_WEIGHTS = {
+                persil: 0.030, basilic: 0.025, coriandre: 0.025, menthe: 0.025, ciboulette: 0.020,
+                salade: 0.300, laitue: 0.250, epinard: 0.200, roquette: 0.100, mache: 0.100,
+                citron: 0.100, orange: 0.200, tomate: 0.150, oignon: 0.100, echalote: 0.050,
+                ail: 0.050, courgette: 0.250, carotte: 0.100, poivron: 0.200,
+              }
+              const normalized = normalizeStr(i.name)
+              const pieceWeightKg = Object.entries(PIECE_WEIGHTS).find(([k]) => normalized.includes(k))?.[1]
+              if (pieceWeightKg) {
+                const qtyKg = quantity * 0.001
+                estimatedPrice = (qtyKg / pieceWeightKg) * match.price
+                found = true
+              }
+            } else if (recipeBase === "piece" || !recipeUnit || recipeBase === null) {
+              // Recette à la pièce ou unité inconnue, prix à la pièce
+              if (priceBase === "piece") {
+                estimatedPrice = quantity * match.price
+                found = true
+              }
+            }
+          }
+        }
+
         return {
           name: i.name,
           quantity: i.quantity,
           unit: i.unit,
-          estimated_price: match ? match.price * quantity : 0,
-          found: !!match
+          estimated_price: Number(estimatedPrice.toFixed(2)),
+          found
         }
       })
+
       const total = details.reduce((sum, d) => sum + d.estimated_price, 0)
       const per_serving = recipeData.servings ? total / recipeData.servings : total
-      setCostDetails({ total, per_serving, details })
-    } catch (e) { console.error(e) }
+
+      setCostDetails({
+        total: Number(total.toFixed(2)),
+        per_serving: Number(per_serving.toFixed(2)),
+        details
+      })
+    } catch (e) {
+      console.error("Erreur calcul budget:", e)
+    }
   }
 
   const reestimate = async () => {
@@ -69,16 +375,39 @@ export default function RecipeDetail() {
 
     try {
       const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
-      const missing = ingredients.filter(i => !prices?.some(p => p.name.toLowerCase() === i.name.toLowerCase()))
+      const missing = ingredients.filter(i => !findBestMatch(i.name, prices || []))
 
       if (missing.length > 0) {
+        // Détermine l'unité attendue via les règles catégorielles, puis crée le hint pour Gemini
+        const ingredientsWithHints = missing.map(m => {
+          const categoryUnit = getCategoryUnit(m.name)
+          if (categoryUnit === "piece") return `${m.name} [vendu à la pièce]`
+          if (categoryUnit === "kg") return `${m.name} [vendu au poids]`
+          if (categoryUnit === "l") return `${m.name} [vendu au volume]`
+          // Fallback : on utilise l'unité de la recette
+          const recipeBase = getIngredientBaseUnit((m.unit || "").toLowerCase().trim())
+          if (recipeBase === "piece") return `${m.name} [vendu à la pièce]`
+          if (recipeBase === "kg") return `${m.name} [vendu au poids]`
+          if (recipeBase === "l") return `${m.name} [vendu au volume]`
+          return m.name
+        })
+
         const { data: gemini_prices, error: funcError } = await supabase.functions.invoke('estimate-costs', {
-          body: { ingredients: missing.map(m => m.name) }
+          body: { ingredients: ingredientsWithHints }
         })
         if (funcError) throw new Error("Erreur serveur IA.")
         if (gemini_prices?.length > 0) {
+          // Remap les noms avec hints vers les vrais noms de la recette
+          const nameMap = Object.fromEntries(
+            ingredientsWithHints.map((hint, idx) => [hint, missing[idx].name])
+          )
+          const remapped = gemini_prices.map((p) => ({
+            name: nameMap[p.name] || p.name,
+            price: p.price,
+            unit: p.unit,
+          }))
           await supabase.from("ingredient_prices").upsert(
-            gemini_prices.map(p => ({ name: p.name, price: p.price, unit: p.unit })),
+            remapped.map(p => ({ name: p.name, price: p.price, unit: p.unit })),
             { onConflict: "name" }
           )
         }
@@ -322,7 +651,6 @@ export default function RecipeDetail() {
           {/* Ingrédients + Étapes */}
           <div className="grid grid-cols-[2fr_3fr] border-t border-gray-100 dark:border-zinc-700">
 
-            {/* Ingrédients — sans coches */}
             <div className="p-8 border-r border-gray-100 dark:border-zinc-700">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-5 flex items-center gap-2 text-base uppercase tracking-wide">
                 <span className="w-6 h-6 bg-brand-orange/10 rounded-lg flex items-center justify-center text-sm">🛒</span>
@@ -341,7 +669,6 @@ export default function RecipeDetail() {
               </div>
             </div>
 
-            {/* Étapes — avec coches */}
             <div className="p-8">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2 text-base uppercase tracking-wide">
                 <span className="w-6 h-6 bg-brand-orange/10 rounded-lg flex items-center justify-center text-sm">👨‍🍳</span>
@@ -436,7 +763,6 @@ export default function RecipeDetail() {
               )}
             </div>
 
-            {/* Ingrédients mobile — sans coches */}
             <div className="mb-10">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-5 flex items-center gap-2 text-lg">
                 <span className="text-brand-orange">🛒</span> Ingrédients

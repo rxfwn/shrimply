@@ -15,13 +15,8 @@ const STATUS = {
 }
 
 const ROADMAP = [
-
-  { icon: "📸", title: "Photos de recettes", desc: "Ajouter une ou plusieurs photos à chaque recette." },
-  { icon: "🖨️", title: "Imprimer une recette", desc: "Un bouton pour imprimer facilement la recette en cuisine." },
-  { icon: "👨‍🍳", title: "Refaire la partie Profil", desc: "Mettre en avant les plats réalisées avec les recettes." },
   { icon: "📤", title: "Partager une recette", desc: "Envoyer une recette à ses amis ou sur les réseaux." },
   { icon: "👨‍🍳", title: "Calculateur de portions", desc: "Adapter automatiquement les quantités pour 2, 4 ou 6 personnes." },
-  { icon: "💰", title: "Estimation du prix d'une recette", desc: "Calcul automatique du coût total avec l'IA." },
   { icon: "🔄", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
   { icon: "📝", title: "Envoyer la liste dans ses notes", desc: "Exporter la liste de courses en TODO dans son téléphone." },
   { icon: "🥦", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },

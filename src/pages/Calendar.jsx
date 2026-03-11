@@ -40,7 +40,21 @@ function formatDate(date) {
   return date.toISOString().split("T")[0]
 }
 
-// Détection mobile
+function RecipeThumb({ photoUrl, name, size = 28 }) {
+  return photoUrl ? (
+    <img
+      src={photoUrl}
+      alt={name}
+      style={{ width: size, height: size, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
+    />
+  ) : (
+    <div style={{ width: size, height: size, borderRadius: 6, flexShrink: 0 }}
+      className="bg-orange-100 flex items-center justify-center text-orange-300 text-xs">
+      🍽
+    </div>
+  )
+}
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   useEffect(() => {
@@ -51,7 +65,6 @@ function useIsMobile() {
   return isMobile
 }
 
-// --- DRAG & DROP (desktop uniquement) ---
 function RecipeCard({ recipe }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `recipe-${recipe.id}`,
@@ -62,9 +75,22 @@ function RecipeCard({ recipe }) {
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 999 : 1,
   } : {}
+
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}
-      className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 bg-zinc-50 mb-1.5 cursor-grab active:cursor-grabbing hover:border-orange-300 hover:bg-orange-50 transition">
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        borderLeft: recipe.color ? `3px solid ${recipe.color}` : "3px solid transparent",
+      }}
+      {...listeners}
+      {...attributes}
+      className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 bg-zinc-50 mb-1.5 cursor-grab active:cursor-grabbing hover:border-orange-300 hover:bg-orange-50 transition overflow-hidden"
+    >
+      {recipe.color && !recipe.photo_url && (
+        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: recipe.color }} />
+      )}
+      <RecipeThumb photoUrl={recipe.photo_url} name={recipe.name} size={32} />
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-zinc-800 truncate">{recipe.name}</div>
         {recipe.prep_time && <div className="text-xs text-zinc-400">⏱ {recipe.prep_time} min</div>}
@@ -78,30 +104,44 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
   const slotId = `slot-${date}-${mealType}`
   const { setNodeRef, isOver } = useDroppable({ id: slotId, data: { date, mealType } })
 
-  const mealColors = {
-    "Matin": "bg-amber-50 border-amber-200",
-    "Midi": "bg-blue-50 border-blue-200",
-    "Soir": "bg-purple-50 border-purple-200",
-  }
-  const textColors = { "Matin": "text-amber-700", "Midi": "text-blue-700", "Soir": "text-purple-700" }
-  const timeColors = { "Matin": "text-amber-400", "Midi": "text-blue-400", "Soir": "text-purple-400" }
+  const recipeColor = meal?.recipes?.color
+  const slotBg     = recipeColor ? `${recipeColor}22` : "#f9f9f9"
+  const slotBorder = recipeColor ? `${recipeColor}66` : "#e5e7eb"
+  const textColor  = "#1f2937"
+  const timeColor  = "#9ca3af"
 
-  // Version mobile — tap pour ouvrir modal
   if (isMobile) {
     return (
       <div
         onClick={() => !meal && onMobileTap(date, mealType)}
-        style={{ height: "60px" }}
-        className={`rounded-lg border transition relative overflow-hidden
-          ${meal ? `${mealColors[mealType]} ${isToday ? "ring-2 ring-brand-orange" : ""}` : "border-dashed border-gray-200 bg-white active:bg-orange-50"}`}
+        style={{
+          height: "60px",
+          backgroundColor: meal ? slotBg : "white",
+          borderColor: meal ? slotBorder : "#e5e7eb",
+          borderWidth: 1,
+          borderStyle: meal ? "solid" : "dashed",
+          borderRadius: 8,
+          outline: isToday && meal ? "2px solid #f97316" : "none",
+          overflow: "hidden",
+          position: "relative",
+          transition: "all 0.15s",
+        }}
       >
         {meal ? (
-          <div className="p-1.5 h-full flex flex-col justify-between">
-            <div className={`text-xs font-semibold line-clamp-2 leading-tight ${textColors[mealType]}`}>
-              {meal.recipes?.name}
+          <div className="h-full flex items-stretch">
+            {meal.recipes?.photo_url ? (
+              <img src={meal.recipes.photo_url} alt={meal.recipes.name}
+                className="h-full w-10 object-cover flex-shrink-0" />
+            ) : recipeColor ? (
+              <div className="w-1 h-full flex-shrink-0" style={{ backgroundColor: recipeColor }} />
+            ) : null}
+            <div className="p-1.5 flex flex-col justify-between flex-1 min-w-0">
+              <div className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: textColor }}>
+                {meal.recipes?.name}
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); onRemove(meal.id) }}
+                className="text-xs self-end opacity-60" style={{ color: timeColor }}>× sup</button>
             </div>
-            <button onClick={(e) => { e.stopPropagation(); onRemove(meal.id) }}
-              className={`${timeColors[mealType]} text-xs self-end opacity-60`}>× sup</button>
           </div>
         ) : (
           <div className="h-full flex items-center justify-center">
@@ -112,28 +152,48 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
     )
   }
 
-  // Version desktop — drag & drop
   return (
-    <div ref={setNodeRef} style={{ height: "76px" }}
-      className={`rounded-lg border transition relative overflow-hidden shadow-sm
-        ${meal
-          ? `${mealColors[mealType]} ${isToday ? "ring-2 ring-brand-orange" : ""}`
-          : isOver ? "border-brand-orange bg-brand-orange/5 border-dashed" : "border-dashed border-gray-200 bg-white hover:border-brand-orange/40"}`}
+    <div
+      ref={setNodeRef}
+      style={{
+        height: "76px",
+        backgroundColor: meal ? slotBg : isOver ? "#fff7ed" : "white",
+        borderColor: meal ? slotBorder : isOver ? "#f97316" : "#e5e7eb",
+        borderWidth: 1,
+        borderStyle: meal ? "solid" : "dashed",
+        borderRadius: 8,
+        outline: isToday && meal ? "2px solid #f97316" : "none",
+        overflow: "hidden",
+        position: "relative",
+        boxShadow: meal ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+        transition: "all 0.15s",
+      }}
     >
       {meal ? (
-        <div className="p-2 h-full flex flex-col justify-between">
-          <div className={`text-xs font-semibold line-clamp-2 leading-tight ${textColors[mealType]}`}>
-            {meal.recipes?.name}
-          </div>
-          <div className="flex items-center justify-between">
-            {meal.recipes?.prep_time && <span className={`text-xs ${timeColors[mealType]}`}>⏱ {meal.recipes.prep_time}m</span>}
-            <button onClick={() => onRemove(meal.id)}
-              className={`${timeColors[mealType]} hover:text-red-400 transition text-base leading-none ml-auto opacity-50 hover:opacity-100`}>×</button>
+        <div className="h-full flex items-stretch">
+          {meal.recipes?.photo_url ? (
+            <img src={meal.recipes.photo_url} alt={meal.recipes.name}
+              className="h-full w-12 object-cover flex-shrink-0" />
+          ) : recipeColor ? (
+            <div className="w-1.5 h-full flex-shrink-0" style={{ backgroundColor: recipeColor }} />
+          ) : null}
+          <div className="p-2 flex flex-col justify-between flex-1 min-w-0">
+            <div className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: textColor }}>
+              {meal.recipes?.name}
+            </div>
+            <div className="flex items-center justify-between">
+              {meal.recipes?.prep_time && (
+                <span className="text-xs" style={{ color: timeColor }}>⏱ {meal.recipes.prep_time}m</span>
+              )}
+              <button onClick={() => onRemove(meal.id)}
+                className="hover:text-red-400 transition text-base leading-none ml-auto opacity-50 hover:opacity-100"
+                style={{ color: timeColor }}>×</button>
+            </div>
           </div>
         </div>
       ) : (
         <div className="h-full flex items-center justify-center">
-          <span className={`text-lg ${isOver ? "text-brand-orange" : "text-gray-200"}`}>+</span>
+          <span className="text-lg" style={{ color: isOver ? "#f97316" : "#e5e7eb" }}>+</span>
         </div>
       )}
     </div>
@@ -154,17 +214,33 @@ function MonthDayCell({ date, meals, onRemove, isToday }) {
         ${isToday ? "bg-orange-500 text-white" : "text-zinc-500"}`}>
         {date.getDate()}
       </div>
-      {meals.map(meal => (
-        <div key={meal.id} className="flex items-center gap-1 bg-orange-100 rounded px-1 py-0.5 mb-0.5 group">
-          <span className="text-xs text-orange-700 truncate flex-1">{meal.recipes?.name}</span>
-          <button onClick={() => onRemove(meal.id)} className="text-orange-300 hover:text-red-400 transition opacity-0 group-hover:opacity-100 text-xs leading-none">×</button>
-        </div>
-      ))}
+      {meals.map(meal => {
+        const color = meal.recipes?.color
+        return (
+          <div
+            key={meal.id}
+            className="flex items-center gap-1 rounded overflow-hidden mb-0.5 group"
+            style={{
+              backgroundColor: color ? `${color}22` : "#f3f4f6",
+              borderLeft: color ? `2px solid ${color}` : "2px solid #d1d5db",
+            }}
+          >
+            {meal.recipes?.photo_url && (
+              <img src={meal.recipes.photo_url} alt={meal.recipes.name}
+                className="w-5 h-5 object-cover flex-shrink-0" />
+            )}
+            <span className="text-xs truncate flex-1 py-0.5 pr-1 text-zinc-700">
+              {meal.recipes?.name}
+            </span>
+            <button onClick={() => onRemove(meal.id)}
+              className="text-zinc-300 hover:text-red-400 transition opacity-0 group-hover:opacity-100 text-xs leading-none pr-1">×</button>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-// --- MODAL MOBILE pour choisir une recette ---
 function MobileRecipeModal({ recipes, onSelect, onClose }) {
   const [search, setSearch] = useState("")
   const filtered = recipes.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
@@ -189,13 +265,20 @@ function MobileRecipeModal({ recipes, onSelect, onClose }) {
           {filtered.length === 0 ? (
             <p className="text-xs text-zinc-400 text-center mt-4">Aucune recette trouvée</p>
           ) : filtered.map(recipe => (
-            <button key={recipe.id} onClick={() => onSelect(recipe)}
-              className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-zinc-700 bg-white dark:bg-zinc-700 hover:border-brand-orange hover:bg-orange-50 transition text-left">
+            <button
+              key={recipe.id}
+              onClick={() => onSelect(recipe)}
+              className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-zinc-700 bg-white dark:bg-zinc-700 hover:border-brand-orange hover:bg-orange-50 transition text-left"
+              style={{ borderLeft: recipe.color ? `3px solid ${recipe.color}` : undefined }}
+            >
+              <RecipeThumb photoUrl={recipe.photo_url} name={recipe.name} size={40} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-zinc-800 dark:text-white truncate">{recipe.name}</p>
                 {recipe.prep_time && <p className="text-xs text-zinc-400">⏱ {recipe.prep_time} min</p>}
               </div>
-              <span className="text-brand-orange text-lg">+</span>
+              {recipe.color
+                ? <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: recipe.color }} />
+                : <span className="text-brand-orange text-lg">+</span>}
             </button>
           ))}
         </div>
@@ -204,7 +287,6 @@ function MobileRecipeModal({ recipes, onSelect, onClose }) {
   )
 }
 
-// --- COMPOSANT PRINCIPAL ---
 export default function Calendar() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
@@ -218,9 +300,7 @@ export default function Calendar() {
   const [activeRecipe, setActiveRecipe] = useState(null)
   const [loadingIA, setLoadingIA] = useState(false)
   const [cooldown, setCooldown] = useState(0)
-
-  // Modal mobile
-  const [mobileModal, setMobileModal] = useState(null) // { date, mealType }
+  const [mobileModal, setMobileModal] = useState(null)
 
   const days = getWeekDays(monday)
   const today = formatDate(new Date())
@@ -247,8 +327,11 @@ export default function Calendar() {
       endDate = formatDate(lastDay)
     }
     const { data: planData } = await supabase
-      .from("meal_plan").select("*, recipes(name, prep_time, tags)")
-      .eq("user_id", user.id).gte("date", startDate).lte("date", endDate)
+      .from("meal_plan")
+      .select("*, recipes(name, prep_time, tags, photo_url, color)")
+      .eq("user_id", user.id)
+      .gte("date", startDate)
+      .lte("date", endDate)
     const { data: recipesData } = await supabase.from("recipes").select("*").eq("user_id", user.id)
     if (planData) setMealPlan(planData)
     if (recipesData) setRecipes(recipesData)
@@ -257,11 +340,9 @@ export default function Calendar() {
   const handleAutoFill = async () => {
     if (loadingIA || cooldown > 0 || recipes.length === 0) return
     setLoadingIA(true)
-    
     try {
       const { data: { user } } = await supabase.auth.getUser()
       const emptySlots = []
-      
       days.forEach(day => {
         const dateStr = formatDate(day)
         MEAL_TYPES.forEach(type => {
@@ -269,42 +350,22 @@ export default function Calendar() {
           if (!exists) emptySlots.push({ date: dateStr, type })
         })
       })
-
-      if (emptySlots.length === 0) {
-        alert("Ton planning est déjà plein ! ✨")
-        setLoadingIA(false)
-        return
-      }
-
+      if (emptySlots.length === 0) { alert("Ton planning est déjà plein ! ✨"); setLoadingIA(false); return }
       const prompt = `J'ai ces recettes : ${recipes.map(r => r.name).join(", ")}. 
       Remplis ces créneaux vides : ${emptySlots.map(s => `${s.date} (${s.type})`).join(", ")}.
       Propose un planning équilibré (varie les recettes).
       Réponds UNIQUEMENT un JSON : [{"date": "YYYY-MM-DD", "meal_type": "Matin/Midi/Soir", "recipe_name": "..."}]`
-
-      const { data: suggestions, error: funcError } = await supabase.functions.invoke('auto-fill-plan', {
-        body: { prompt }
-      })
-
+      const { data: suggestions, error: funcError } = await supabase.functions.invoke('auto-fill-plan', { body: { prompt } })
       if (funcError) throw new Error("L'IA Shrimply ne répond pas.")
-
       const inserts = suggestions.map(s => {
         const recipe = recipes.find(r => r.name === s.recipe_name)
         if (!recipe) return null
         return { user_id: user.id, recipe_id: recipe.id, date: s.date, meal_type: s.meal_type }
       }).filter(Boolean)
-
-      if (inserts.length > 0) {
-        await supabase.from("meal_plan").insert(inserts)
-        await fetchData()
-      }
-      
+      if (inserts.length > 0) { await supabase.from("meal_plan").insert(inserts); await fetchData() }
       setCooldown(60)
-    } catch (err) {
-      console.error(err)
-      alert(err.message)
-    } finally {
-      setLoadingIA(false)
-    }
+    } catch (err) { console.error(err); alert(err.message) }
+    finally { setLoadingIA(false) }
   }
 
   const getMeal = (date, mealType) => mealPlan.find(m => m.date === formatDate(date) && m.meal_type === mealType)
@@ -341,12 +402,7 @@ export default function Calendar() {
     const existing = mealPlan.find(m => m.date === mobileModal.date && m.meal_type === mobileModal.mealType)
     if (existing) { setMobileModal(null); return }
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from("meal_plan").insert({
-      user_id: user.id,
-      recipe_id: recipe.id,
-      date: mobileModal.date,
-      meal_type: mobileModal.mealType,
-    })
+    await supabase.from("meal_plan").insert({ user_id: user.id, recipe_id: recipe.id, date: mobileModal.date, meal_type: mobileModal.mealType })
     setMobileModal(null)
     await fetchData()
   }
@@ -375,29 +431,21 @@ export default function Calendar() {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
 
-      {/* MODAL MOBILE */}
       {mobileModal && (
-        <MobileRecipeModal
-          recipes={recipes}
-          onSelect={handleMobileSelect}
-          onClose={() => setMobileModal(null)}
-        />
+        <MobileRecipeModal recipes={recipes} onSelect={handleMobileSelect} onClose={() => setMobileModal(null)} />
       )}
 
       <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
-
         <div style={{ flex: 1, overflow: "auto", padding: isMobile ? "0.75rem" : "1.25rem" }}>
 
           {/* HEADER */}
           <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center justify-between"} mb-4`}>
             <div className={`flex items-center ${isMobile ? "justify-between" : "gap-3"}`}>
               {!isMobile && <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Mon planning</h1>}
-
               <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5">
                 <button onClick={() => setView("week")} className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "week" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}>Semaine</button>
                 <button onClick={() => setView("month")} className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "month" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}>Mois</button>
               </div>
-
               <div className="flex items-center gap-1">
                 <button onClick={prevPeriod} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">◀</button>
                 <span className={`text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1 text-center ${isMobile ? "min-w-28" : "min-w-48"}`}>
@@ -406,9 +454,7 @@ export default function Calendar() {
                 <button onClick={nextPeriod} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">▶</button>
               </div>
             </div>
-
             <div className="flex gap-2">
-              {/* TODO: bouton à réactiver quand la Edge Function auto-fill-plan sera prête */}
               {false && (
                 <button onClick={handleAutoFill} disabled={loadingIA || cooldown > 0}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition
@@ -439,8 +485,7 @@ export default function Calendar() {
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "32px repeat(7, 1fr)" : "56px repeat(7, 1fr)", gap: "4px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   {MEAL_TYPES.map(type => (
-                    <div key={type}
-                      className="flex items-center justify-end pr-1 text-zinc-400 font-medium"
+                    <div key={type} className="flex items-center justify-end pr-1 text-zinc-400 font-medium"
                       style={{ fontSize: isMobile ? "8px" : "12px", height: isMobile ? "60px" : "76px" }}>
                       {isMobile ? type[0] : type}
                     </div>
@@ -449,16 +494,9 @@ export default function Calendar() {
                 {days.map((day, dayIndex) => (
                   <div key={dayIndex} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     {MEAL_TYPES.map(mealType => (
-                      <MealSlot
-                        key={mealType}
-                        date={formatDate(day)}
-                        mealType={mealType}
-                        meal={getMeal(day, mealType)}
-                        onRemove={handleRemoveMeal}
-                        isToday={formatDate(day) === today}
-                        isMobile={isMobile}
-                        onMobileTap={handleMobileTap}
-                      />
+                      <MealSlot key={mealType} date={formatDate(day)} mealType={mealType}
+                        meal={getMeal(day, mealType)} onRemove={handleRemoveMeal}
+                        isToday={formatDate(day) === today} isMobile={isMobile} onMobileTap={handleMobileTap} />
                     ))}
                   </div>
                 ))}
@@ -508,8 +546,13 @@ export default function Calendar() {
 
       <DragOverlay>
         {activeRecipe && (
-          <div className="bg-white border border-orange-400 rounded-lg p-2 shadow-lg text-xs font-medium text-zinc-800 w-48">
-            {activeRecipe.name}
+          <div className="bg-white border border-orange-400 rounded-lg p-2 shadow-lg flex items-center gap-2 w-48"
+            style={{ borderLeft: activeRecipe.color ? `3px solid ${activeRecipe.color}` : undefined }}>
+            <RecipeThumb photoUrl={activeRecipe.photo_url} name={activeRecipe.name} size={28} />
+            <span className="text-xs font-medium text-zinc-800 truncate">{activeRecipe.name}</span>
+            {activeRecipe.color && (
+              <div className="w-2 h-2 rounded-full flex-shrink-0 ml-auto" style={{ backgroundColor: activeRecipe.color }} />
+            )}
           </div>
         )}
       </DragOverlay>

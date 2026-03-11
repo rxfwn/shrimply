@@ -12,16 +12,30 @@ const UNITS = [
   "paquet", "boîte", "tranche", "pièce"
 ]
 
+const RECIPE_COLORS = [
+  { label: "Vert", value: "#22c55e", bg: "bg-green-500" },
+  { label: "Rouge", value: "#ef4444", bg: "bg-red-500" },
+  { label: "Orange", value: "#f97316", bg: "bg-orange-500" },
+  { label: "Bleu", value: "#3b82f6", bg: "bg-blue-500" },
+  { label: "Violet", value: "#a855f7", bg: "bg-purple-500" },
+  { label: "Rose", value: "#ec4899", bg: "bg-pink-500" },
+  { label: "Jaune", value: "#eab308", bg: "bg-yellow-500" },
+  { label: "Gris", value: "#6b7280", bg: "bg-gray-500" },
+]
+
 export default function Recipes() {
   const navigate = useNavigate()
   const ingredientRefs = useRef([])
   const stepRefs = useRef([])
+  const dragItem = useRef(null)
+  const dragOverItem = useRef(null)
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [prepTime, setPrepTime] = useState("")
   const [servings, setServings] = useState("")
   const [selectedTags, setSelectedTags] = useState([])
+  const [recipeColor, setRecipeColor] = useState("")
   const [ingredients, setIngredients] = useState([{ name: "", quantity: "", unit: "" }])
   const [steps, setSteps] = useState([{ description: "" }])
   const [photoUrl, setPhotoUrl] = useState("")
@@ -34,6 +48,7 @@ export default function Recipes() {
   const [dupError, setDupError] = useState("")
   const [draftRestored, setDraftRestored] = useState(false)
   const [draftSaved, setDraftSaved] = useState(false)
+  const [dragOverIndex, setDragOverIndex] = useState(null)
 
   const [search, setSearch] = useState("")
   const [activeFilter, setActiveFilter] = useState("all")
@@ -53,6 +68,7 @@ export default function Recipes() {
       setPrepTime(draft.prepTime || "")
       setServings(draft.servings || "")
       setSelectedTags(draft.selectedTags || [])
+      setRecipeColor(draft.recipeColor || "")
       setIngredients(draft.ingredients?.length ? draft.ingredients : [{ name: "", quantity: "", unit: "" }])
       setSteps(draft.steps?.length ? draft.steps : [{ description: "" }])
       setDraftRestored(true)
@@ -76,7 +92,7 @@ export default function Recipes() {
     const timeout = setTimeout(() => {
       const hasContent = name || description || ingredients[0]?.name
       if (!hasContent) return
-      saveDraft({ name, description, prepTime, servings, selectedTags, ingredients, steps })
+      saveDraft({ name, description, prepTime, servings, selectedTags, recipeColor, ingredients, steps })
       if (!hasShownDraftPopup.current) {
         hasShownDraftPopup.current = true
         setDraftSaved(true)
@@ -84,7 +100,7 @@ export default function Recipes() {
       }
     }, delay)
     return () => clearTimeout(timeout)
-  }, [showForm, name, description, prepTime, servings, selectedTags, ingredients, steps])
+  }, [showForm, name, description, prepTime, servings, selectedTags, recipeColor, ingredients, steps])
 
   const checkBannedWords = async (textsToCheck) => {
     const { data: banned } = await supabase.from("banned_words").select("word")
@@ -129,6 +145,7 @@ export default function Recipes() {
         servings: recipe.servings,
         tags: recipe.tags,
         photo_url: recipe.photo_url || null,
+        color: recipe.color || null,
         is_public: false,
         duplicated_from: sourceId,
       }).select().single()
@@ -184,6 +201,35 @@ export default function Recipes() {
     setErrors(prev => ({ ...prev, [`step_${index}`]: false }))
   }
 
+  // ── DRAG & DROP ÉTAPES ──────────────────────────────────────────────────────
+  const handleDragStart = (index) => {
+    dragItem.current = index
+  }
+
+  const handleDragEnter = (index) => {
+    dragOverItem.current = index
+    setDragOverIndex(index)
+  }
+
+  const handleDragEnd = () => {
+    const from = dragItem.current
+    const to = dragOverItem.current
+    if (from === null || to === null || from === to) {
+      dragItem.current = null
+      dragOverItem.current = null
+      setDragOverIndex(null)
+      return
+    }
+    const reordered = [...steps]
+    const [moved] = reordered.splice(from, 1)
+    reordered.splice(to, 0, moved)
+    setSteps(reordered)
+    dragItem.current = null
+    dragOverItem.current = null
+    setDragOverIndex(null)
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   const validate = () => {
     const newErrors = {}
     if (!name.trim()) newErrors.name = true
@@ -223,6 +269,7 @@ export default function Recipes() {
       prep_time: parseInt(prepTime),
       servings: parseInt(servings),
       tags: selectedTags,
+      color: recipeColor || null,
       is_public: false,
       photo_url: photoUrl || null,
     }).select().single()
@@ -239,7 +286,7 @@ export default function Recipes() {
 
       setSuccess(true)
       setName(""); setDescription(""); setPrepTime(""); setServings("")
-      setSelectedTags([]); setIngredients([{ name: "", quantity: "", unit: "" }])
+      setSelectedTags([]); setRecipeColor(""); setIngredients([{ name: "", quantity: "", unit: "" }])
       setSteps([{ description: "" }]); setErrors({}); setPhotoUrl("")
       clearDraft()
       setShowForm(false)
@@ -266,6 +313,7 @@ export default function Recipes() {
     clearDraft()
     hasShownDraftPopup.current = false
     setPhotoUrl("")
+    setRecipeColor("")
   }
 
   return (
@@ -328,7 +376,7 @@ export default function Recipes() {
                   onClick={() => {
                     clearDraft()
                     setName(""); setDescription(""); setPrepTime(""); setServings("")
-                    setSelectedTags([]); setIngredients([{ name: "", quantity: "", unit: "" }])
+                    setSelectedTags([]); setRecipeColor(""); setIngredients([{ name: "", quantity: "", unit: "" }])
                     setSteps([{ description: "" }]); setPhotoUrl("")
                   }}
                   className="text-xs text-zinc-400 hover:text-red-400 transition flex items-center gap-1"
@@ -403,6 +451,38 @@ export default function Recipes() {
                 </div>
               </div>
 
+              {/* 🎨 Couleur calendrier */}
+              <div>
+                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">
+                  🎨 Couleur dans le calendrier
+                </label>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {RECIPE_COLORS.map(color => (
+                    <button
+                      key={color.value}
+                      onClick={() => setRecipeColor(recipeColor === color.value ? "" : color.value)}
+                      title={color.label}
+                      className={`w-7 h-7 rounded-full transition-all border-2 ${recipeColor === color.value ? "border-zinc-900 dark:border-white scale-110 shadow-md" : "border-transparent hover:scale-105"}`}
+                      style={{ backgroundColor: color.value }}
+                    />
+                  ))}
+                  {recipeColor && (
+                    <button
+                      onClick={() => setRecipeColor("")}
+                      className="text-xs text-zinc-400 hover:text-red-400 transition ml-1"
+                    >
+                      × Effacer
+                    </button>
+                  )}
+                </div>
+                {recipeColor && (
+                  <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: recipeColor }} />
+                    Cette couleur apparaîtra dans ton calendrier
+                  </p>
+                )}
+              </div>
+
               {/* Ingrédients */}
               <div>
                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">Ingrédients <span className="text-red-400">*</span></label>
@@ -442,13 +522,29 @@ export default function Recipes() {
                 </div>
               </div>
 
-              {/* Étapes */}
+              {/* Étapes — avec drag & drop */}
               <div>
-                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">Étapes <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">
+                  Étapes <span className="text-red-400">*</span>
+                  <span className="ml-2 font-normal text-zinc-400 normal-case tracking-normal">— glisse ⠿ pour réordonner</span>
+                </label>
                 {errors.noSteps && <p className="text-xs text-red-400 mb-2">Au moins une étape est obligatoire</p>}
                 <div className="flex flex-col gap-2">
                   {steps.map((step, index) => (
-                    <div key={index} className="flex gap-2 items-center">
+                    <div
+                      key={index}
+                      draggable
+                      onDragStart={() => handleDragStart(index)}
+                      onDragEnter={() => handleDragEnter(index)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={e => e.preventDefault()}
+                      className={`flex gap-2 items-center rounded-xl transition-all ${dragOverIndex === index && dragItem.current !== index ? "bg-brand-orange/10 scale-[1.01]" : ""}`}
+                    >
+                      {/* Poignée drag */}
+                      <span
+                        className="text-zinc-300 hover:text-zinc-500 cursor-grab active:cursor-grabbing text-base flex-shrink-0 select-none"
+                        title="Glisser pour réordonner"
+                      >⠿</span>
                       <span className="text-xs font-bold text-brand-orange w-5 flex-shrink-0">{index + 1}.</span>
                       <div className="flex-1">
                         <textarea
@@ -560,10 +656,6 @@ export default function Recipes() {
             )
 
             return (
-              // ─── SEULE LIGNE MODIFIÉE ───
-              // Avant : grid-cols-3
-              // Après : 4 colonnes sur grand écran, 3 sur medium, 2 sur petit
-              //         Les cartes orphelines sont centrées grâce à justify-items-center
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 justify-items-center">
                 {filtered.map(recipe => (
                   <div
@@ -571,6 +663,11 @@ export default function Recipes() {
                     onClick={() => navigate(`/recipes/${recipe.id}`)}
                     className="w-full bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer"
                   >
+                    {/* Bande couleur en haut de la carte */}
+                    {recipe.color && (
+                      <div className="h-1.5 w-full" style={{ backgroundColor: recipe.color }} />
+                    )}
+
                     {/* Photo */}
                     {recipe.photo_url ? (
                       <img src={recipe.photo_url} alt={recipe.name} className="w-full aspect-[4/3] object-cover" />
@@ -591,6 +688,9 @@ export default function Recipes() {
                       <div className="flex items-center gap-2 text-xs text-zinc-400 mb-2">
                         {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
                         {recipe.servings && <span>🍽 {recipe.servings}p</span>}
+                        {recipe.color && (
+                          <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: recipe.color }} title="Couleur calendrier" />
+                        )}
                       </div>
 
                       {recipe.tags && recipe.tags.length > 0 && (

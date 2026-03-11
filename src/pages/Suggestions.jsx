@@ -17,9 +17,7 @@ const STATUS = {
 const ROADMAP = [
   { icon: "👨‍🍳", title: "Calculateur de portions", desc: "Adapter automatiquement les quantités pour 2, 4 ou 6 personnes." },
   { icon: "🔄", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
-  { icon: "📝", title: "Envoyer la liste dans ses notes", desc: "Exporter la liste de courses en TODO dans son téléphone." },
   { icon: "🥦", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
-  { icon: "👑", title: "Couronne sur le profil", desc: "Badge spécial pour un utilisateur qui partage beaucoup de recettes." },
   { icon: "🗺️", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." }
 
 ]

@@ -12,6 +12,17 @@ const UNITS = [
   "paquet", "boîte", "tranche", "pièce"
 ]
 
+const RECIPE_COLORS = [
+  { label: "Vert",    value: "#22c55e" },
+  { label: "Rouge",   value: "#ef4444" },
+  { label: "Orange",  value: "#f97316" },
+  { label: "Bleu",    value: "#3b82f6" },
+  { label: "Violet",  value: "#a855f7" },
+  { label: "Rose",    value: "#ec4899" },
+  { label: "Jaune",   value: "#eab308" },
+  { label: "Gris",    value: "#6b7280" },
+]
+
 export default function RecipeEdit() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -20,6 +31,7 @@ export default function RecipeEdit() {
   const [prepTime, setPrepTime] = useState("")
   const [servings, setServings] = useState("")
   const [selectedTags, setSelectedTags] = useState([])
+  const [recipeColor, setRecipeColor] = useState("")
   const [ingredients, setIngredients] = useState([])
   const [steps, setSteps] = useState([])
   const [photoUrl, setPhotoUrl] = useState("")
@@ -37,7 +49,7 @@ export default function RecipeEdit() {
       name, description,
       prepTime: String(prepTime),
       servings: String(servings),
-      selectedTags, ingredients, steps, photoUrl
+      selectedTags, recipeColor, ingredients, steps, photoUrl
     })
     return current !== initialData.current
   }
@@ -58,6 +70,7 @@ export default function RecipeEdit() {
       setPrepTime(recipe.prep_time || "")
       setServings(recipe.servings || "")
       setSelectedTags(recipe.tags || [])
+      setRecipeColor(recipe.color || "")
       setPhotoUrl(recipe.photo_url || "")
       setIngredients(ings)
       setSteps(stps)
@@ -68,6 +81,7 @@ export default function RecipeEdit() {
         prepTime: String(recipe.prep_time || ""),
         servings: String(recipe.servings || ""),
         selectedTags: recipe.tags || [],
+        recipeColor: recipe.color || "",
         ingredients: ings,
         steps: stps,
         photoUrl: recipe.photo_url || "",
@@ -125,6 +139,7 @@ export default function RecipeEdit() {
       prep_time: parseInt(prepTime) || null,
       servings: parseInt(servings) || null,
       tags: selectedTags,
+      color: recipeColor || null,
       photo_url: photoUrl || null,
     }).eq("id", id)
 
@@ -166,23 +181,16 @@ export default function RecipeEdit() {
               <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mt-2">Tu as des changements en cours. Que veux-tu faire ?</p>
             </div>
             <div className="p-5 flex flex-col gap-3">
-              <button
-                onClick={() => handleSave(true)}
-                disabled={saving}
-                className="w-full bg-brand-orange hover:bg-brand-orange/80 text-white py-3.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md"
-              >
+              <button onClick={() => handleSave(true)} disabled={saving}
+                className="w-full bg-brand-orange hover:bg-brand-orange/80 text-white py-3.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md">
                 {saving ? "Sauvegarde..." : "💾 Sauvegarder et quitter"}
               </button>
-              <button
-                onClick={() => { setShowUnsavedPopup(false); navigate(`/recipes/${id}`) }}
-                className="w-full border border-gray-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 py-3.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition"
-              >
+              <button onClick={() => { setShowUnsavedPopup(false); navigate(`/recipes/${id}`) }}
+                className="w-full border border-gray-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 py-3.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition">
                 Annuler les modifications
               </button>
-              <button
-                onClick={() => setShowUnsavedPopup(false)}
-                className="w-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 py-2 text-sm transition"
-              >
+              <button onClick={() => setShowUnsavedPopup(false)}
+                className="w-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 py-2 text-sm transition">
                 Continuer à modifier
               </button>
             </div>
@@ -270,6 +278,35 @@ export default function RecipeEdit() {
             </div>
           </div>
 
+          {/* 🎨 Couleur calendrier */}
+          <div>
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">
+              🎨 Couleur dans le calendrier
+            </label>
+            <div className="flex flex-wrap gap-2 items-center">
+              {RECIPE_COLORS.map(color => (
+                <button
+                  key={color.value}
+                  onClick={() => setRecipeColor(recipeColor === color.value ? "" : color.value)}
+                  title={color.label}
+                  className={`w-7 h-7 rounded-full transition-all border-2 ${recipeColor === color.value ? "border-zinc-900 dark:border-white scale-110 shadow-md" : "border-transparent hover:scale-105"}`}
+                  style={{ backgroundColor: color.value }}
+                />
+              ))}
+              {recipeColor && (
+                <button onClick={() => setRecipeColor("")} className="text-xs text-zinc-400 hover:text-red-400 transition ml-1">
+                  × Effacer
+                </button>
+              )}
+            </div>
+            {recipeColor && (
+              <p className="text-xs text-zinc-400 mt-1.5 flex items-center gap-1.5">
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: recipeColor }} />
+                Cette couleur apparaîtra dans ton calendrier
+              </p>
+            )}
+          </div>
+
           {/* Ingrédients */}
           <div>
             <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 block">Ingrédients</label>
@@ -318,17 +355,12 @@ export default function RecipeEdit() {
           {/* Boutons flottants sticky */}
           <div className="sticky bottom-8 z-40 flex justify-center mt-4">
             <div className="flex gap-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-8 py-3 rounded-2xl shadow-2xl border border-gray-100 dark:border-zinc-700 w-full max-w-sm">
-              <button
-                onClick={handleBack}
-                className="flex-1 border border-gray-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 px-5 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition"
-              >
+              <button onClick={handleBack}
+                className="flex-1 border border-gray-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 px-5 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition">
                 Annuler
               </button>
-              <button
-                onClick={() => handleSave(true)}
-                disabled={!name || saving}
-                className="flex-1 bg-brand-orange hover:bg-brand-orange/80 text-white px-6 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md"
-              >
+              <button onClick={() => handleSave(true)} disabled={!name || saving}
+                className="flex-1 bg-brand-orange hover:bg-brand-orange/80 text-white px-6 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md">
                 {saving ? "Vérification..." : "💾 Sauvegarder"}
               </button>
             </div>

@@ -15,7 +15,6 @@ const STATUS = {
 }
 
 const ROADMAP = [
-  { icon: "📤", title: "Partager une recette", desc: "Envoyer une recette à ses amis ou sur les réseaux." },
   { icon: "👨‍🍳", title: "Calculateur de portions", desc: "Adapter automatiquement les quantités pour 2, 4 ou 6 personnes." },
   { icon: "🔄", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
   { icon: "📝", title: "Envoyer la liste dans ses notes", desc: "Exporter la liste de courses en TODO dans son téléphone." },

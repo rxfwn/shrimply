@@ -3,28 +3,23 @@
 // ===============================
 
 const UNIT_CONVERSIONS = {
-
   // poids
   g: { base: "kg", factor: 0.001 },
   gramme: { base: "kg", factor: 0.001 },
   grammes: { base: "kg", factor: 0.001 },
-
   kg: { base: "kg", factor: 1 },
-
   mg: { base: "kg", factor: 0.000001 },
 
   // volume
   ml: { base: "l", factor: 0.001 },
   millilitre: { base: "l", factor: 0.001 },
   millilitres: { base: "l", factor: 0.001 },
-
   cl: { base: "l", factor: 0.01 },
-
   l: { base: "l", factor: 1 },
   litre: { base: "l", factor: 1 },
   litres: { base: "l", factor: 1 },
 
-  // cuillères — toutes les variantes de saisie possibles
+  // cuillères
   "c.à.s": { base: "l", factor: 0.015 },
   "c. à soupe": { base: "l", factor: 0.015 },
   "c.à soupe": { base: "l", factor: 0.015 },
@@ -33,7 +28,6 @@ const UNIT_CONVERSIONS = {
   "cuillère à soupe": { base: "l", factor: 0.015 },
   "cuillères à soupe": { base: "l", factor: 0.015 },
   cuillere: { base: "l", factor: 0.015 },
-
   "c.à.c": { base: "l", factor: 0.005 },
   "c. à café": { base: "l", factor: 0.005 },
   "c.à café": { base: "l", factor: 0.005 },
@@ -46,7 +40,6 @@ const UNIT_CONVERSIONS = {
   // unités cuisine
   pincée: { base: "kg", factor: 0.0005 },
   pincee: { base: "kg", factor: 0.0005 },
-
   piece: { base: "piece", factor: 1 },
   pièce: { base: "piece", factor: 1 },
   pièces: { base: "piece", factor: 1 },
@@ -63,23 +56,17 @@ const UNIT_CONVERSIONS = {
 
 function convertUnit(quantity, fromUnit, toUnit) {
   if (!fromUnit || !toUnit) return quantity
-
   const normalizedFrom = fromUnit.toLowerCase().trim()
   const normalizedTo = toUnit.toLowerCase().trim()
-
   if (normalizedFrom === normalizedTo) return quantity
-
   const from = UNIT_CONVERSIONS[normalizedFrom]
   const to = UNIT_CONVERSIONS[normalizedTo]
-
   if (!from || !to) return quantity
   if (from.base !== to.base) return quantity
-
   const baseQty = quantity * from.factor
   return baseQty / to.factor
 }
 
-// Normalise une chaîne pour la comparaison : minuscules, sans accents, sans ponctuation
 function normalizeStr(str) {
   return (str || "")
     .toLowerCase()
@@ -90,85 +77,56 @@ function normalizeStr(str) {
     .trim()
 }
 
-// Mots à ignorer dans le matching
 const STOP_WORDS = new Set([
-  // qualificatifs
   "frais", "fraiche", "fraiche", "fraiches", "fraiches",
   "vert", "verts", "verte", "vertes",
   "jaune", "jaunes", "rouge", "rouges", "blanc", "blanche",
   "selon", "gout", "gout",
   "bio", "petit", "petite", "grand", "grande",
   "extra", "vierge", "arborio", "guerande",
-  // articles / prépositions
   "en", "de", "du", "la", "le", "les", "un", "une", "des", "au", "aux",
   "pour", "avec", "par",
-  // contenants — clé du fix
   "sachet", "paquet", "boite", "bouteille", "bocal", "brique",
   "bouquet", "botte", "buche", "pot", "filet", "barquette",
   "boite", "conserve", "tube",
-  // variétés spécifiques (ne doivent pas bloquer le match)
   "mache", "iceberg", "romaine", "batavia", "frisee", "roquette",
   "arborio", "basmati", "jasmin", "long", "ronde",
   "guerande", "himalaya", "iode",
-  // variantes de conditionnement
   "varietes", "assortiment",
 ])
 
-// ===============================
-// RÈGLES DE CATÉGORIE D'UNITÉ
-// Détermine l'unité de vente standard d'un ingrédient
-// indépendamment de ce que la recette indique
-// ===============================
 const CATEGORY_UNIT_RULES = [
-  // Légumes entiers → piece
   { keywords: ["salade", "laitue", "mache", "roquette", "epinard", "endive", "cresson", "scarole"], unit: "piece" },
   { keywords: ["tomate", "poivron", "courgette", "aubergine", "concombre", "fenouil", "brocoli", "chou"], unit: "piece" },
   { keywords: ["oignon", "echalote", "poireau", "navet", "betterave", "radis", "carotte", "panais"], unit: "piece" },
   { keywords: ["avocat", "mangue", "citron", "orange", "pamplemousse", "pomme", "poire", "peche", "abricot", "banane"], unit: "piece" },
-  // Ail → piece
   { keywords: ["ail"], unit: "piece" },
-  // Herbes fraîches → piece (botte)
   { keywords: ["persil", "basilic", "coriandre", "menthe", "ciboulette", "thym", "romarin", "aneth", "estragon", "laurier"], unit: "piece" },
-  // Bouillon cube → piece
   { keywords: ["cube", "bouillon"], unit: "piece" },
-  // Œufs → piece
   { keywords: ["oeuf", "oeufs"], unit: "piece" },
-  // Huiles → l
   { keywords: ["huile"], unit: "l" },
-  // Fromages → kg
   { keywords: ["chevre", "feta", "camembert", "brie", "roquefort", "comté", "comte", "parmesan", "gruyere", "fromage"], unit: "kg" },
-  // Condiments/sauces → kg
   { keywords: ["pesto", "moutarde", "ketchup", "mayonnaise", "sauce"], unit: "kg" },
-  // Féculents → kg
   { keywords: ["riz", "pate", "farine", "semoule", "boulgour", "quinoa", "lentille", "pois"], unit: "kg" },
-  // Épices / sel / sucre → kg
   { keywords: ["sel", "poivre", "sucre", "cannelle", "curcuma", "paprika", "cumin", "curry", "epice"], unit: "kg" },
 ]
 
 function getCategoryUnit(ingredientName) {
   const normalized = normalizeStr(ingredientName)
   for (const rule of CATEGORY_UNIT_RULES) {
-    if (rule.keywords.some(k => normalized.includes(k))) {
-      return rule.unit
-    }
+    if (rule.keywords.some(k => normalized.includes(k))) return rule.unit
   }
-  return null // unité inconnue, on laisse Gemini décider
+  return null
 }
 
-// Stemming léger : retire le 's' final pour gérer pluriels (cubes->cube, légumes->légume)
 function stem(word) {
   if (word.length > 3 && word.endsWith("s")) return word.slice(0, -1)
   return word
 }
 
-// Synonymes : ramène certains mots vers un mot canonique avant matching
 const SYNONYMS = {
-  laitue: "salade",
-  mache: "salade",
-  roquette: "salade",
-  epinard: "salade",
-  endive: "salade",
-  cresson: "salade",
+  laitue: "salade", mache: "salade", roquette: "salade",
+  epinard: "salade", endive: "salade", cresson: "salade",
 }
 
 function applySynonyms(words) {
@@ -184,33 +142,20 @@ function getMatchWords(name) {
   )
 }
 
-// Trouve le meilleur match dans la liste de prix
-// Stratégie : score = nombre de mots de l'ingrédient trouvés dans le nom du prix
-// On prend le match avec le score le plus élevé, et en cas d'égalité, le plus court (plus précis)
 function findBestMatch(ingredientName, prices) {
   const ingredientWords = getMatchWords(ingredientName)
   if (!ingredientWords.length) return null
-
   let bestMatch = null
   let bestScore = 0
   let bestNameLen = Infinity
-
   for (const p of prices) {
     const priceWords = getMatchWords(p.name)
     if (!priceWords.length) continue
-
-    // Mots communs entre recette et prix (après suppression des stopwords des deux côtés)
     const commonWords = ingredientWords.filter(w => priceWords.includes(w))
     const score = commonWords.length
-
     if (score === 0) continue
-
-    // Couverture dans les deux sens :
-    // - tous les mots de la recette sont dans le prix (ex: "riz risotto" dans "paquet riz arborio risotto")
-    // - OU tous les mots du prix sont dans la recette (ex: "persil" dans "persil frais")
     const coverageRecipe = score / ingredientWords.length
     const coveragePrice = score / priceWords.length
-
     if (coverageRecipe === 1 || coveragePrice === 1) {
       const nameLen = priceWords.length
       if (score > bestScore || (score === bestScore && nameLen < bestNameLen)) {
@@ -220,18 +165,19 @@ function findBestMatch(ingredientName, prices) {
       }
     }
   }
-
   return bestMatch
 }
 
-// Détermine l'unité de base d'un ingrédient dans la recette
-// Si l'unité est vide ou "piece/pièce", on retourne "piece"
 function getIngredientBaseUnit(unit) {
   if (!unit) return null
   const u = unit.toLowerCase().trim()
   const conv = UNIT_CONVERSIONS[u]
   return conv ? conv.base : null
 }
+
+// ===============================
+// COMPOSANT
+// ===============================
 
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
@@ -252,6 +198,26 @@ export default function RecipeDetail() {
   const [apiError, setApiError] = useState("")
   const [cooldown, setCooldown] = useState(0)
   const estimatingRef = useRef(false)
+
+  // 🔗 Partage
+  const [copied, setCopied] = useState(false)
+
+  const handleShare = async () => {
+    const url = window.location.href
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      // Fallback navigateurs anciens
+      const input = document.createElement("input")
+      input.value = url
+      document.body.appendChild(input)
+      input.select()
+      document.execCommand("copy")
+      document.body.removeChild(input)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   useEffect(() => { fetchRecipe() }, [id])
 
@@ -277,7 +243,7 @@ export default function RecipeDetail() {
   }
 
   // ===============================
-  // CALCULATEUR DE COÛT AMÉLIORÉ
+  // CALCULATEUR DE COÛT
   // ===============================
   const loadCostDetails = async (recipeData, ingredientsData) => {
     try {
@@ -296,19 +262,14 @@ export default function RecipeDetail() {
           if (match) {
             const recipeUnit = (i.unit || "").toLowerCase().trim()
             const priceUnit = (match.unit || "").toLowerCase().trim()
-
             const recipeBase = getIngredientBaseUnit(recipeUnit)
             const priceBase = getIngredientBaseUnit(priceUnit) || (match.unit === "piece" ? "piece" : null)
 
             if (recipeBase !== null && recipeBase === priceBase) {
-              // Unités compatibles : conversion directe
               const convertedQty = convertUnit(quantity, recipeUnit, priceUnit)
               estimatedPrice = convertedQty * match.price
               found = true
             } else if (recipeBase === "l" && priceBase === "kg") {
-              // Recette en volume (c. à café/soupe), prix au kg
-              // Pour les ingrédients secs mesurés en cuillères (sucre, sel, farine, épices...)
-              // Densité approximative : 1 litre ≈ 0.8 kg (sucre/farine), 1.2 kg (sel)
               const DENSITY_KG_PER_L = {
                 sucre: 0.85, farine: 0.55, sel: 1.20, poivre: 0.50,
                 cannelle: 0.50, curcuma: 0.50, paprika: 0.50, cumin: 0.50,
@@ -320,8 +281,6 @@ export default function RecipeDetail() {
               estimatedPrice = qtyL * density * match.price
               found = true
             } else if (recipeBase === "kg" && priceBase === "piece") {
-              // Recette en grammes, prix à la pièce (ex: persil en g, botte en piece)
-              // On utilise les poids moyens par catégorie
               const PIECE_WEIGHTS = {
                 persil: 0.030, basilic: 0.025, coriandre: 0.025, menthe: 0.025, ciboulette: 0.020,
                 salade: 0.300, laitue: 0.250, epinard: 0.200, roquette: 0.100, mache: 0.100,
@@ -336,7 +295,6 @@ export default function RecipeDetail() {
                 found = true
               }
             } else if (recipeBase === "piece" || !recipeUnit || recipeBase === null) {
-              // Recette à la pièce ou unité inconnue, prix à la pièce
               if (priceBase === "piece") {
                 estimatedPrice = quantity * match.price
                 found = true
@@ -378,13 +336,11 @@ export default function RecipeDetail() {
       const missing = ingredients.filter(i => !findBestMatch(i.name, prices || []))
 
       if (missing.length > 0) {
-        // Détermine l'unité attendue via les règles catégorielles, puis crée le hint pour Gemini
         const ingredientsWithHints = missing.map(m => {
           const categoryUnit = getCategoryUnit(m.name)
           if (categoryUnit === "piece") return `${m.name} [vendu à la pièce]`
           if (categoryUnit === "kg") return `${m.name} [vendu au poids]`
           if (categoryUnit === "l") return `${m.name} [vendu au volume]`
-          // Fallback : on utilise l'unité de la recette
           const recipeBase = getIngredientBaseUnit((m.unit || "").toLowerCase().trim())
           if (recipeBase === "piece") return `${m.name} [vendu à la pièce]`
           if (recipeBase === "kg") return `${m.name} [vendu au poids]`
@@ -397,7 +353,6 @@ export default function RecipeDetail() {
         })
         if (funcError) throw new Error("Erreur serveur IA.")
         if (gemini_prices?.length > 0) {
-          // Remap les noms avec hints vers les vrais noms de la recette
           const nameMap = Object.fromEntries(
             ingredientsWithHints.map((hint, idx) => [hint, missing[idx].name])
           )
@@ -541,6 +496,55 @@ export default function RecipeDetail() {
 
   const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
 
+  // Boutons d'action partagés (desktop + mobile)
+  const ActionButtons = ({ size = "md" }) => {
+    const base = size === "sm"
+      ? "p-2 text-base rounded-xl"
+      : "p-2.5 rounded-xl"
+
+    return (
+      <>
+        {/* 🔗 Partager */}
+        <button
+          onClick={handleShare}
+          title="Copier le lien"
+          className={`${base} bg-zinc-50 dark:bg-zinc-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-500 transition-all duration-200 flex items-center justify-center min-w-[36px]`}
+        >
+          {copied
+            ? <span className="text-[11px] font-bold text-blue-500 px-0.5">✓ Copié</span>
+            : <span>🔗</span>
+          }
+        </button>
+
+        {/* 🖨️ Imprimer */}
+        <button
+          onClick={handlePrint}
+          title="Imprimer"
+          className={`${base} bg-zinc-50 dark:bg-zinc-700 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:text-orange-500 transition`}
+        >
+          🖨️
+        </button>
+
+        {/* ✏️ Éditer */}
+        <button
+          onClick={() => navigate(`/recipes/${id}/edit`)}
+          className={`${base} bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 transition`}
+        >
+          ✏️
+        </button>
+
+        {/* 🗑️ Supprimer */}
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className={`${base} bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 transition disabled:opacity-50`}
+        >
+          🗑️
+        </button>
+      </>
+    )
+  }
+
   return (
     <div className="p-4 md:p-6">
       <button
@@ -550,7 +554,7 @@ export default function RecipeDetail() {
         ← Retour
       </button>
 
-      {/* DESKTOP */}
+      {/* ===================== DESKTOP ===================== */}
       <div className="hidden md:block">
         <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-zinc-700">
 
@@ -576,9 +580,7 @@ export default function RecipeDetail() {
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-white leading-tight">{recipe.name}</h1>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={handlePrint} className="p-2 bg-zinc-50 dark:bg-zinc-700 hover:bg-orange-50 hover:text-orange-500 rounded-xl transition text-base" title="Imprimer">🖨️</button>
-                    <button onClick={() => navigate(`/recipes/${id}/edit`)} className="p-2 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-600 rounded-xl transition text-base">✏️</button>
-                    <button onClick={handleDelete} disabled={deleting} className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 rounded-xl transition disabled:opacity-50 text-base">🗑️</button>
+                    <ActionButtons size="sm" />
                   </div>
                 </div>
 
@@ -618,6 +620,7 @@ export default function RecipeDetail() {
                 )}
               </div>
 
+              {/* Budget */}
               <div className="mt-5 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30 rounded-2xl p-4">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">💰 Budget estimé</span>
@@ -650,7 +653,6 @@ export default function RecipeDetail() {
 
           {/* Ingrédients + Étapes */}
           <div className="grid grid-cols-[2fr_3fr] border-t border-gray-100 dark:border-zinc-700">
-
             <div className="p-8 border-r border-gray-100 dark:border-zinc-700">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-5 flex items-center gap-2 text-base uppercase tracking-wide">
                 <span className="w-6 h-6 bg-brand-orange/10 rounded-lg flex items-center justify-center text-sm">🛒</span>
@@ -697,7 +699,7 @@ export default function RecipeDetail() {
         </div>
       </div>
 
-      {/* MOBILE */}
+      {/* ===================== MOBILE ===================== */}
       <div className="block md:hidden">
         <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-zinc-700">
 
@@ -729,12 +731,11 @@ export default function RecipeDetail() {
                 )}
               </div>
               <div className="flex gap-2 flex-shrink-0 ml-4">
-                <button onClick={handlePrint} className="p-2.5 bg-zinc-50 dark:bg-zinc-700 hover:bg-orange-50 rounded-xl transition" title="Imprimer">🖨️</button>
-                <button onClick={() => navigate(`/recipes/${id}/edit`)} className="p-2.5 bg-zinc-50 dark:bg-zinc-700 hover:bg-zinc-100 rounded-xl transition">✏️</button>
-                <button onClick={handleDelete} disabled={deleting} className="p-2.5 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl transition disabled:opacity-50">🗑️</button>
+                <ActionButtons size="md" />
               </div>
             </div>
 
+            {/* Budget mobile */}
             <div className="mb-10 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30 rounded-2xl p-5 shadow-inner">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">💰 Budget</h2>
@@ -763,6 +764,7 @@ export default function RecipeDetail() {
               )}
             </div>
 
+            {/* Ingrédients mobile */}
             <div className="mb-10">
               <h3 className="font-bold text-zinc-900 dark:text-white mb-5 flex items-center gap-2 text-lg">
                 <span className="text-brand-orange">🛒</span> Ingrédients
@@ -780,6 +782,7 @@ export default function RecipeDetail() {
               </div>
             </div>
 
+            {/* Étapes mobile */}
             <div>
               <h3 className="font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2 text-lg border-t border-zinc-100 dark:border-zinc-700 pt-8">
                 <span className="text-brand-orange">👨‍🍳</span> Préparation

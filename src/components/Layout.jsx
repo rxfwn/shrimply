@@ -44,8 +44,9 @@ export default function Layout() {
     <>
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10 flex items-center justify-between">
-        <span className="text-xl font-bold tracking-tight text-brand-cream">
-          🦐 Shrim<span className="text-brand-orange">ply</span>
+        <span className="text-xl font-bold tracking-tight text-brand-cream flex items-center gap-1.5">
+          <img src="/shrimp_1f990.png" alt="shrimp" className="w-6 h-6 object-contain" />
+          <span>Shrim<span className="text-brand-orange">ply</span></span>
         </span>
         <button
           onClick={() => setSidebarOpen(false)}
@@ -79,7 +80,6 @@ export default function Layout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 flex flex-col gap-0.5 overflow-y-auto">
-        <p className="text-xs font-semibold px-3 py-2 uppercase tracking-widest text-brand-cream/30">Menu</p>
         {navItem("/calendar", "📅", "Calendrier")}
         {navItem("/recipes", "📖", "Mes recettes")}
         {navItem("/shopping", "🛒", "Courses")}
@@ -167,8 +167,9 @@ export default function Layout() {
             <span className="block w-5 h-0.5 bg-zinc-600 dark:bg-zinc-300 rounded" />
             <span className="block w-5 h-0.5 bg-zinc-600 dark:bg-zinc-300 rounded" />
           </button>
-          <span className="text-base font-bold tracking-tight text-brand-purple dark:text-brand-cream">
-            🦐 Shrim<span className="text-brand-orange">ply</span>
+          <span className="text-base font-bold tracking-tight text-brand-purple dark:text-brand-cream flex items-center gap-1.5">
+            <img src="/shrimp_1f990.png" alt="shrimp" className="w-5 h-5 object-contain" />
+            <span>Shrim<span className="text-brand-orange">ply</span></span>
           </span>
           {/* Avatar → /profile sur mobile aussi */}
           <div

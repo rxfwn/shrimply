@@ -223,14 +223,17 @@ export default function Discover() {
 
       {/* Header */}
       <div className="mb-5">
-        <h1 className="text-2xl font-bold text-white mb-1">✨ Découvrir</h1>
-        <p className="text-sm text-white/40">Recettes partagées par la communauté</p>
+      <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+      <img src="/icons/spark.png" alt="" style={{ width: 24, height: 24 }} />
+      Découvrir
+      </h1>
+      <p className="text-sm  text-white">Recettes partagées par la communauté</p>
       </div>
 
       {/* Recherche */}
       <div className="mb-4">
         <input
-          className="w-full md:max-w-md rounded-[10px] px-4 py-2.5 text-sm outline-none transition text-white"
+          className="w-full md:max-w-md rounded-[10px] px-4 py-2.5 text-sm outline-none transition text-white  text-light"
           style={{ backgroundColor: "#2d2d2d", border: "1px solid rgba(255,255,255,0.1)" }}
           placeholder="🔍 Rechercher une recette..."
           value={search}
@@ -267,8 +270,8 @@ export default function Discover() {
         <div className="text-white/40 text-sm">Chargement...</div>
       ) : filteredRecipes.length === 0 ? (
         <div className="rounded-[10px] p-8 text-center max-w-md border border-white/10" style={{ backgroundColor: "#2d2d2d" }}>
-          <p className="text-white/40 text-sm mb-1">Aucune recette publique pour l'instant</p>
-          <p className="text-white/20 text-xs">Partage tes recettes pour qu'elles apparaissent ici !</p>
+          <p className="text-white ">Aucune recette publique pour l'instant</p>
+          <p className="text-white/20 text-light" style={{ fontSize:"14px" }}>Partage tes recettes pour qu'elles apparaissent ici !</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">

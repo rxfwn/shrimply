@@ -86,7 +86,7 @@ export default function Layout() {
             <p style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontSize: 15, fontWeight: 700, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>
               {profile?.username || user?.email?.split("@")[0] || "Mon profil"}
             </p>
-            <p className="text-light" style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 100, fontSize: 9, color: "#ffffff", lineHeight: 1.4 }}>voir le profil</p>
+            <p className="text-light"style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 100, fontSize: 9, color: "#ffffff", lineHeight: 1.4 }}>voir le profil</p>
           </div>
         </div>
       </div>
@@ -146,27 +146,28 @@ export default function Layout() {
       {/* CONTENU PRINCIPAL */}
       <div className="flex-1 flex flex-col overflow-y-auto" style={{ backgroundColor: "#111111" }}>
 
-        {/* TOPBAR mobile */}
-        <div className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
-          style={{ backgroundColor: "#091718" }}>
-          <button onClick={() => setSidebarOpen(true)} className="flex flex-col gap-1 p-1">
-            <span className="block w-5 h-0.5 bg-white/50 rounded" />
-            <span className="block w-5 h-0.5 bg-white/50 rounded" />
-            <span className="block w-5 h-0.5 bg-white/50 rounded" />
-          </button>
-          <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-            <img src="/icons/shrim.png" alt="shrimp" style={{ width: 22, height: 22, filter: "none" }} />
-            <span>Shrim<span className="text-[#f3501e]">ply</span></span>
-          </span>
-          <div onClick={() => navigate("/profile")}
-            className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-[#f3501e]/30 border-2 border-[#f3501e]/60 cursor-pointer">
-            {profile?.avatar_url ? (
-              <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-sm">👤</span>
-            )}
-          </div>
-        </div>
+      {/* TOPBAR mobile */}
+<div className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0">
+  <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+    <img src="/icons/burger.png" alt="menu" className="no-select" style={{ width: 24, height: 28, display: "block" }} />
+  </button>
+
+  <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+    <img src="/icons/shrim.png" alt="shrimp" className="no-select" style={{ width: 22, height: 22 }} />
+    <span>Shrim<span className="text-[#f3501e]">ply</span></span>
+  </span>
+
+  <div
+    onClick={() => navigate("/profile")}
+    className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-[#f3501e]/30 border-2 border-[#f3501e]/60 cursor-pointer"
+  >
+    {profile?.avatar_url ? (
+      <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" className="w-full h-full object-cover" />
+    ) : (
+      <span className="text-sm">👤</span>
+    )}
+  </div>
+</div>
 
         <Outlet />
       </div>

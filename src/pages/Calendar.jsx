@@ -7,6 +7,8 @@ import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 
 const MEAL_TYPES = ["Matin", "Midi", "Soir"]
 const DAY_NAMES = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+const DAY_COLORS = ["#FFB9E1", "#9BE7FF", "#CFFF79", "#FE7C3E", "#9BE7FF", "#d57bff", "#f3501e"]
+const DAY_TEXT_COLORS = ["#510312", "#03225C", "#091718", "#510312", "#03225C", "#130b2d", "#ffffff"]
 const MONTH_NAMES = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
 
 const MEAL_ICONS = {
@@ -165,7 +167,7 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
               </div>
               <button onClick={(e) => { e.stopPropagation(); onRemove(meal.id) }}
                 style={{ fontSize: 9, color: mealTextColor, opacity: 0.5, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
-                × sup
+                ×
               </button>
             </div>
           </>
@@ -183,7 +185,7 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
       ref={setNodeRef}
       style={{
         height: slotHeight,
-        backgroundColor: meal ? mealCardBg : isOver ? "#111111" : "#2d2d2d",
+        backgroundColor: meal ? mealCardBg : isOver ? "#3d2d1a" : "#2d2d2d",
         borderRadius: 10,
         overflow: "hidden",
         border: isToday && meal
@@ -200,7 +202,6 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
     >
       {meal ? (
         <>
-          {/* Photo en haut */}
           {meal.recipes?.photo_url && (
             <img
               src={meal.recipes.photo_url}
@@ -208,7 +209,6 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
               style={{ width: "100%", height: 60, objectFit: "cover", display: "block", flexShrink: 0 }}
             />
           )}
-          {/* Titre + infos en dessous */}
           <div style={{ flex: 1, padding: "6px 8px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: mealTextColor, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.3 }}>
               {meal.recipes?.name}
@@ -228,14 +228,14 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
         </>
       ) : (
         <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <img src="/icons/plus.png" alt="+" style={{ width: 24, height: 24, opacity:0.4, userSelect: "none", pointerEvents: "none"}} />
+          <img src="/icons/plus.png" alt="+" style={{ width: 16, height: 16, opacity: isOver ? 1 : 0.15, transition: "opacity 0.15s" }} />
         </div>
       )}
     </div>
   )
 }
 
-// ─── VUE MOIS : slot individuel droppable pour chaque repas ──────────────────
+// ─── VUE MOIS DESKTOP : slot individuel droppable pour chaque repas ──────────────────
 function MonthMealSlot({ dateStr, mealType, meal, onRemove }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${dateStr}-${mealType}`,
@@ -295,7 +295,7 @@ function MonthMealSlot({ dateStr, mealType, meal, onRemove }) {
   )
 }
 
-// ─── VUE MOIS : case jour avec 3 slots calés en hauteur ──────────────────────
+// ─── VUE MOIS DESKTOP : case jour avec 3 slots calés en hauteur ──────────────────────
 function MonthDayCell({ date, meals, onRemove, isToday }) {
   const dateStr = formatDate(date)
   const getMealForType = (type) => meals.find(m => m.meal_type === type)
@@ -312,20 +312,18 @@ function MonthDayCell({ date, meals, onRemove, isToday }) {
       gap: 3,
       overflow: "hidden",
     }}>
-      {/* Numéro du jour */}
       <div style={{ flexShrink: 0 }}>
         <div style={{
           fontSize: 10, fontWeight: 700,
           width: 18, height: 18, borderRadius: "50%",
           display: "inline-flex", alignItems: "center", justifyContent: "center",
           backgroundColor: isToday ? "#d57bff" : "transparent",
-          color: isToday ? "#130b2d" : "rgba(255,255,255,0.45)",
+          color: isToday ? "#ffffff" : "rgba(255,255,255,0.45)",
         }}>
           {date.getDate()}
         </div>
       </div>
 
-      {/* 3 slots égaux en hauteur */}
       {MEAL_TYPES.map(type => (
         <MonthMealSlot
           key={type}
@@ -333,6 +331,168 @@ function MonthDayCell({ date, meals, onRemove, isToday }) {
           mealType={type}
           meal={getMealForType(type)}
           onRemove={onRemove}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ─── VUE MOIS MOBILE : slot individuel pour mobile ──────────────────
+function MobileMealSlot({ dateStr, mealType, meal, onRemove, handleMobileTap }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `slot-${dateStr}-${mealType}`,
+    data: { date: dateStr, mealType }
+  })
+  
+  const cardBg = meal ? (getRecipeCardBg(meal.recipes) || "#4c4c4c") : "#4c4c4c"
+  const cardBorder = meal ? getRecipeCardBorder(meal.recipes) : null
+  const textColor = cardBg ? getTextColor(cardBg) : "#ffffff"
+  
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={() => !meal && handleMobileTap(dateStr, mealType)}
+      style={{
+        height: 20,
+        backgroundColor: meal 
+          ? cardBg 
+          : isOver ? "rgba(243,80,30,0.12)" : "#4c4c4c",
+        borderRadius: 3,
+        border: meal && cardBorder
+          ? `1px solid ${cardBorder}`
+          : isOver ? "1px solid #d57bff" : "1px solid transparent",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 4px",
+        gap: 3,
+        overflow: "hidden",
+        cursor: meal ? "default" : "pointer",
+        transition: "all 0.15s",
+        flexShrink: 0,
+      }}
+    >
+      {meal ? (
+        <>
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            color: textColor,
+            fontFamily: "Poppins, sans-serif",
+            letterSpacing: "-0.07em",
+            lineHeight: "9px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+          }}>
+            {meal.recipes?.name}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove(meal.id)
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: textColor,
+              opacity: 0.25,
+              fontSize: 14,
+              lineHeight: 1,
+              flexShrink: 0,
+              padding: 0,
+            }}
+          >×</button>
+        </>
+      ) : (
+        <div style={{ 
+          width: "100%", 
+          height: "100%", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center" 
+        }}>
+          <img 
+            src="/icons/plus.png" 
+            alt="+" 
+            style={{ 
+              width: 12, 
+              height: 12, 
+              opacity: isOver ? 0.8 : 0.15,
+              transition: "opacity 0.15s"
+            }} 
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── VUE MOIS MOBILE : case jour avec 3 slots horizontaux ──────────────────
+function MobileMonthDayCell({ date, meals, onRemove, isToday, handleMobileTap }) {
+  const dateStr = formatDate(date)
+  const dayOfWeek = date.getDay()
+  const dayName = DAY_NAMES[dayOfWeek === 0 ? 6 : dayOfWeek - 1]
+  const getMealForType = (type) => meals.find(m => m.meal_type === type)
+
+  return (
+    <div style={{
+      height: 105,
+      backgroundColor: "#2d2d2d",
+      borderRadius: 10,
+      border: isToday ? "1.5px solid #d57bff" : "1.5px solid transparent",
+      display: "flex",
+      flexDirection: "column",
+      padding: "4px 7px 5px",
+      gap: 4,
+      overflow: "hidden",
+      position: "relative",
+    }}>
+      {/* En-tête : numéro + nom du jour */}
+      <div style={{ 
+        display: "flex", 
+        alignItems: "baseline", 
+        gap: 4,
+        marginBottom: 1,
+        flexShrink: 0,
+      }}>
+        <span 
+        
+        style={{
+          paddingTop:5,
+        fontSize: 14,
+        color: "#ffffff",
+        fontFamily: "Poppins, sans-serif",
+        letterSpacing: "-0.07em",
+        lineHeight: "9px",
+        }}>
+          {date.getDate()}
+        </span>
+        <span 
+        className="text-light"
+        style={{
+          paddingLeft:3,
+          fontSize: 13,
+          fontWeight: 700,
+          color: "#ffffff",
+          fontFamily: "Poppins, sans-serif",
+          letterSpacing: "-0.07em",
+          lineHeight: "9px",
+        }}>
+          {dayName}
+        </span>
+      </div>
+
+      {/* 3 slots horizontaux */}
+      {MEAL_TYPES.map(type => (
+        <MobileMealSlot
+          key={type}
+          dateStr={dateStr}
+          mealType={type}
+          meal={getMealForType(type)}
+          onRemove={onRemove}
+          handleMobileTap={handleMobileTap}
         />
       ))}
     </div>
@@ -392,8 +552,6 @@ export default function Calendar() {
   const [recipes, setRecipes] = useState([])
   const [search, setSearch] = useState("")
   const [activeRecipe, setActiveRecipe] = useState(null)
-  const [loadingIA, setLoadingIA] = useState(false)
-  const [cooldown, setCooldown] = useState(0)
   const [mobileModal, setMobileModal] = useState(null)
   const [showBalancePopup, setShowBalancePopup] = useState(false)
 
@@ -402,13 +560,6 @@ export default function Calendar() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   useEffect(() => { fetchData() }, [monday, currentMonth, currentYear, view])
-
-  useEffect(() => {
-    if (cooldown > 0) {
-      const timer = setTimeout(() => setCooldown(cooldown - 1), 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [cooldown])
 
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -481,9 +632,9 @@ export default function Calendar() {
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`
   const monthDays = getMonthDays(currentYear, currentMonth)
 
-  const toggleBtnStyle = (active) => ({ 
-    padding: "6px 24px",
-    borderRadius: 10,
+  const toggleBtnStyle = (active) => ({
+    padding: "6px 16px",
+    borderRadius: 6,
     fontSize: 12,
     border: "none",
     cursor: "pointer",
@@ -491,7 +642,7 @@ export default function Calendar() {
     fontWeight: 700,
     letterSpacing: "-0.05em",
     transition: "all 0.2s ease",
-    backgroundColor: active ? "#4c4c4c" : "transparent",
+    backgroundColor: active ? "#4C4C4C" : "transparent",
     color: active ? "#ffffff" : "rgba(255,255,255,0.45)",
     whiteSpace: "nowrap",
   })
@@ -511,8 +662,7 @@ export default function Calendar() {
             <p style={{ margin: "0 0 24px", fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 500, lineHeight: 1.6 }}>
               la fonctionnalité d'équilibrage automatique de ton planning est en cours de développement
             </p>
-            <button 
-              onClick={() => setShowBalancePopup(false)}
+            <button onClick={() => setShowBalancePopup(false)}
               style={{ width: "100%", padding: "12px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
               onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
@@ -529,36 +679,37 @@ export default function Calendar() {
         <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "12px" : "20px 20px 20px 24px" }}>
 
           {/* HEADER */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40, flexWrap: "wrap", gap: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <img src="/icons/calendar.png" alt="" style={{ width: 22, height: 22 }} />
-                <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff" }}>mon planning</h1>
-              </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
 
-              <div style={{ display: "flex", backgroundColor: "#2d2d2d", borderRadius: 10, gap: 2 }}>
+            {/* Ligne 1 : titre + toggle */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <img src="/icons/calendar.png" alt="" style={{ width: 22, height: 22 }} />
+              <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff" }}>mon planning</h1>
+              <div style={{ display: "flex", backgroundColor: "#2d2d2d", borderRadius: 10, padding: 3, gap: 2 }}>
                 <button className="text-light" onClick={() => setView("week")} style={toggleBtnStyle(view === "week")}>semaine</button>
                 <button className="text-light" onClick={() => setView("month")} style={toggleBtnStyle(view === "month")}>mois</button>
               </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button onClick={prevPeriod}
-                  style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <img src="/icons/left.png" alt="" style={{ width: 18, height: 18 }} />
-                </button>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", minWidth: 160, textAlign: "center" }}>
-                  {view === "week" ? weekLabel : monthLabel}
-                </span>
-                <button onClick={nextPeriod}
-                  style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <img src="/icons/right.png" alt="" style={{ width: 18, height: 18 }} />
-                </button>
-              </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            {/* Ligne 2 : ← date → */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <button onClick={prevPeriod}
+                style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <img src="/icons/left.png" alt="" style={{ width: 18, height: 18 }} />
+              </button>
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#ffffff", textAlign: "center", whiteSpace: "nowrap" }}>
+                {view === "week" ? weekLabel : monthLabel}
+              </span>
+              <button onClick={nextPeriod}
+                style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <img src="/icons/right.png" alt="" style={{ width: 18, height: 18 }} />
+              </button>
+            </div>
+
+            {/* Ligne 3 : boutons équilibrer + courses */}
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button onClick={() => setShowBalancePopup(true)}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                 onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
@@ -567,9 +718,8 @@ export default function Calendar() {
                 <img src="/icons/salad.png" alt="" style={{ width: 16, height: 16 }} />
                 équilibrer
               </button>
-
               <button onClick={() => navigate("/shopping")}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "-0.05em", color: "#1a3d1a", transition: "transform 0.2s ease" }}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#1a3d1a", transition: "transform 0.2s ease" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                 onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
@@ -579,70 +729,200 @@ export default function Calendar() {
                 courses
               </button>
             </div>
+
           </div>
 
           {/* VUE SEMAINE */}
           {view === "week" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "20px repeat(7, 1fr)" : "32px repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
-                <div />
-                {days.map((day, i) => (
-                  <div key={i} style={{ textAlign: "center", padding: "4px 0" }}>
-                    <div className="text-light" style={{ fontSize: 12, color: "#ffffff", letterSpacing: "0.05em" }}>
-                      {isMobile ? DAY_NAMES[i][0] : DAY_NAMES[i]}
-                    </div>
-                    <div style={{
-                      fontSize: isMobile ? 11 : 16, fontWeight: 700,
-                      width: isMobile ? 20 : 28, height: isMobile ? 20 : 28,
-                      borderRadius: "50%", margin: "2px auto 0",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      backgroundColor: formatDate(day) === today ? "#170d32" : "transparent",
-                      color: "#ffffff",
-                    }}>
-                      {day.getDate()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "20px repeat(7, 1fr)" : "32px repeat(7, 1fr)", gap: 4 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {MEAL_TYPES.map(type => (
-                    <div key={type} style={{ height: isMobile ? 90 : 120, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
-                      <img src={MEAL_ICONS[type]} alt={type} style={{ width: isMobile ? 14 : 18, height: isMobile ? 14 : 18 }} />
-                    </div>
-                  ))}
-                </div>
-                {days.map((day, dayIndex) => (
-                  <div key={dayIndex} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    {MEAL_TYPES.map(mealType => (
-                      <MealSlot key={mealType} date={formatDate(day)} mealType={mealType}
-                        meal={getMeal(day, mealType)} onRemove={handleRemoveMeal}
-                        isToday={formatDate(day) === today} isMobile={isMobile} onMobileTap={handleMobileTap} />
+              {/* ── DESKTOP : grille colonnes par jour ── */}
+              {!isMobile && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "32px repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                    <div />
+                    {days.map((day, i) => (
+                      <div key={i} style={{ textAlign: "center", padding: "4px 0" }}>
+                        <div style={{ fontSize: 10, color: "#ffffff", textTransform: "uppercase", letterSpacing: "0.05em" }}>{DAY_NAMES[i]}</div>
+                        <div style={{
+                          fontSize: 16, fontWeight: 700,
+                          width: 28, height: 28, borderRadius: "50%", margin: "2px auto 0",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          backgroundColor: formatDate(day) === today ? "#d57bff" : "transparent",
+                          color: "#ffffff",
+                        }}>{day.getDate()}</div>
+                      </div>
                     ))}
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "32px repeat(7, 1fr)", gap: 4 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {MEAL_TYPES.map(type => (
+                        <div key={type} style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
+                          <img src={MEAL_ICONS[type]} alt={type} style={{ width: 18, height: 18 }} />
+                        </div>
+                      ))}
+                    </div>
+                    {days.map((day, dayIndex) => (
+                      <div key={dayIndex} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {MEAL_TYPES.map(mealType => (
+                          <MealSlot key={mealType} date={formatDate(day)} mealType={mealType}
+                            meal={getMeal(day, mealType)} onRemove={handleRemoveMeal}
+                            isToday={formatDate(day) === today} isMobile={false} onMobileTap={handleMobileTap} />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* ── MOBILE : lignes par jour, bande colorée à gauche ── */}
+              {isMobile && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {/* Header icônes matin/midi/soir */}
+                  <div style={{ display: "flex", marginLeft: 30, gap: 6, marginBottom: 2 }}>
+                    {MEAL_TYPES.map(type => (
+                      <div key={type} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img src={MEAL_ICONS[type]} alt={type} style={{ width: 16, height: 16, opacity: 0.6 }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Lignes jours */}
+                  {days.map((day, i) => {
+                    const dayColor = DAY_COLORS[i]
+                    const dayTextColor = DAY_TEXT_COLORS[i]
+                    const isToday = formatDate(day) === today
+                    const dateStr = formatDate(day)
+                    return (
+                      <div key={i} style={{
+                        display: "flex",
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        height: 108,
+                        border: isToday ? `1.5px solid ${dayColor}` : "1.5px solid transparent",
+                      }}>
+                        {/* Bande colorée avec nom du jour vertical */}
+                        <div style={{
+                          width: 28,
+                          backgroundColor: dayColor,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          borderRadius: "8px 0 0 8px",
+                        }}>
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: dayTextColor,
+                            fontFamily: "Poppins, sans-serif",
+                            letterSpacing: "-0.05em",
+                            writingMode: "vertical-rl",
+                            transform: "rotate(180deg)",
+                            textTransform: "uppercase",
+                          }}>
+                            {DAY_NAMES[i]}
+                          </span>
+                        </div>
+
+                        {/* 3 slots */}
+                        <div style={{
+                          flex: 1,
+                          backgroundColor: "#2d2d2d",
+                          display: "flex",
+                          gap: 5,
+                          padding: "5px 5px 5px 6px",
+                          borderRadius: "0 8px 8px 0",
+                        }}>
+                          {MEAL_TYPES.map(mealType => {
+                            const meal = getMeal(day, mealType)
+                            const mealCardBg = meal ? (getRecipeCardBg(meal.recipes) || "#1a1a1a") : null
+                            const mealCardBorder = meal ? getRecipeCardBorder(meal.recipes) : null
+                            const mealTextColor = mealCardBg ? getTextColor(mealCardBg) : "#ffffff"
+                            return (
+                              <div key={mealType}
+                                onClick={() => !meal && handleMobileTap(dateStr, mealType)}
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: meal ? mealCardBg : "#4c4c4c",
+                                  borderRadius: 6,
+                                  overflow: "hidden",
+                                  border: meal && mealCardBorder ? `1px solid ${mealCardBorder}` : "1px solid transparent",
+                                  cursor: meal ? "default" : "pointer",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                }}
+                              >
+                                {meal ? (
+                                  <>
+                                    {meal.recipes?.photo_url && (
+                                      <img src={meal.recipes.photo_url} alt={meal.recipes.name}
+                                        style={{ width: "100%", height: 54, objectFit: "cover", display: "block", flexShrink: 0 }} />
+                                    )}
+                                    <div style={{ flex: 1, padding: "3px 5px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0 }}>
+                                      <div style={{ fontSize: 9, fontWeight: 700, color: mealTextColor, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.3 }}>
+                                        {meal.recipes?.name}
+                                      </div>
+                                      <button onClick={(e) => { e.stopPropagation(); handleRemoveMeal(meal.id) }}
+                                        style={{ fontSize: 9, color: mealTextColor, opacity: 0.4, background: "none", border: "none", cursor: "pointer", textAlign: "right", padding: 0 }}>
+                                        ×
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <img src="/icons/plus.png" alt="+" style={{ width: 22, height: 22, opacity: 0.35, userSelect: "none", pointerEvents: "none" }} />
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </>
           )}
 
           {/* VUE MOIS */}
           {view === "month" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 5, marginBottom: 5 }}>
-                {DAY_NAMES.map(day => (
-                  <div key={day} style={{ textAlign: "center", fontSize: 10, color: "#ffffff", letterSpacing: "0.05em", padding: "4px 0" }}>
-                    {isMobile ? day[0] : day.slice(0, 3)}
+              {!isMobile ? (
+                // VERSION DESKTOP
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 5, marginBottom: 5 }}>
+                    {DAY_NAMES.map(day => (
+                      <div key={day} style={{ textAlign: "center", fontSize: 10, color: "#ffffff", textTransform: "uppercase", letterSpacing: "0.05em", padding: "4px 0" }}>
+                        {day.slice(0, 3)}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "110px", gap: 5 }}>
-                {monthDays.map((day, i) => (
-                  day
-                    ? <MonthDayCell key={i} date={day} meals={getMealsForDay(day)} onRemove={handleRemoveMeal} isToday={formatDate(day) === today} />
-                    : <div key={i} />
-                ))}
-              </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "110px", gap: 5 }}>
+                    {monthDays.map((day, i) => (
+                      day
+                        ? <MonthDayCell key={i} date={day} meals={getMealsForDay(day)} onRemove={handleRemoveMeal} isToday={formatDate(day) === today} />
+                        : <div key={i} />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                // VERSION MOBILE - GRILLE 3 COLONNES
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5 }}>
+                  {monthDays.map((day, i) => (
+                    day
+                      ? <MobileMonthDayCell 
+                          key={i} 
+                          date={day} 
+                          meals={getMealsForDay(day)} 
+                          onRemove={handleRemoveMeal} 
+                          isToday={formatDate(day) === today}
+                          handleMobileTap={handleMobileTap}
+                        />
+                      : <div key={i} />
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -656,7 +936,7 @@ export default function Calendar() {
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>mes recettes</span>
               </div>
               <input
-                className="text-light" style={{ width: "100%", backgroundColor: "#1a1a1a", border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#ffffff", outline: "none", boxSizing: "border-box", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em" }}
+                style={{ width: "100%", backgroundColor: "#1a1a1a", border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#ffffff", outline: "none", boxSizing: "border-box", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em" }}
                 placeholder="rechercher..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}

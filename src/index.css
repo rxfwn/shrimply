@@ -92,6 +92,9 @@ button {
 
 }
 
+.btn-nobg {
+  background: none !important;
+}
 
 .text-light {
   font-weight: 200 !important;

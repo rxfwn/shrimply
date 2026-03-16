@@ -3,10 +3,17 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
+import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 
 const MEAL_TYPES = ["Matin", "Midi", "Soir"]
-const DAY_NAMES = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+const DAY_NAMES = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 const MONTH_NAMES = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+
+const MEAL_ICONS = {
+  Matin: "/icons/sun.png",
+  Midi: "/icons/clock.png",
+  Soir: "/icons/moon.png",
+}
 
 function getWeekDays(startDate) {
   return Array.from({ length: 7 }, (_, i) => {
@@ -37,22 +44,11 @@ function getMonthDays(year, month) {
 }
 
 function formatDate(date) {
-  return date.toISOString().split("T")[0]
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
-function RecipeThumb({ photoUrl, name, size = 28 }) {
-  return photoUrl ? (
-    <img
-      src={photoUrl}
-      alt={name}
-      style={{ width: size, height: size, borderRadius: 6, objectFit: "cover", flexShrink: 0 }}
-    />
-  ) : (
-    <div style={{ width: size, height: size, borderRadius: 6, flexShrink: 0 }}
-      className="bg-orange-100 flex items-center justify-center text-orange-300 text-xs">
-      🍽
-    </div>
-  )
+function getTodayLocal() {
+  return formatDate(new Date())
 }
 
 function useIsMobile() {
@@ -65,11 +61,33 @@ function useIsMobile() {
   return isMobile
 }
 
+function getRecipeCardBg(recipe) {
+  if (!recipe) return null
+  const tag = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+  return tag?.cardBg || null
+}
+
+function getRecipeCardBorder(recipe) {
+  if (!recipe) return DEFAULT_CARD_BORDER
+  const tag = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+  return tag?.cardBorder || DEFAULT_CARD_BORDER
+}
+
+function getTextColor(hex) {
+  if (!hex) return "#111111"
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
+  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
+}
+
 function RecipeCard({ recipe }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `recipe-${recipe.id}`,
     data: { type: "recipe", recipe }
   })
+  const cardBg = getRecipeCardBg(recipe)
+  const cardBorder = getRecipeCardBorder(recipe)
+  const textColor = getTextColor(cardBg)
+
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     opacity: isDragging ? 0.5 : 1,
@@ -81,71 +99,79 @@ function RecipeCard({ recipe }) {
       ref={setNodeRef}
       style={{
         ...style,
-        borderLeft: recipe.color ? `3px solid ${recipe.color}` : "3px solid transparent",
+        backgroundColor: cardBg,
+        borderRadius: 10,
+        padding: "8px 10px",
+        marginBottom: 6,
+        cursor: "grab",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        border: `1.5px solid ${cardBorder}`,
+        transition: "border-color 0.15s",
       }}
       {...listeners}
       {...attributes}
-      className="flex items-center gap-2 p-2 rounded-lg border border-gray-100 bg-zinc-50 mb-1.5 cursor-grab active:cursor-grabbing hover:border-orange-300 hover:bg-orange-50 transition overflow-hidden"
     >
-      {recipe.color && !recipe.photo_url && (
-        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: recipe.color }} />
+      {recipe.photo_url ? (
+        <img src={recipe.photo_url} alt={recipe.name}
+          style={{ width: 32, height: 32, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: "rgba(0,0,0,0.15)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🍽</div>
       )}
-      <RecipeThumb photoUrl={recipe.photo_url} name={recipe.name} size={32} />
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium text-zinc-800 truncate">{recipe.name}</div>
-        {recipe.prep_time && <div className="text-xs text-zinc-400">⏱ {recipe.prep_time} min</div>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: textColor, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{recipe.name}</div>
+        {recipe.prep_time && <div style={{ fontSize: 10, color: textColor, opacity: 0.6 }}>⏱ {recipe.prep_time} min</div>}
       </div>
-      <span className="text-zinc-300 text-sm">⠿</span>
+      <span style={{ color: textColor, opacity: 0.4, fontSize: 14 }}>⠿</span>
     </div>
   )
 }
 
+// ─── VUE SEMAINE : photo EN HAUT, titre + infos EN DESSOUS ───────────────────
 function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileTap }) {
   const slotId = `slot-${date}-${mealType}`
   const { setNodeRef, isOver } = useDroppable({ id: slotId, data: { date, mealType } })
+  const slotHeight = isMobile ? 90 : 120
 
-  const recipeColor = meal?.recipes?.color
-  const slotBg     = recipeColor ? `${recipeColor}22` : "#f9f9f9"
-  const slotBorder = recipeColor ? `${recipeColor}66` : "#e5e7eb"
-  const textColor  = "#1f2937"
-  const timeColor  = "#9ca3af"
+  const mealCardBg = meal ? (getRecipeCardBg(meal.recipes) || "#1a1a1a") : null
+  const mealCardBorder = meal ? getRecipeCardBorder(meal.recipes) : null
+  const mealTextColor = mealCardBg ? getTextColor(mealCardBg) : "#ffffff"
 
   if (isMobile) {
     return (
       <div
         onClick={() => !meal && onMobileTap(date, mealType)}
         style={{
-          height: "60px",
-          backgroundColor: meal ? slotBg : "white",
-          borderColor: meal ? slotBorder : "#e5e7eb",
-          borderWidth: 1,
-          borderStyle: meal ? "solid" : "dashed",
-          borderRadius: 8,
-          outline: isToday && meal ? "2px solid #f97316" : "none",
+          height: slotHeight,
+          backgroundColor: meal ? mealCardBg : "#2d2d2d",
+          borderRadius: 10,
           overflow: "hidden",
-          position: "relative",
-          transition: "all 0.15s",
+          border: isToday && meal ? "1.5px solid #d57bff" : `1.5px solid ${mealCardBorder || "transparent"}`,
+          cursor: meal ? "default" : "pointer",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {meal ? (
-          <div className="h-full flex items-stretch">
-            {meal.recipes?.photo_url ? (
+          <>
+            {meal.recipes?.photo_url && (
               <img src={meal.recipes.photo_url} alt={meal.recipes.name}
-                className="h-full w-10 object-cover flex-shrink-0" />
-            ) : recipeColor ? (
-              <div className="w-1 h-full flex-shrink-0" style={{ backgroundColor: recipeColor }} />
-            ) : null}
-            <div className="p-1.5 flex flex-col justify-between flex-1 min-w-0">
-              <div className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: textColor }}>
+                style={{ width: "100%", height: 52, objectFit: "cover", display: "block", flexShrink: 0 }} />
+            )}
+            <div style={{ flex: 1, padding: "4px 6px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: mealTextColor, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.3 }}>
                 {meal.recipes?.name}
               </div>
               <button onClick={(e) => { e.stopPropagation(); onRemove(meal.id) }}
-                className="text-xs self-end opacity-60" style={{ color: timeColor }}>× sup</button>
+                style={{ fontSize: 9, color: mealTextColor, opacity: 0.5, background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}>
+                × sup
+              </button>
             </div>
-          </div>
+          </>
         ) : (
-          <div className="h-full flex items-center justify-center">
-            <span className="text-gray-300 text-xl">+</span>
+          <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <img src="/icons/plus.png" alt="+" style={{ width: 14, height: 14, opacity: 0.2 }} />
           </div>
         )}
       </div>
@@ -156,87 +182,159 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
     <div
       ref={setNodeRef}
       style={{
-        height: "76px",
-        backgroundColor: meal ? slotBg : isOver ? "#fff7ed" : "white",
-        borderColor: meal ? slotBorder : isOver ? "#f97316" : "#e5e7eb",
-        borderWidth: 1,
-        borderStyle: meal ? "solid" : "dashed",
-        borderRadius: 8,
-        outline: isToday && meal ? "2px solid #f97316" : "none",
+        height: slotHeight,
+        backgroundColor: meal ? mealCardBg : isOver ? "#111111" : "#2d2d2d",
+        borderRadius: 10,
         overflow: "hidden",
-        position: "relative",
-        boxShadow: meal ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
+        border: isToday && meal
+          ? "1.5px solid #d57bff"
+          : isOver
+          ? "1.5px solid #d57bff"
+          : meal && mealCardBorder
+          ? `1.5px solid ${mealCardBorder}`
+          : "1.5px solid transparent",
         transition: "all 0.15s",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {meal ? (
-        <div className="h-full flex items-stretch">
-          {meal.recipes?.photo_url ? (
-            <img src={meal.recipes.photo_url} alt={meal.recipes.name}
-              className="h-full w-12 object-cover flex-shrink-0" />
-          ) : recipeColor ? (
-            <div className="w-1.5 h-full flex-shrink-0" style={{ backgroundColor: recipeColor }} />
-          ) : null}
-          <div className="p-2 flex flex-col justify-between flex-1 min-w-0">
-            <div className="text-xs font-semibold line-clamp-2 leading-tight" style={{ color: textColor }}>
+        <>
+          {/* Photo en haut */}
+          {meal.recipes?.photo_url && (
+            <img
+              src={meal.recipes.photo_url}
+              alt={meal.recipes.name}
+              style={{ width: "100%", height: 60, objectFit: "cover", display: "block", flexShrink: 0 }}
+            />
+          )}
+          {/* Titre + infos en dessous */}
+          <div style={{ flex: 1, padding: "6px 8px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: mealTextColor, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.3 }}>
               {meal.recipes?.name}
             </div>
-            <div className="flex items-center justify-between">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               {meal.recipes?.prep_time && (
-                <span className="text-xs" style={{ color: timeColor }}>⏱ {meal.recipes.prep_time}m</span>
+                <span style={{ fontSize: 10, color: mealTextColor, opacity: 0.6 }}>⏱ {meal.recipes.prep_time}m</span>
               )}
-              <button onClick={() => onRemove(meal.id)}
-                className="hover:text-red-400 transition text-base leading-none ml-auto opacity-50 hover:opacity-100"
-                style={{ color: timeColor }}>×</button>
+              <button
+                onClick={() => onRemove(meal.id)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: mealTextColor, opacity: 0.4, fontSize: 16, lineHeight: 1, marginLeft: "auto", padding: 0 }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "1" }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "0.4" }}
+              >×</button>
             </div>
           </div>
-        </div>
+        </>
       ) : (
-        <div className="h-full flex items-center justify-center">
-          <span className="text-lg" style={{ color: isOver ? "#f97316" : "#e5e7eb" }}>+</span>
+        <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <img src="/icons/plus.png" alt="+" style={{ width: 24, height: 24, opacity:0.4, userSelect: "none", pointerEvents: "none"}} />
         </div>
       )}
     </div>
   )
 }
 
-function MonthDayCell({ date, meals, onRemove, isToday }) {
+// ─── VUE MOIS : slot individuel droppable pour chaque repas ──────────────────
+function MonthMealSlot({ dateStr, mealType, meal, onRemove }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: `slot-${formatDate(date)}-Midi`,
-    data: { date: formatDate(date), mealType: "Midi" }
+    id: `slot-${dateStr}-${mealType}`,
+    data: { date: dateStr, mealType }
   })
+  const cardBg = meal ? (getRecipeCardBg(meal.recipes) || "#1a1a1a") : null
+  const cardBorder = meal ? getRecipeCardBorder(meal.recipes) : null
+  const textColor = cardBg ? getTextColor(cardBg) : "#ffffff"
+  const tagInfo = meal ? TAGS.find(t => t.value === meal.recipes?.primary_tag || t.key === meal.recipes?.primary_tag) : null
+
   return (
-    <div ref={setNodeRef}
-      className={`min-h-24 border rounded-lg p-1.5 transition
-        ${isToday ? "border-orange-400 bg-orange-50" : isOver ? "border-orange-300 bg-orange-50" : "border-gray-100 bg-white hover:border-orange-200"}`}
+    <div
+      ref={setNodeRef}
+      style={{
+        flex: 1,
+        minHeight: 0,
+        backgroundColor: meal ? cardBg : isOver ? "rgba(243,80,30,0.12)" : "rgba(255,255,255,0.03)",
+        border: meal
+          ? `1px solid ${cardBorder || "rgba(255,255,255,0.06)"}`
+          : isOver ? "1px solid #d57bff" : "1px solid transparent",
+        borderRadius: 5,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 5px",
+        gap: 3,
+        overflow: "hidden",
+        transition: "all 0.15s",
+      }}
     >
-      <div className={`text-xs font-semibold mb-1 w-5 h-5 flex items-center justify-center rounded-full
-        ${isToday ? "bg-orange-500 text-white" : "text-zinc-500"}`}>
-        {date.getDate()}
+      {meal ? (
+        <>
+          {tagInfo && (
+            <img src={`/icons/${tagInfo.icon}.png`} alt=""
+              style={{ width: 9, height: 9, flexShrink: 0, opacity: 0.8 }}
+              onError={e => e.target.style.display = "none"} />
+          )}
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: textColor,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            flex: 1, lineHeight: 1,
+          }}>
+            {meal.recipes?.name}
+          </span>
+          <button
+            onClick={() => onRemove(meal.id)}
+            style={{ background: "none", border: "none", cursor: "pointer", color: textColor, opacity: 0.25, fontSize: 11, lineHeight: 1, flexShrink: 0, padding: 0 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "0.25"}
+          >×</button>
+        </>
+      ) : (
+        <img src={MEAL_ICONS[mealType]} alt={mealType}
+          style={{ width: 8, height: 8, opacity: isOver ? 0.8 : 0.15, transition: "opacity 0.15s" }}
+          onError={e => e.target.style.display = "none"} />
+      )}
+    </div>
+  )
+}
+
+// ─── VUE MOIS : case jour avec 3 slots calés en hauteur ──────────────────────
+function MonthDayCell({ date, meals, onRemove, isToday }) {
+  const dateStr = formatDate(date)
+  const getMealForType = (type) => meals.find(m => m.meal_type === type)
+
+  return (
+    <div style={{
+      height: 110,
+      backgroundColor: "#2d2d2d",
+      borderRadius: 10,
+      border: isToday ? "1.5px solid #d57bff" : "1.5px solid transparent",
+      display: "flex",
+      flexDirection: "column",
+      padding: "4px 5px 5px",
+      gap: 3,
+      overflow: "hidden",
+    }}>
+      {/* Numéro du jour */}
+      <div style={{ flexShrink: 0 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 700,
+          width: 18, height: 18, borderRadius: "50%",
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          backgroundColor: isToday ? "#d57bff" : "transparent",
+          color: isToday ? "#130b2d" : "rgba(255,255,255,0.45)",
+        }}>
+          {date.getDate()}
+        </div>
       </div>
-      {meals.map(meal => {
-        const color = meal.recipes?.color
-        return (
-          <div
-            key={meal.id}
-            className="flex items-center gap-1 rounded overflow-hidden mb-0.5 group"
-            style={{
-              backgroundColor: color ? `${color}22` : "#f3f4f6",
-              borderLeft: color ? `2px solid ${color}` : "2px solid #d1d5db",
-            }}
-          >
-            {meal.recipes?.photo_url && (
-              <img src={meal.recipes.photo_url} alt={meal.recipes.name}
-                className="w-5 h-5 object-cover flex-shrink-0" />
-            )}
-            <span className="text-xs truncate flex-1 py-0.5 pr-1 text-zinc-700">
-              {meal.recipes?.name}
-            </span>
-            <button onClick={() => onRemove(meal.id)}
-              className="text-zinc-300 hover:text-red-400 transition opacity-0 group-hover:opacity-100 text-xs leading-none pr-1">×</button>
-          </div>
-        )
-      })}
+
+      {/* 3 slots égaux en hauteur */}
+      {MEAL_TYPES.map(type => (
+        <MonthMealSlot
+          key={type}
+          dateStr={dateStr}
+          mealType={type}
+          meal={getMealForType(type)}
+          onRemove={onRemove}
+        />
+      ))}
     </div>
   )
 }
@@ -246,39 +344,35 @@ function MobileRecipeModal({ recipes, onSelect, onClose }) {
   const filtered = recipes.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end">
-      <div className="bg-white dark:bg-zinc-800 rounded-t-3xl w-full max-h-[75vh] flex flex-col">
-        <div className="p-4 border-b border-gray-100 dark:border-zinc-700">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Choisir une recette</h2>
-            <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600 text-xl leading-none">×</button>
+    <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "flex-end" }}>
+      <div style={{ backgroundColor: "#091718", borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "75vh", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#ffffff" }}>choisir une recette</h2>
+            <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer" }}>×</button>
           </div>
           <input
-            className="w-full bg-zinc-50 dark:bg-zinc-700 border border-gray-200 dark:border-zinc-600 rounded-xl px-3 py-2 text-sm outline-none focus:border-brand-orange"
+            style={{ width: "100%", backgroundColor: "#2d2d2d", border: "none", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#ffffff", outline: "none", boxSizing: "border-box" }}
             placeholder="Rechercher..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             autoFocus
           />
         </div>
-        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-          {filtered.length === 0 ? (
-            <p className="text-xs text-zinc-400 text-center mt-4">Aucune recette trouvée</p>
-          ) : filtered.map(recipe => (
-            <button
-              key={recipe.id}
-              onClick={() => onSelect(recipe)}
-              className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-zinc-700 bg-white dark:bg-zinc-700 hover:border-brand-orange hover:bg-orange-50 transition text-left"
-              style={{ borderLeft: recipe.color ? `3px solid ${recipe.color}` : undefined }}
-            >
-              <RecipeThumb photoUrl={recipe.photo_url} name={recipe.name} size={40} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-zinc-800 dark:text-white truncate">{recipe.name}</p>
-                {recipe.prep_time && <p className="text-xs text-zinc-400">⏱ {recipe.prep_time} min</p>}
+        <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map(recipe => (
+            <button key={recipe.id} onClick={() => onSelect(recipe)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, backgroundColor: "#2d2d2d", border: "none", borderRadius: 10, cursor: "pointer", textAlign: "left" }}>
+              {recipe.photo_url ? (
+                <img src={recipe.photo_url} alt={recipe.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "#1a1a1a", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🍽</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipe.name}</p>
+                {recipe.prep_time && <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>⏱ {recipe.prep_time} min</p>}
               </div>
-              {recipe.color
-                ? <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: recipe.color }} />
-                : <span className="text-brand-orange text-lg">+</span>}
+              <img src="/icons/plus.png" alt="+" style={{ width: 16, height: 16 }} />
             </button>
           ))}
         </div>
@@ -301,9 +395,10 @@ export default function Calendar() {
   const [loadingIA, setLoadingIA] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [mobileModal, setMobileModal] = useState(null)
+  const [showBalancePopup, setShowBalancePopup] = useState(false)
 
   const days = getWeekDays(monday)
-  const today = formatDate(new Date())
+  const today = getTodayLocal()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
 
   useEffect(() => { fetchData() }, [monday, currentMonth, currentYear, view])
@@ -326,46 +421,10 @@ export default function Calendar() {
       const lastDay = new Date(currentYear, currentMonth + 1, 0)
       endDate = formatDate(lastDay)
     }
-    const { data: planData } = await supabase
-      .from("meal_plan")
-      .select("*, recipes(name, prep_time, tags, photo_url, color)")
-      .eq("user_id", user.id)
-      .gte("date", startDate)
-      .lte("date", endDate)
+    const { data: planData } = await supabase.from("meal_plan").select("*, recipes(name, prep_time, tags, primary_tag, photo_url)").eq("user_id", user.id).gte("date", startDate).lte("date", endDate)
     const { data: recipesData } = await supabase.from("recipes").select("*").eq("user_id", user.id)
     if (planData) setMealPlan(planData)
     if (recipesData) setRecipes(recipesData)
-  }
-
-  const handleAutoFill = async () => {
-    if (loadingIA || cooldown > 0 || recipes.length === 0) return
-    setLoadingIA(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      const emptySlots = []
-      days.forEach(day => {
-        const dateStr = formatDate(day)
-        MEAL_TYPES.forEach(type => {
-          const exists = mealPlan.find(m => m.date === dateStr && m.meal_type === type)
-          if (!exists) emptySlots.push({ date: dateStr, type })
-        })
-      })
-      if (emptySlots.length === 0) { alert("Ton planning est déjà plein ! ✨"); setLoadingIA(false); return }
-      const prompt = `J'ai ces recettes : ${recipes.map(r => r.name).join(", ")}. 
-      Remplis ces créneaux vides : ${emptySlots.map(s => `${s.date} (${s.type})`).join(", ")}.
-      Propose un planning équilibré (varie les recettes).
-      Réponds UNIQUEMENT un JSON : [{"date": "YYYY-MM-DD", "meal_type": "Matin/Midi/Soir", "recipe_name": "..."}]`
-      const { data: suggestions, error: funcError } = await supabase.functions.invoke('auto-fill-plan', { body: { prompt } })
-      if (funcError) throw new Error("L'IA Shrimply ne répond pas.")
-      const inserts = suggestions.map(s => {
-        const recipe = recipes.find(r => r.name === s.recipe_name)
-        if (!recipe) return null
-        return { user_id: user.id, recipe_id: recipe.id, date: s.date, meal_type: s.meal_type }
-      }).filter(Boolean)
-      if (inserts.length > 0) { await supabase.from("meal_plan").insert(inserts); await fetchData() }
-      setCooldown(60)
-    } catch (err) { console.error(err); alert(err.message) }
-    finally { setLoadingIA(false) }
   }
 
   const getMeal = (date, mealType) => mealPlan.find(m => m.date === formatDate(date) && m.meal_type === mealType)
@@ -409,24 +468,33 @@ export default function Calendar() {
 
   const prevPeriod = () => {
     if (view === "week") { const d = new Date(monday); d.setDate(d.getDate() - 7); setMonday(d) }
-    else {
-      if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
-      else setCurrentMonth(m => m - 1)
-    }
+    else { if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) } else setCurrentMonth(m => m - 1) }
   }
 
   const nextPeriod = () => {
     if (view === "week") { const d = new Date(monday); d.setDate(d.getDate() + 7); setMonday(d) }
-    else {
-      if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) }
-      else setCurrentMonth(m => m + 1)
-    }
+    else { if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) } else setCurrentMonth(m => m + 1) }
   }
 
   const filteredRecipes = recipes.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
   const weekLabel = `${days[0].getDate()} — ${days[6].getDate()} ${days[6].toLocaleString("fr-FR", { month: "long" })} ${days[6].getFullYear()}`
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`
   const monthDays = getMonthDays(currentYear, currentMonth)
+
+  const toggleBtnStyle = (active) => ({ 
+    padding: "6px 24px",
+    borderRadius: 10,
+    fontSize: 12,
+    border: "none",
+    cursor: "pointer",
+    fontFamily: "Poppins, sans-serif",
+    fontWeight: 700,
+    letterSpacing: "-0.05em",
+    transition: "all 0.2s ease",
+    backgroundColor: active ? "#4c4c4c" : "transparent",
+    color: active ? "#ffffff" : "rgba(255,255,255,0.45)",
+    whiteSpace: "nowrap",
+  })
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -435,35 +503,80 @@ export default function Calendar() {
         <MobileRecipeModal recipes={recipes} onSelect={handleMobileSelect} onClose={() => setMobileModal(null)} />
       )}
 
-      <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
-        <div style={{ flex: 1, overflow: "auto", padding: isMobile ? "0.75rem" : "1.25rem" }}>
+      {showBalancePopup && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ backgroundColor: "#091718", borderRadius: 16, padding: 32, maxWidth: 360, width: "100%", textAlign: "center", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <img src="/icons/salad.png" alt="" style={{ width: 48, height: 48, marginBottom: 16 }} />
+            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "#ffffff" }}>bientôt disponible !</h2>
+            <p style={{ margin: "0 0 24px", fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 500, lineHeight: 1.6 }}>
+              la fonctionnalité d'équilibrage automatique de ton planning est en cours de développement
+            </p>
+            <button 
+              onClick={() => setShowBalancePopup(false)}
+              style={{ width: "100%", padding: "12px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+              onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+            >ok, j'attends !</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", height: "100%", overflow: "hidden", backgroundColor: "#111111" }}>
+
+        {/* MAIN */}
+        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "12px" : "20px 20px 20px 24px" }}>
 
           {/* HEADER */}
-          <div className={`flex ${isMobile ? "flex-col gap-2" : "items-center justify-between"} mb-4`}>
-            <div className={`flex items-center ${isMobile ? "justify-between" : "gap-3"}`}>
-              {!isMobile && <h1 className="text-xl font-semibold text-zinc-900 dark:text-white">Mon planning</h1>}
-              <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-lg p-0.5">
-                <button onClick={() => setView("week")} className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "week" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}>Semaine</button>
-                <button onClick={() => setView("month")} className={`px-3 py-1 rounded-md text-xs font-medium transition ${view === "month" ? "bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white shadow-sm" : "text-zinc-400 hover:text-zinc-600"}`}>Mois</button>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 40, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <img src="/icons/calendar.png" alt="" style={{ width: 22, height: 22 }} />
+                <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff" }}>mon planning</h1>
               </div>
-              <div className="flex items-center gap-1">
-                <button onClick={prevPeriod} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">◀</button>
-                <span className={`text-xs font-medium text-zinc-700 dark:text-zinc-300 px-1 text-center ${isMobile ? "min-w-28" : "min-w-48"}`}>
-                  {view === "week" ? (isMobile ? `${days[0].getDate()}–${days[6].getDate()} ${days[6].toLocaleString("fr-FR", { month: "short" })}` : weekLabel) : monthLabel}
+
+              <div style={{ display: "flex", backgroundColor: "#2d2d2d", borderRadius: 10, gap: 2 }}>
+                <button className="text-light" onClick={() => setView("week")} style={toggleBtnStyle(view === "week")}>semaine</button>
+                <button className="text-light" onClick={() => setView("month")} style={toggleBtnStyle(view === "month")}>mois</button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={prevPeriod}
+                  style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img src="/icons/left.png" alt="" style={{ width: 18, height: 18 }} />
+                </button>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#ffffff", minWidth: 160, textAlign: "center" }}>
+                  {view === "week" ? weekLabel : monthLabel}
                 </span>
-                <button onClick={nextPeriod} className="w-7 h-7 border border-gray-200 rounded-lg flex items-center justify-center text-zinc-400 hover:border-orange-400 hover:text-orange-500 transition text-xs">▶</button>
+                <button onClick={nextPeriod}
+                  style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img src="/icons/right.png" alt="" style={{ width: 18, height: 18 }} />
+                </button>
               </div>
             </div>
-            <div className="flex gap-2">
-              {false && (
-                <button onClick={handleAutoFill} disabled={loadingIA || cooldown > 0}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition
-                    ${cooldown > 0 ? "bg-zinc-100 text-zinc-400 cursor-not-allowed" : "bg-brand-orange/10 text-brand-orange hover:bg-brand-orange hover:text-white"}`}>
-                  {loadingIA ? "🪄..." : cooldown > 0 ? `⏳ ${cooldown}s` : "💡 Équilibrer"}
-                </button>
-              )}
-              <button onClick={() => navigate("/shopping")} className="bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-orange-600 transition">
-                🛒 Courses
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setShowBalancePopup(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+              >
+                <img src="/icons/salad.png" alt="" style={{ width: 16, height: 16 }} />
+                équilibrer
+              </button>
+
+              <button onClick={() => navigate("/shopping")}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14, letterSpacing: "-0.05em", color: "#1a3d1a", transition: "transform 0.2s ease" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+                onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+              >
+                <img src="/icons/cart.png" alt="" style={{ width: 16, height: 16 }} />
+                courses
               </button>
             </div>
           </div>
@@ -471,28 +584,37 @@ export default function Calendar() {
           {/* VUE SEMAINE */}
           {view === "week" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "32px repeat(7, 1fr)" : "56px repeat(7, 1fr)", gap: "4px", marginBottom: "4px" }}>
-                <div></div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "20px repeat(7, 1fr)" : "32px repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+                <div />
                 {days.map((day, i) => (
-                  <div key={i} className="text-center py-1">
-                    <div className="text-xs uppercase tracking-wide text-zinc-400 font-medium">{isMobile ? DAY_NAMES[i][0] : DAY_NAMES[i]}</div>
-                    <div className={`${isMobile ? "text-xs" : "text-base"} font-semibold mt-0.5 ${formatDate(day) === today ? "bg-orange-500 text-white w-6 h-6 rounded-full flex items-center justify-center mx-auto text-xs" : "text-zinc-800 dark:text-zinc-200"}`}>
+                  <div key={i} style={{ textAlign: "center", padding: "4px 0" }}>
+                    <div className="text-light" style={{ fontSize: 12, color: "#ffffff", letterSpacing: "0.05em" }}>
+                      {isMobile ? DAY_NAMES[i][0] : DAY_NAMES[i]}
+                    </div>
+                    <div style={{
+                      fontSize: isMobile ? 11 : 16, fontWeight: 700,
+                      width: isMobile ? 20 : 28, height: isMobile ? 20 : 28,
+                      borderRadius: "50%", margin: "2px auto 0",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      backgroundColor: formatDate(day) === today ? "#170d32" : "transparent",
+                      color: "#ffffff",
+                    }}>
                       {day.getDate()}
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "32px repeat(7, 1fr)" : "56px repeat(7, 1fr)", gap: "4px" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "20px repeat(7, 1fr)" : "32px repeat(7, 1fr)", gap: 4 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {MEAL_TYPES.map(type => (
-                    <div key={type} className="flex items-center justify-end pr-1 text-zinc-400 font-medium"
-                      style={{ fontSize: isMobile ? "8px" : "12px", height: isMobile ? "60px" : "76px" }}>
-                      {isMobile ? type[0] : type}
+                    <div key={type} style={{ height: isMobile ? 90 : 120, display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
+                      <img src={MEAL_ICONS[type]} alt={type} style={{ width: isMobile ? 14 : 18, height: isMobile ? 14 : 18 }} />
                     </div>
                   ))}
                 </div>
                 {days.map((day, dayIndex) => (
-                  <div key={dayIndex} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div key={dayIndex} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {MEAL_TYPES.map(mealType => (
                       <MealSlot key={mealType} date={formatDate(day)} mealType={mealType}
                         meal={getMeal(day, mealType)} onRemove={handleRemoveMeal}
@@ -507,16 +629,17 @@ export default function Calendar() {
           {/* VUE MOIS */}
           {view === "month" && (
             <>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "5px", marginBottom: "5px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 5, marginBottom: 5 }}>
                 {DAY_NAMES.map(day => (
-                  <div key={day} className="text-center text-xs uppercase tracking-wide text-zinc-400 font-medium py-1">
-                    {isMobile ? day[0] : day}
+                  <div key={day} style={{ textAlign: "center", fontSize: 10, color: "#ffffff", letterSpacing: "0.05em", padding: "4px 0" }}>
+                    {isMobile ? day[0] : day.slice(0, 3)}
                   </div>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "5px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridAutoRows: "110px", gap: 5 }}>
                 {monthDays.map((day, i) => (
-                  day ? <MonthDayCell key={i} date={day} meals={getMealsForDay(day)} onRemove={handleRemoveMeal} isToday={formatDate(day) === today} />
+                  day
+                    ? <MonthDayCell key={i} date={day} meals={getMealsForDay(day)} onRemove={handleRemoveMeal} isToday={formatDate(day) === today} />
                     : <div key={i} />
                 ))}
               </div>
@@ -524,21 +647,29 @@ export default function Calendar() {
           )}
         </div>
 
-        {/* SIDEBAR RECETTES — desktop uniquement */}
+        {/* SIDEBAR RECETTES */}
         {!isMobile && (
-          <div style={{ width: "240px", borderLeft: "1px solid #EBEBEB", background: "white", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-            <div className="p-3 border-b border-gray-100">
-              <div className="text-sm font-semibold text-zinc-900 mb-2">📖 Mes recettes</div>
-              <input className="w-full bg-zinc-50 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-orange-400"
-                placeholder="Rechercher..." value={search} onChange={e => setSearch(e.target.value)} />
+          <div style={{ width: 240, borderLeft: "1px solid rgba(255,255,255,0.06)", backgroundColor: "#2d2d2d", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+            <div style={{ padding: "16px 12px 12px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#ffffff" }}>mes recettes</span>
+              </div>
+              <input
+                className="text-light" style={{ width: "100%", backgroundColor: "#1a1a1a", border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#ffffff", outline: "none", boxSizing: "border-box", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em" }}
+                placeholder="rechercher..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
             </div>
-            <div style={{ flex: 1, overflowY: "auto", padding: "0.5rem" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: 8 }}>
               {filteredRecipes.length === 0
-                ? <div className="text-xs text-zinc-400 text-center mt-4">Aucune recette trouvée</div>
-                : filteredRecipes.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} />)}
+                ? <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textAlign: "center", marginTop: 16 }}>Aucune recette</div>
+                : filteredRecipes.map(recipe => <RecipeCard key={recipe.id} recipe={recipe} />)
+              }
             </div>
-            <div className="p-3 border-t border-gray-100">
-              <p className="text-xs text-zinc-400 text-center">⠿ Glisse une recette sur un créneau</p>
+            <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", textAlign: "center", margin: 0 }}>⠿ glisse une recette sur un créneau</p>
             </div>
           </div>
         )}
@@ -546,13 +677,13 @@ export default function Calendar() {
 
       <DragOverlay>
         {activeRecipe && (
-          <div className="bg-white border border-orange-400 rounded-lg p-2 shadow-lg flex items-center gap-2 w-48"
-            style={{ borderLeft: activeRecipe.color ? `3px solid ${activeRecipe.color}` : undefined }}>
-            <RecipeThumb photoUrl={activeRecipe.photo_url} name={activeRecipe.name} size={28} />
-            <span className="text-xs font-medium text-zinc-800 truncate">{activeRecipe.name}</span>
-            {activeRecipe.color && (
-              <div className="w-2 h-2 rounded-full flex-shrink-0 ml-auto" style={{ backgroundColor: activeRecipe.color }} />
+          <div style={{ backgroundColor: getRecipeCardBg(activeRecipe), border: `1.5px solid ${getRecipeCardBorder(activeRecipe)}`, borderRadius: 10, padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, width: 180, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+            {activeRecipe.photo_url ? (
+              <img src={activeRecipe.photo_url} alt={activeRecipe.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: "cover" }} />
+            ) : (
+              <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: "rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🍽</div>
             )}
+            <span style={{ fontSize: 11, fontWeight: 700, color: getTextColor(getRecipeCardBg(activeRecipe)), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{activeRecipe.name}</span>
           </div>
         )}
       </DragOverlay>

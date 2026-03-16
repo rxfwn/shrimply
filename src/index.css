@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 @keyframes shrink {
   from { width: 0; }
@@ -9,30 +9,98 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --blue: #3B35D4;
-  --orange: #F4622A;
-  --purple: #2D1B8E;
-  --cyan: #5BC8C8;
-  --cream: #F5F0E8;
-  
+/* On applique à TOUT le monde car le preflight est désactivé */
+*, ::before, ::after {
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 700 !important; /* Bold */
+  letter-spacing: -0.01em !important; /* Ton -100 Illustrator */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 * { box-sizing: border-box; }
 
+/* ── MODE SOMBRE (défaut) ───────────────────────────────── */
+:root {
+  --bg-main: #111111;
+  --bg-sidebar: #091718;
+  --bg-card: #2d2d2d;
+  --text-main: #ffffff;
+  --text-muted: rgba(255,255,255,0.4);
+  --border: rgba(255,255,255,0.08);
+}
+
+/* ── MODE CLAIR ─────────────────────────────────────────── */
+:root.light {
+  --bg-main: #f5f5f5;
+  --bg-sidebar: #ffffff;
+  --bg-card: #ffffff;
+  --text-main: #111111;
+  --text-muted: rgba(0,0,0,0.4);
+  --border: rgba(0,0,0,0.08);
+}
+
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: #F5F0E8;
-  color: #0F0D2E;
-  font-family: 'Inter', 'Noto Color Emoji', sans-serif;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  background: var(--bg-main);
+  color: var(--text-main);
 }
 
-.dark body {
-  background: #0F0D2E;
-  color: #F5F0E8;
+.btn-purple {
+  background-color: #d57bff !important;
+  color: #130b2d !important;
+  transition: all 0.2s ease;
+}
+.btn-purple:hover {
+  transform: scale(1.03);
+}
+.btn-purple:active {
+  transform: scale(0.95);
+}
+.btn-purple * {
+  color: #130b2d !important;
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #111111 inset !important;
+  -webkit-text-fill-color: #666666 !important;
+  caret-color: #ffffff;
+}
+
+::-webkit-scrollbar { width: 0px; height: 0px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #3B35D4; border-radius: 2px; }
+
+button {
+  outline: none !important;
+  border: none;
+}
+
+.btn-ghost {
+  background: none !important;
+  color:#ffffff !important;
+  font-size: 18px;
+
+}
+
+
+.text-light {
+  font-weight: 200 !important;
+}
+
+.tag-pill-inactive {
+  opacity: 0.35 !important;
+}
+
+.tag-pill-active {
+  opacity: 1 !important;
+}

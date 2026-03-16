@@ -1,7 +1,31 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 
+const inputStyle = {
+  width: "100%", borderRadius: 10, padding: "10px 14px",
+  fontSize: 13, outline: "none",
+  background: "#111111", border:"none",
+  color: "#ffffff", fontFamily: "Poppins, sans-serif", fontWeight: 500,
+  letterSpacing: "-0.05em", boxSizing: "border-box",
+}
+
+const btnBase = {
+  fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13,
+  letterSpacing: "-0.05em", border: "none", cursor: "pointer",
+  borderRadius: 10, transition: "transform 0.2s ease",
+}
+
+function Avatar({ url, size = 36 }) {
+  return (
+    <div style={{ width: size, height: size, borderRadius: "50%", backgroundColor: "#2d2d2d", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.4 }}>
+      {url ? <img src={url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+    </div>
+  )
+}
+
 export default function Friends() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState("")
   const [searchResults, setSearchResults] = useState([])
   const [following, setFollowing] = useState([])
@@ -16,129 +40,135 @@ export default function Friends() {
     const { data: { user } } = await supabase.auth.getUser()
     setCurrentUser(user)
 
-    // On récupère les abonnements
-    const { data: followingData, error: followError } = await supabase
+    const { data: followingData } = await supabase
       .from("follows")
-      .select("following_id, profiles!follows_following_id_fkey(id, username, avatar_url)")
+      .select("following_id")
       .eq("follower_id", user.id)
 
-    // On récupère les abonnés
-    const { data: followersData, error: followerError } = await supabase
+    const { data: followersData } = await supabase
       .from("follows")
-      .select("follower_id, profiles!follows_follower_id_fkey(id, username, avatar_url)")
+      .select("follower_id")
       .eq("following_id", user.id)
 
-    if (followError) console.error("Erreur abonnements:", followError)
-    if (followerError) console.error("Erreur abonnés:", followerError)
+    if (followingData?.length > 0) {
+      const ids = followingData.map(f => f.following_id)
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", ids)
+      setFollowing(followingData.map(f => ({ ...f, profile: profiles?.find(p => p.id === f.following_id) })))
+    } else {
+      setFollowing([])
+    }
 
-    // On filtre pour éviter les erreurs si un profil lié est null (406 protection)
-    if (followingData) setFollowing(followingData.filter(f => f.profiles !== null))
-    if (followersData) setFollowers(followersData.filter(f => f.profiles !== null))
+    if (followersData?.length > 0) {
+      const ids = followersData.map(f => f.follower_id)
+      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", ids)
+      setFollowers(followersData.map(f => ({ ...f, profile: profiles?.find(p => p.id === f.follower_id) })))
+    } else {
+      setFollowers([])
+    }
   }
 
   const handleSearch = async () => {
     if (!search.trim()) return
     setLoading(true)
-    
-    // Recherche de profils avec une sécurité simple
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("profiles")
       .select("id, username, avatar_url")
       .ilike("username", `%${search}%`)
       .neq("id", currentUser.id)
       .limit(10)
-
-    if (error) console.error("Erreur recherche:", error)
-    
     setSearchResults(data || [])
     setLoading(false)
   }
 
   const handleFollow = async (userId) => {
-    const { error } = await supabase.from("follows").insert({
-      follower_id: currentUser.id,
-      following_id: userId,
-    })
-
-    if (!error) {
-      setSuccess("Utilisateur suivi !")
-      setTimeout(() => setSuccess(""), 2000)
-      await fetchData()
-    }
+    await supabase.from("follows").insert({ follower_id: currentUser.id, following_id: userId })
+    setSuccess("utilisateur suivi !")
+    setTimeout(() => setSuccess(""), 2000)
+    await fetchData()
   }
 
   const handleUnfollow = async (userId) => {
-    const { error } = await supabase.from("follows")
-      .delete()
-      .eq("follower_id", currentUser.id)
-      .eq("following_id", userId)
-    
-    if (!error) await fetchData()
+    await supabase.from("follows").delete().eq("follower_id", currentUser.id).eq("following_id", userId)
+    await fetchData()
   }
 
-  const isFollowing = (userId) => {
-    return following.some(f => f.following_id === userId)
+  const isFollowing = (userId) => following.some(f => f.following_id === userId)
+
+  const usernameStyle = {
+    flex: 1, fontSize: 13, fontWeight: 700, color: "#ffffff",
+    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+    cursor: "pointer", transition: "color 0.12s",
+    background: "none", border: "none", padding: 0, textAlign: "left",
+    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em",
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div style={{ padding: "20px 24px", backgroundColor: "#111111", minHeight: "100%", fontFamily: "Poppins, sans-serif" }}>
 
       {success && (
-        <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
           ✅ {success}
         </div>
       )}
 
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-6">👥 Amis</h1>
+      {/* HEADER */}
+      <h1 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+        <img src="/icons/friends.png" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display="none"} />
+        amis
+      </h1>
 
-      {/* Recherche */}
-      <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-5 shadow-sm mb-5">
-        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-3">Rechercher des utilisateurs</h2>
-        <div className="flex gap-2">
+      {/* RECHERCHE */}
+      <div style={{ backgroundColor: "#091718", borderRadius: 12, padding: 16, border: "none", marginBottom: 16 }}>
+        <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          rechercher des utilisateurs
+        </h2>
+        <div style={{ display: "flex", gap: 10 }}>
           <input
-            className="flex-1 border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-orange-400"
-            placeholder="Rechercher par nom d'utilisateur..."
+            style={inputStyle}
+            placeholder="rechercher par pseudo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
           />
-          <button
-            onClick={handleSearch}
-            disabled={loading}
-            className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-600 transition disabled:opacity-50"
+          <button onClick={handleSearch} disabled={loading}
+            style={{ ...btnBase, padding: "10px 16px", backgroundColor: "#f3501e", color: "#ffffff", opacity: loading ? 0.5 : 1, whiteSpace: "nowrap" }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "scale(1.03)" }}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+            onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
           >
-            {loading ? "..." : "Chercher"}
+            {loading ? "..." : "chercher"}
           </button>
         </div>
 
+        {/* Résultats */}
         {searchResults.length > 0 && (
-          <div className="mt-3 flex flex-col gap-2">
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             {searchResults.map(user => (
-              <div key={user.id} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-700 rounded-lg">
-                <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-sm">👤</span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{user.username || "Utilisateur"}</p>
-                </div>
+              <div key={user.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", backgroundColor: "#1a1a1a", borderRadius: 10 }}>
+                <Avatar url={user.avatar_url} size={36} />
+                <button
+                  style={usernameStyle}
+                  onClick={() => navigate(`/profile/${user.id}`)}
+                  onMouseEnter={e => e.currentTarget.style.color = "#f3501e"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#ffffff"}
+                >
+                  {user.username || "utilisateur"}
+                </button>
                 {isFollowing(user.id) ? (
-                  <button
-                    onClick={() => handleUnfollow(user.id)}
-                    className="text-xs border border-gray-200 dark:border-zinc-600 text-zinc-500 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition"
-                  >
-                    Ne plus suivre
-                  </button>
+                  <button onClick={() => handleUnfollow(user.id)}
+                    style={{ ...btnBase, padding: "5px 12px", fontSize: 11, backgroundColor: "#2d2d2d", color: "rgba(255,255,255,0.5)" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#2d0a0a"; e.currentTarget.style.color = "#fca5a5" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#2d2d2d"; e.currentTarget.style.color = "rgba(255,255,255,0.5)" }}
+                  >ne plus suivre</button>
                 ) : (
-                  <button
-                    onClick={() => handleFollow(user.id)}
-                    className="text-xs bg-orange-500 text-white px-3 py-1.5 rounded-lg hover:bg-orange-600 transition"
-                  >
-                    + Suivre
-                  </button>
+                  <button onClick={() => handleFollow(user.id)}
+                    style={{ ...btnBase, padding: "5px 12px", fontSize: 11, backgroundColor: "#f3501e", color: "#ffffff" }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                    onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+                    onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+                  >+ suivre</button>
                 )}
               </div>
             ))}
@@ -146,33 +176,37 @@ export default function Friends() {
         )}
 
         {searchResults.length === 0 && search && !loading && (
-          <p className="text-xs text-zinc-400 mt-3 text-center">Aucun utilisateur trouvé</p>
+          <p style={{ margin: "12px 0 0", fontSize: 12, color: "rgba(255,255,255,0.3)", textAlign: "center", fontWeight: 500 }}>aucun utilisateur trouvé</p>
         )}
       </div>
 
-      {/* Abonnements */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-3">
-            Abonnements · {following.length}
+      {/* ABONNEMENTS + ABONNÉS */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+
+        {/* Abonnements */}
+        <div style={{ backgroundColor: "#091718", borderRadius: 12, padding: 16, border: "none" }}>
+          <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            abonnements · {following.length}
           </h2>
           {following.length === 0 ? (
-            <p className="text-xs text-zinc-400">Tu ne suis personne encore</p>
+            <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>tu ne suis personne encore</p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {following.map(f => (
-                <div key={f.following_id} className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {f.profiles?.avatar_url ? (
-                      <img src={f.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xs">👤</span>
-                    )}
-                  </div>
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300 flex-1 truncate">{f.profiles?.username || "Utilisateur"}</span>
+                <div key={f.following_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Avatar url={f.profile?.avatar_url} size={30} />
                   <button
-                    onClick={() => handleUnfollow(f.following_id)}
-                    className="text-zinc-300 hover:text-red-400 transition text-base leading-none"
+                    style={{ ...usernameStyle, fontSize: 12 }}
+                    onClick={() => navigate(`/profile/${f.profile?.id}`)}
+                    onMouseEnter={e => e.currentTarget.style.color = "#f3501e"}
+                    onMouseLeave={e => e.currentTarget.style.color = "#ffffff"}
+                  >
+                    {f.profile?.username || "utilisateur"}
+                  </button>
+                  <button onClick={() => handleUnfollow(f.following_id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.2)", fontSize: 18, lineHeight: 1, padding: 0 }}
+                    onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
+                    onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
                   >×</button>
                 </div>
               ))}
@@ -180,24 +214,26 @@ export default function Friends() {
           )}
         </div>
 
-        <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide mb-3">
-            Abonnés · {followers.length}
+        {/* Abonnés */}
+        <div style={{ backgroundColor: "#091718", borderRadius: 12, padding: 16, border: "none" }}>
+          <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            abonnés · {followers.length}
           </h2>
           {followers.length === 0 ? (
-            <p className="text-xs text-zinc-400">Personne ne te suit encore</p>
+            <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.25)" }}>personne ne te suit encore</p>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {followers.map(f => (
-                <div key={f.follower_id} className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {f.profiles?.avatar_url ? (
-                      <img src={f.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xs">👤</span>
-                    )}
-                  </div>
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">{f.profiles?.username || "Utilisateur"}</span>
+                <div key={f.follower_id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Avatar url={f.profile?.avatar_url} size={30} />
+                  <button
+                    style={{ ...usernameStyle, fontSize: 12 }}
+                    onClick={() => navigate(`/profile/${f.profile?.id}`)}
+                    onMouseEnter={e => e.currentTarget.style.color = "#f3501e"}
+                    onMouseLeave={e => e.currentTarget.style.color = "#ffffff"}
+                  >
+                    {f.profile?.username || "utilisateur"}
+                  </button>
                 </div>
               ))}
             </div>

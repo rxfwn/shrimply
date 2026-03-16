@@ -1,0 +1,145 @@
+import { useState, useEffect } from "react"
+import { supabase } from "../supabase"
+import { useNavigate } from "react-router-dom"
+
+export default function ResetPasswordConfirm() {
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+  const navigate = useNavigate()
+
+  const passwordMatch = confirmPassword && password === confirmPassword
+  const passwordMismatch = confirmPassword && password !== confirmPassword
+
+  const handleConfirm = async () => {
+    if (password !== confirmPassword) { setError("Les mots de passe ne correspondent pas"); return }
+    if (password.length < 6) { setError("Minimum 6 caractères"); return }
+    setLoading(true)
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) { setError("Erreur lors de la mise à jour"); setLoading(false) }
+    else { setSuccess(true); setTimeout(() => navigate("/login"), 2000) }
+  }
+
+  const inputStyle = {
+    width: "100%", borderRadius: "12px", padding: "14px 16px",
+    fontSize: "14px", outline: "none", background: "#111111",
+    border: "0px solid rgba(255,255,255,0.08)", color: "#666666",
+    fontFamily: "Poppins, sans-serif", fontWeight: 500,
+    letterSpacing: "-0.05em", transition: "border-color 0.2s", boxSizing: "border-box",
+  }
+
+  const btnBaseStyle = {
+    width: "100%", padding: "14px", borderRadius: "12px",
+    fontSize: "14px", fontWeight: 700, letterSpacing: "-0.05em",
+    fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer",
+    transition: "transform 0.2s ease",
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      backgroundColor: "#111111", fontFamily: "Poppins, sans-serif", fontWeight: 700,
+      letterSpacing: "-0.05em", padding: "24px",
+    }}>
+      <div style={{ width: "100%", maxWidth: "400px" }}>
+
+        {/* LOGO */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
+            <img src="/icons/shrim.png" alt="Shrimply" style={{ width: 40, height: 40 }} />
+            <span style={{ fontSize: "28px", color: "#ffffff", fontWeight: 700 }}>
+              Shrim<span style={{ color: "#f3501e" }}>ply</span>
+            </span>
+          </div>
+          <p className="text-light" style={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", margin: 0 }}>
+            planification de repas facile
+          </p>
+        </div>
+
+        {/* BLOC */}
+        <div style={{ backgroundColor: "#091718", borderRadius: "10px", padding: "32px" }}>
+          <h2 style={{ fontSize: "20px", color: "#ffffff", margin: "0 0 8px 0", fontWeight: 700 }}>
+            nouveau mot de passe
+          </h2>
+          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", margin: "0 0 24px 0", fontWeight: 500 }}>
+            Choisis un nouveau mot de passe pour ton compte.
+          </p>
+
+          {error && (
+            <div style={{ marginBottom: "16px", padding: "12px 16px", borderRadius: "12px", fontSize: "13px", background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>
+              {error}
+            </div>
+          )}
+
+          {success ? (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "48px", marginBottom: "16px" }}>✅</div>
+              <p style={{ color: "#34d399", fontWeight: 700, fontSize: "15px", margin: 0 }}>Mot de passe mis à jour !</p>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: 500, marginTop: "8px" }}>Redirection en cours...</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+
+              {/* Nouveau mot de passe */}
+              <div style={{ position: "relative" }}>
+                <input
+                  style={{ ...inputStyle, paddingRight: "44px" }}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="nouveau mot de passe"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                />
+                <button onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <img src={showPassword ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
+                </button>
+              </div>
+
+              {/* Confirmer */}
+              <div style={{ position: "relative" }}>
+                <input
+                  style={{
+                    ...inputStyle, paddingRight: "44px",
+                    border: passwordMismatch ? "1.5px solid rgba(239,68,68,0.5)" : passwordMatch ? "1.5px solid rgba(52,211,153,0.5)" : "0px solid rgba(255,255,255,0.08)",
+                  }}
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="confirmer le mot de passe"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                />
+                <button onClick={() => setShowConfirm(!showConfirm)}
+                  style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <img src={showConfirm ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
+                </button>
+              </div>
+              {passwordMatch && <p style={{ fontSize: "12px", color: "#34d399", margin: "-4px 0 0 4px", fontWeight: 500 }}>✅ Les mots de passe correspondent</p>}
+              {passwordMismatch && <p style={{ fontSize: "12px", color: "#fca5a5", margin: "-4px 0 0 4px", fontWeight: 500 }}>❌ Les mots de passe ne correspondent pas</p>}
+
+              <button
+                onClick={handleConfirm}
+                disabled={loading || !password || !confirmPassword}
+                style={{
+                  ...btnBaseStyle,
+                  background: "#f3501e", color: "#ffffff",
+                  opacity: loading || !password || !confirmPassword ? 0.4 : 1,
+                  cursor: loading || !password || !confirmPassword ? "not-allowed" : "pointer",
+                  marginTop: "4px",
+                }}
+                onMouseEnter={e => { if (!loading && password && confirmPassword) e.currentTarget.style.transform = "scale(1.03)" }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)" }}
+                onMouseDown={e => { e.currentTarget.style.transform = "scale(0.95)" }}
+                onMouseUp={e => { e.currentTarget.style.transform = "scale(1.03)" }}
+              >
+                {loading ? "mise à jour..." : "mettre à jour"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

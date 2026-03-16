@@ -1,16 +1,10 @@
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
-import { useTheme } from "../context/ThemeContext"
-
-const PREFERENCES = [
-  "🌿 Végétarien", "🌱 Vegan", "🐟 Pescétarien", "🥩 Sans restrictions",
-  "🚫 Sans gluten", "🥛 Sans lactose", "🥜 Sans arachides", "💰 Économique"
-]
+import { TAGS } from "../tags"
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { darkMode, setDarkMode } = useTheme()
   const fileRef = useRef()
 
   const [user, setUser] = useState(null)
@@ -23,7 +17,6 @@ export default function Settings() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteInput, setDeleteInput] = useState("")
 
-  // Notifications (stockées localement)
   const [notifNewFollower, setNotifNewFollower] = useState(
     localStorage.getItem("notif_follower") !== "false"
   )
@@ -52,30 +45,24 @@ export default function Settings() {
     const file = e.target.files[0]
     if (!file) return
     if (file.size > 2 * 1024 * 1024) {
-      setSuccess("❌ Image trop lourde (max 2MB)")
+      setSuccess("❌ image trop lourde (max 2MB)")
       setTimeout(() => setSuccess(""), 3000)
       return
     }
     setUploading(true)
-    const path = `${user.id}`
-    await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type })
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path)
+    await supabase.storage.from("avatars").upload(`${user.id}`, file, { upsert: true, contentType: file.type })
+    const { data } = supabase.storage.from("avatars").getPublicUrl(`${user.id}`)
     setAvatarUrl(data.publicUrl)
     setUploading(false)
   }
 
   const handleSave = async () => {
     setSaving(true)
-    await supabase.from("profiles").upsert({
-      id: user.id,
-      username,
-      avatar_url: avatarUrl,
-      preferences: selectedPrefs,
-    })
+    await supabase.from("profiles").upsert({ id: user.id, username, avatar_url: avatarUrl, preferences: selectedPrefs })
     localStorage.setItem("notif_follower", notifNewFollower)
     localStorage.setItem("notif_liked", notifRecipeLiked)
     setSaving(false)
-    setSuccess("✅ Profil sauvegardé !")
+    setSuccess("✅ profil sauvegardé !")
     setTimeout(() => setSuccess(""), 3000)
   }
 
@@ -86,99 +73,167 @@ export default function Settings() {
 
   const handleDeleteAccount = async () => {
     if (deleteInput !== username) return
-    // Supprimer les données de l'utilisateur
     await supabase.from("recipes").delete().eq("user_id", user.id)
     await supabase.from("profiles").delete().eq("id", user.id)
     await supabase.auth.signOut()
     navigate("/login")
   }
 
+  // ── Composants internes ────────────────────────────────────────────────────
+
   const Toggle = ({ value, onChange }) => (
     <button
       onClick={() => onChange(!value)}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-200 flex-shrink-0 ${value ? "bg-brand-orange" : "bg-gray-200 dark:bg-zinc-600"}`}
+      style={{
+        position: "relative", width: 44, height: 24, borderRadius: 12, flexShrink: 0,
+        backgroundColor: value ? "#f3501e" : "#4c4c4c",
+        border: "none", cursor: "pointer", transition: "background-color 0.2s",
+      }}
     >
-      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${value ? "translate-x-5" : "translate-x-0"}`} />
+      <span style={{
+        position: "absolute", top: 2, left: 2,
+        width: 20, height: 20, borderRadius: "50%",
+        backgroundColor: "#ffffff",
+        transform: value ? "translateX(20px)" : "translateX(0)",
+        transition: "transform 0.2s",
+        display: "block",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+      }} />
     </button>
   )
 
-  const Section = ({ title, children }) => (
-    <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 rounded-xl shadow-sm mb-4 overflow-hidden">
-      <div className="px-5 pt-4 pb-1">
-        <h2 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3">{title}</h2>
+  const Section = ({ title, icon, children }) => (
+    <div style={{
+      backgroundColor: "#1a1a1a",
+      borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.06)",
+      overflow: "hidden",
+      marginBottom: 12,
+    }}>
+      <div style={{
+        padding: "14px 18px 10px",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        {icon && <img src={`/icons/${icon}.png`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}
+        <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          {title}
+        </span>
       </div>
-      <div className="pb-2">{children}</div>
+      {children}
     </div>
   )
 
-  const Row = ({ label, sub, right, onClick, danger }) => (
+  const Row = ({ label, sub, right, onClick, danger, noBorder }) => (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between px-5 py-3 ${onClick ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition" : ""} ${danger ? "text-red-500" : ""}`}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "13px 18px",
+        borderBottom: noBorder ? "none" : "1px solid rgba(255,255,255,0.04)",
+        cursor: onClick ? "pointer" : "default",
+        transition: "background 0.12s",
+      }}
+      onMouseEnter={e => { if (onClick) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)" }}
+      onMouseLeave={e => { if (onClick) e.currentTarget.style.backgroundColor = "transparent" }}
     >
       <div>
-        <p className={`text-sm font-medium ${danger ? "text-red-500" : "text-zinc-900 dark:text-white"}`}>{label}</p>
-        {sub && <p className="text-xs text-zinc-400 mt-0.5">{sub}</p>}
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: danger ? "#f87171" : "#ffffff", letterSpacing: "-0.03em" }}>{label}</p>
+        {sub && <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>{sub}</p>}
       </div>
       {right}
     </div>
   )
 
+  const inputStyle = {
+    width: "100%", borderRadius: 10, padding: "10px 14px",
+    fontSize: 13, outline: "none",
+    backgroundColor: "#2d2d2d",
+    border: "1.5px solid rgba(255,255,255,0.06)",
+    color: "#ffffff", fontFamily: "Poppins, sans-serif", fontWeight: 500,
+    letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s",
+  }
+
+  const btnBase = {
+    fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13,
+    letterSpacing: "-0.05em", border: "none", cursor: "pointer",
+    borderRadius: 10, transition: "transform 0.15s",
+  }
+
   return (
-    <div className="p-6 max-w-xl">
+    <div style={{ backgroundColor: "#111111", minHeight: "100%", padding: "24px", fontFamily: "Poppins, sans-serif", maxWidth: 560 }}>
 
       {/* Toast */}
       {success && (
-        <div className="fixed top-6 right-6 z-50 bg-green-500 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium">
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: success.startsWith("❌") ? "#f87171" : "#34d399", color: success.startsWith("❌") ? "#ffffff" : "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
           {success}
         </div>
       )}
 
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-white mb-6">⚙️ Paramètres</h1>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+        <img src="/icons/settings.png" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.05em" }}>paramètres</h1>
+      </div>
 
-      {/* ── PROFIL ──────────────────────────────────────────────────────── */}
-      <Section title="Profil">
-        <div className="px-5 pb-3">
+      {/* ── PROFIL ─────────────────────────────────────────────────────────── */}
+      <Section title="profil" icon="book">
+        <div style={{ padding: "16px 18px" }}>
+
           {/* Avatar */}
-          <div className="flex items-center gap-4 mb-4">
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
             <div
-              className="w-16 h-16 rounded-full bg-orange-100 dark:bg-zinc-700 flex items-center justify-center cursor-pointer overflow-hidden border-2 border-orange-200 hover:border-orange-400 transition"
               onClick={() => fileRef.current.click()}
+              style={{
+                width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
+                border: "2.5px solid rgba(243,80,30,0.5)",
+                backgroundColor: "#2d2d2d",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", transition: "border-color 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#f3501e"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(243,80,30,0.5)"}
             >
               {avatarUrl ? (
-                <img src={`${avatarUrl}?t=${Date.now()}`} alt="avatar" className="w-full h-full object-cover" />
+                <img src={`${avatarUrl}?t=${Date.now()}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
-                <span className="text-2xl">👤</span>
+                <span style={{ fontSize: 26 }}>👤</span>
               )}
             </div>
             <div>
               <button
                 onClick={() => fileRef.current.click()}
-                className="text-sm text-brand-orange hover:text-brand-orange/70 font-medium transition"
+                style={{ ...btnBase, background: "none", border: "none", padding: 0, color: "#f3501e", fontSize: 13, display: "block", marginBottom: 4 }}
               >
-                {uploading ? "Upload..." : "Changer la photo"}
+                {uploading ? "upload en cours..." : "changer la photo"}
               </button>
-              <p className="text-xs text-zinc-400 mt-0.5">JPG, PNG — max 2MB</p>
+              <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500 }}>JPG, PNG — max 2MB</p>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} />
           </div>
 
-          {/* Nom */}
-          <div className="mb-3">
-            <label className="text-xs font-medium text-zinc-500 mb-1 block">Nom d'utilisateur</label>
+          {/* Nom d'utilisateur */}
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+              nom d'utilisateur
+            </label>
             <input
-              className="w-full border border-gray-200 dark:border-zinc-600 dark:bg-zinc-700 dark:text-white rounded-lg p-2.5 text-sm outline-none focus:border-brand-orange transition"
-              placeholder="Ton prénom ou pseudo"
+              style={inputStyle}
+              placeholder="ton prénom ou pseudo"
               value={username}
               onChange={e => setUsername(e.target.value)}
+              onFocus={e => e.target.style.borderColor = "#f3501e"}
+              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.06)"}
             />
           </div>
 
-          {/* Email */}
+          {/* Email (désactivé) */}
           <div>
-            <label className="text-xs font-medium text-zinc-500 mb-1 block">Email</label>
+            <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+              email
+            </label>
             <input
-              className="w-full border border-gray-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 rounded-lg p-2.5 text-sm text-zinc-400 cursor-not-allowed"
+              style={{ ...inputStyle, backgroundColor: "#141414", color: "rgba(255,255,255,0.3)", cursor: "not-allowed", border: "1.5px solid rgba(255,255,255,0.03)" }}
               value={user?.email || ""}
               disabled
             />
@@ -186,121 +241,151 @@ export default function Settings() {
         </div>
       </Section>
 
-      {/* ── PRÉFÉRENCES ALIMENTAIRES ─────────────────────────────────────── */}
-      <Section title="Préférences alimentaires">
-        <div className="px-5 pb-3">
-          <p className="text-xs text-zinc-400 mb-3">Utilisées pour personnaliser tes suggestions de recettes.</p>
-          <div className="flex flex-wrap gap-2">
-            {PREFERENCES.map(pref => (
-              <button
-                key={pref}
-                onClick={() => togglePref(pref)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition ${selectedPrefs.includes(pref)
-                  ? "bg-brand-orange border-brand-orange text-white"
-                  : "bg-white dark:bg-zinc-700 border-gray-200 dark:border-zinc-600 text-zinc-500 dark:text-zinc-400 hover:border-brand-orange"}`}
-              >
-                {pref}
-              </button>
-            ))}
+      {/* ── PRÉFÉRENCES ALIMENTAIRES ────────────────────────────────────────── */}
+      <Section title="préférences alimentaires" icon="salad">
+        <div style={{ padding: "12px 18px 16px" }}>
+          <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500, lineHeight: 1.5 }}>
+            utilisées pour personnaliser tes suggestions de recettes.
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {TAGS.map(tag => {
+              const active = selectedPrefs.includes(tag.value)
+              return (
+                <button
+                  key={tag.value}
+                  onClick={() => togglePref(tag.value)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em",
+                    cursor: "pointer", transition: "all 0.15s",
+                    backgroundColor: active ? tag.pillBg : "transparent",
+                    color: active ? tag.pillText : "rgba(255,255,255,0.4)",
+                    border: active ? "1.5px solid transparent" : "1.5px solid rgba(255,255,255,0.1)",
+                    transform: active ? "scale(1.05)" : "scale(1)",
+                  }}
+                >
+                  <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
+                  {tag.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       </Section>
 
-      {/* ── APPARENCE ───────────────────────────────────────────────────── */}
-      <Section title="Apparence">
+      {/* ── NOTIFICATIONS ───────────────────────────────────────────────────── */}
+      <Section title="notifications" icon="clock">
         <Row
-          label="Mode nuit"
-          sub="Réduit la luminosité de l'interface"
-          right={<Toggle value={darkMode} onChange={setDarkMode} />}
-        />
-      </Section>
-
-      {/* ── NOTIFICATIONS ───────────────────────────────────────────────── */}
-      <Section title="Notifications">
-        <Row
-          label="Nouveaux abonnés"
-          sub="Quand quelqu'un commence à te suivre"
+          label="nouveaux abonnés"
+          sub="quand quelqu'un commence à te suivre"
           right={<Toggle value={notifNewFollower} onChange={setNotifNewFollower} />}
         />
         <Row
-          label="Recette aimée"
-          sub="Quand quelqu'un aime une de tes recettes"
+          label="recette aimée"
+          sub="quand quelqu'un aime une de tes recettes"
           right={<Toggle value={notifRecipeLiked} onChange={setNotifRecipeLiked} />}
+          noBorder
         />
       </Section>
 
-      {/* ── CONFIDENTIALITÉ ─────────────────────────────────────────────── */}
-      <Section title="Confidentialité">
+      {/* ── CONFIDENTIALITÉ ─────────────────────────────────────────────────── */}
+      <Section title="confidentialité">
         <Row
-          label="Profil public"
-          sub="Tes recettes publiques sont visibles par tous"
-          right={<span className="text-xs text-zinc-400">Toujours actif</span>}
+          label="profil public"
+          sub="tes recettes publiques sont visibles par tous"
+          right={<span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>toujours actif</span>}
         />
         <Row
-          label="Voir mes recettes publiées"
-          right={<span className="text-zinc-400">→</span>}
+          label="voir mes recettes publiées"
+          right={<span style={{ color: "rgba(255,255,255,0.25)", fontSize: 16 }}>→</span>}
           onClick={() => navigate("/profile")}
+          noBorder
         />
       </Section>
 
-      {/* ── COMPTE ──────────────────────────────────────────────────────── */}
-      <Section title="Compte">
+      {/* ── COMPTE ──────────────────────────────────────────────────────────── */}
+      <Section title="compte">
         <Row
-          label="Se déconnecter"
-          right={<span className="text-zinc-400">→</span>}
+          label="se déconnecter"
+          right={<span style={{ color: "rgba(255,255,255,0.25)", fontSize: 16 }}>→</span>}
           onClick={handleLogout}
         />
         <Row
-          label="Supprimer mon compte"
-          sub="Action irréversible"
+          label="supprimer mon compte"
+          sub="action irréversible"
           danger
           onClick={() => setConfirmDelete(true)}
+          noBorder
         />
       </Section>
 
-      {/* Bouton sauvegarder */}
+      {/* ── BOUTON SAUVEGARDER ──────────────────────────────────────────────── */}
       <button
         onClick={handleSave}
         disabled={saving}
-        className="w-full bg-brand-orange text-white py-3 rounded-xl text-sm font-semibold hover:bg-brand-orange/80 transition disabled:opacity-50 shadow-md"
+        style={{
+          ...btnBase,
+          width: "100%", padding: "13px",
+          backgroundColor: "#f3501e", color: "#ffffff",
+          fontSize: 13, opacity: saving ? 0.6 : 1,
+          marginTop: 4,
+        }}
+        onMouseEnter={e => { if (!saving) e.currentTarget.style.transform = "scale(1.02)" }}
+        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        onMouseDown={e => e.currentTarget.style.transform = "scale(0.97)"}
+        onMouseUp={e => e.currentTarget.style.transform = "scale(1.02)"}
       >
-        {saving ? "Sauvegarde..." : "💾 Sauvegarder"}
+        {saving ? "sauvegarde..." : "💾 sauvegarder"}
       </button>
 
-      {/* ── MODAL SUPPRESSION ───────────────────────────────────────────── */}
+      {/* ── POPUP SUPPRESSION ───────────────────────────────────────────────── */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-red-100 dark:border-red-900/30">
-            <div className="text-center mb-5">
-              <div className="text-4xl mb-3">⚠️</div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-2">Supprimer mon compte</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Cette action est <strong>irréversible</strong>. Toutes tes recettes seront supprimées.
-              </p>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ backgroundColor: "#1a1a1a", borderRadius: 16, maxWidth: 380, width: "100%", overflow: "hidden", border: "1px solid rgba(239,68,68,0.2)" }}>
+
+            {/* Header rouge */}
+            <div style={{ backgroundColor: "rgba(239,68,68,0.08)", padding: "28px 24px 20px", display: "flex", flexDirection: "column", alignItems: "center", borderBottom: "1px solid rgba(239,68,68,0.12)" }}>
+              <div style={{ width: 52, height: 52, backgroundColor: "#2d2d2d", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 12 }}>⚠️</div>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.05em" }}>supprimer mon compte</h2>
             </div>
-            <p className="text-xs text-zinc-500 mb-2">
-              Tape ton nom d'utilisateur <strong className="text-zinc-800 dark:text-white">"{username}"</strong> pour confirmer :
-            </p>
-            <input
-              className="w-full border border-red-200 dark:border-red-800 rounded-lg p-2.5 text-sm outline-none mb-4 dark:bg-zinc-700 dark:text-white focus:border-red-400"
-              placeholder={username}
-              value={deleteInput}
-              onChange={e => setDeleteInput(e.target.value)}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setConfirmDelete(false); setDeleteInput("") }}
-                className="flex-1 border border-gray-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={deleteInput !== username}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-40"
-              >
-                Supprimer
-              </button>
+
+            <div style={{ padding: "20px 24px 24px" }}>
+              <p style={{ margin: "0 0 16px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, textAlign: "center", fontWeight: 500 }}>
+                action <strong style={{ color: "rgba(255,255,255,0.7)" }}>irréversible</strong> — toutes tes recettes seront supprimées.
+              </p>
+
+              <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                tape « {username} » pour confirmer
+              </label>
+              <input
+                style={{ ...inputStyle, border: "1.5px solid rgba(239,68,68,0.3)", marginBottom: 16 }}
+                placeholder={username}
+                value={deleteInput}
+                onChange={e => setDeleteInput(e.target.value)}
+                onFocus={e => e.target.style.borderColor = "#f87171"}
+                onBlur={e => e.target.style.borderColor = "rgba(239,68,68,0.3)"}
+              />
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => { setConfirmDelete(false); setDeleteInput("") }}
+                  style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#2d2d2d", color: "rgba(255,255,255,0.6)" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  annuler
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteInput !== username}
+                  style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#ef4444", color: "#ffffff", opacity: deleteInput !== username ? 0.35 : 1 }}
+                  onMouseEnter={e => { if (deleteInput === username) e.currentTarget.style.transform = "scale(1.02)" }}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  supprimer
+                </button>
+              </div>
             </div>
           </div>
         </div>

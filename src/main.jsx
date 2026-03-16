@@ -1,4 +1,6 @@
 import React from "react"
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { ThemeProvider } from "./context/ThemeContext"
@@ -19,6 +21,8 @@ import Nutrition from "./pages/Nutrition"
 import Suggestions from "./pages/Suggestions"
 import Settings from "./pages/Settings"
 import Profile from "./pages/Profile"
+import ResetPassword from "./pages/ResetPassword"
+import ResetPasswordConfirm from "./pages/ResetPasswordConfirm"
 import "./index.css"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -29,6 +33,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/home" element={<Navigate to="/calendar" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/confirm" element={<ResetPasswordConfirm />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route element={<PrivateRoute />}>
           <Route element={<Layout />}>
@@ -44,6 +50,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/:userId" element={<Profile />} />
           </Route>
         </Route>
       </Routes>

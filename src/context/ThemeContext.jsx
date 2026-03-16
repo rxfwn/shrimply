@@ -4,16 +4,19 @@ const ThemeContext = createContext()
 
 export function ThemeProvider({ children }) {
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark"
+    // Par défaut dark mode
+    return localStorage.getItem("theme") !== "light"
   })
 
   useEffect(() => {
     const root = document.documentElement
     if (darkMode) {
       root.classList.add("dark")
+      root.classList.remove("light")
       localStorage.setItem("theme", "dark")
     } else {
       root.classList.remove("dark")
+      root.classList.add("light")
       localStorage.setItem("theme", "light")
     }
   }, [darkMode])

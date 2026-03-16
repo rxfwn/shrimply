@@ -158,7 +158,7 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
           onClick={() => fileInputRef.current.click()}
           className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 h-52 flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-orange-50/50 dark:hover:bg-orange-900/5 transition"
         >
-          <span className="text-3xl mb-2">📸</span>
+          <img src="/icons/photo.png" alt="" style={{ width: 46, height: 46 }} className="mb-2" />
           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Ajouter la photo du plat</p>
           <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
         </div>

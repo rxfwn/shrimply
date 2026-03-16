@@ -11,8 +11,9 @@ export default function Login() {
   const navigate = useNavigate()
 
   const handleLogin = async () => {
+    setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError("Email ou mot de passe incorrect")
+    if (error) { setError("Email ou mot de passe incorrect"); setLoading(false) }
     else navigate("/calendar")
   }
 
@@ -23,62 +24,168 @@ export default function Login() {
     })
   }
 
+  const inputStyle = {
+    width: "100%",
+    borderRadius: "12px",
+    padding: "14px 16px",
+    fontSize: "14px",
+    outline: "none",
+    background: "#111111",
+    border: "0px solid rgba(255,255,255,0.08)",
+    color: "#666666",
+    fontFamily: "Poppins, sans-serif",
+    fontWeight: 100,
+    letterSpacing: "-0.05em",
+    transition: "border-color 0.2s",
+    boxSizing: "border-box",
+  }
+
+  const btnBaseStyle = {
+    width: "100%",
+    padding: "14px",
+    borderRadius: "12px",
+    fontSize: "14px",
+    fontWeight: 700,
+    letterSpacing: "-0.05em",
+    fontFamily: "Poppins, sans-serif",
+    border: "none",
+    cursor: "pointer",
+    transition: "transform 0.2s ease",
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-purple">
-      <div className="w-full max-w-md px-6">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-brand-cream mb-1">🦐 Shrim<span className="text-brand-orange">ply</span></h1>
-          <p className="text-sm text-brand-cream/50">Planifie tes repas avec style</p>
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "#111111",
+      fontFamily: "Poppins, sans-serif",
+      fontWeight: 700,
+      letterSpacing: "-0.05em",
+      padding: "24px",
+    }}>
+      <div style={{ width: "100%", maxWidth: "400px" }}>
+
+        {/* LOGO */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
+            <img src="/icons/shrim.png" alt="Shrimply" style={{ width: 40, height: 40 }} />
+            <span style={{ fontSize: "28px", color: "#ffffff", fontWeight: 700 }}>
+              Shrim<span style={{ color: "#f3501e" }}>ply</span>
+            </span>
+          </div>
+          <p className="text-light" style={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", margin: 0 }}>
+          planification de repas facile
+          </p>
         </div>
 
-        <div className="rounded-2xl p-7 shadow-2xl bg-brand-dark/60 border border-white/10">
-          <h2 className="text-lg font-semibold text-brand-cream mb-5">Connexion</h2>
+        {/* BLOC */}
+        <div style={{
+          backgroundColor: "#091718",
+          borderRadius: "10px",
+          padding: "32px",
+        }}>
+          <h2 style={{ fontSize: "20px", color: "#ffffff", margin: "0 0 24px 0", fontWeight: 700 }}>
+            connexion
+          </h2>
 
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-xl text-sm font-medium bg-red-500/15 text-red-300 border border-red-500/30">
+            <div style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              fontSize: "13px",
+              background: "rgba(239,68,68,0.1)",
+              color: "#fca5a5",
+              
+            }}>
               {error}
             </div>
           )}
 
-          <div className="flex flex-col gap-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontWeight:900  }}>
             <input
-              className="w-full rounded-xl px-4 py-3 text-sm outline-none bg-white/5 border border-white/10 text-brand-cream placeholder-brand-cream/30 focus:border-brand-orange transition"
-              type="email" placeholder="Email" value={email}
+              style={inputStyle}
+              type="email"
+              placeholder="email"
+              value={email}
               onChange={e => setEmail(e.target.value)}
+              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
             />
-            <div className="relative">
+
+            <div style={{ position: "relative" }}>
               <input
-                className="w-full rounded-xl px-4 py-3 text-sm outline-none bg-white/5 border border-white/10 text-brand-cream placeholder-brand-cream/30 focus:border-brand-orange transition pr-10"
-                type={showPassword ? "text" : "password"} placeholder="Mot de passe" value={password}
+                style={{ ...inputStyle, paddingRight: "44px" }}
+                type={showPassword ? "text" : "password"}
+                placeholder="mot de passe"
+                value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleLogin()}
+                onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
               />
-              <button onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-cream/40 hover:text-brand-cream transition text-sm">
-                {showPassword ? "🙈" : "👁️"}
+              <button
+              onClick={() => setShowPassword(!showPassword)}
+              style={{position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)",background: "none", border: "none", cursor: "pointer", padding: 0,
+              }}> 
+              <img src={showPassword ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
               </button>
+              
+            </div>
+              <div style={{ textAlign: "right", marginTop: "-4px" }}>
+            <Link to="/reset-password" style={{ fontSize: "12px", color: "#ffffff", textDecoration: "none", fontWeight: 500 }}>
+            mot de passe oublié ?
+           </Link>
             </div>
 
-            <button onClick={handleLogin} disabled={loading || !email || !password}
-              className="w-full py-3 rounded-xl text-sm font-bold bg-brand-orange hover:bg-brand-orange/80 text-white transition disabled:opacity-50 mt-1">
-              {loading ? "Connexion..." : "Se connecter"}
+
+
+            <button
+            onClick={handleLogin}
+            disabled={loading || !email || !password}
+            style={{
+            ...btnBaseStyle,
+            background: "#f3501e",
+            color: "#ffffff",
+            opacity: loading || !email || !password ? 0.4 : 1,
+            cursor: loading || !email || !password ? "not-allowed" : "pointer",
+            marginTop: "4px",
+             }}
+             onMouseEnter={e => { if (!loading && email && password) e.currentTarget.style.transform = "scale(1.03)" }}
+             onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)" }}
+             onMouseDown={e => { e.currentTarget.style.transform = "scale(0.95)" }}
+             onMouseUp={e => { e.currentTarget.style.transform = "scale(1.03)" }}
+            >
+            {loading ? "connexion..." : "se connecter"}
             </button>
 
-            <div className="flex items-center gap-3 my-1">
-              <div className="flex-1 h-px bg-white/10"></div>
-              <span className="text-xs text-brand-cream/30">ou</span>
-              <div className="flex-1 h-px bg-white/10"></div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "4px 0" }}>
+              <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+              <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.25)", fontWeight: 500 }}>ou</span>
+              <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
             </div>
 
-            <button onClick={handleGoogle}
-              className="w-full py-3 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-brand-cream hover:bg-white/10 transition">
-              🔵 Continuer avec Google
+            <button
+              onClick={handleGoogle}
+              style={{
+                ...btnBaseStyle,
+                background: "#111111",
+                color: "#ffffff",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+              onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+            >
+              continuer avec google
             </button>
           </div>
 
-          <p className="text-center text-sm mt-5 text-brand-cream/40">
-            Pas encore de compte ?{" "}
-            <Link to="/register" className="font-semibold text-brand-cyan">S'inscrire</Link>
+          <p style={{ textAlign: "center", fontSize: "13px", marginTop: "20px", marginBottom: 0, color: "#ffffff", fontWeight: 500 }}>
+            pas encore de compte ?{" "}
+            <Link to="/register" style={{ color: "#f3501e", textDecoration: "none", fontWeight: 700 }}>
+              s'inscrire
+            </Link>
           </p>
         </div>
       </div>

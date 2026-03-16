@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
+import { TAGS } from "../tags"
 import {
   findBestMatch, computeCostDetails, getCategoryUnit,
   getIngredientBaseUnit, normalizeStr
@@ -219,7 +220,7 @@ export default function RecipeDetail() {
     <div className="p-4 md:p-6">
       <button onClick={() => navigate("/recipes")}
         className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 mb-4 md:mb-6 text-sm flex items-center gap-1 font-medium transition">
-        ← Retour
+        retour
       </button>
 
       {/* ===== DESKTOP ===== */}
@@ -252,11 +253,25 @@ export default function RecipeDetail() {
                   {ingredients.length > 0 && <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 px-3 py-1.5 rounded-full text-xs font-semibold"><span>🛒</span><span>{ingredients.length} ingr.</span></div>}
                   {steps.length > 0 && <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 px-3 py-1.5 rounded-full text-xs font-semibold"><span>👨‍🍳</span><span>{steps.length} étapes</span></div>}
                 </div>
-                {recipe.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {recipe.tags.map(tag => <span key={tag} className="text-[11px] bg-brand-orange/10 text-brand-orange px-2.5 py-1 rounded-full font-medium">{tag}</span>)}
-                  </div>
-                )}
+                {/* Tags Desktop avec le nouveau système */}
+                {recipe.tags?.length > 0 && (() => {
+                  const validTags = recipe.tags.filter(tv => TAGS.some(t => t.value === tv));
+                  if (validTags.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1.5">
+                      {validTags.map(tv => {
+                        const ti = TAGS.find(t => t.value === tv);
+                        return (
+                          <span key={tv} className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-semibold border shadow-sm"
+                            style={{ backgroundColor: ti.pillBg, color: ti.pillText, borderColor: ti.pillBg }}>
+                            <img src={`/icons/${ti.icon}.png`} alt="" style={{width: 14, height: 14, filter: "none", opacity: 1}} onError={e => { e.target.style.display = "none" }} />
+                            {ti.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="mt-5 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30 rounded-2xl p-4">
                 <div className="flex justify-between items-center mb-3">
@@ -343,11 +358,25 @@ export default function RecipeDetail() {
                   {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
                   {recipe.servings && <span>🍽 {recipe.servings} pers.</span>}
                 </div>
-                {recipe.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-3">
-                    {recipe.tags.map(tag => <span key={tag} className="text-xs bg-brand-orange/10 text-brand-orange px-2 py-0.5 rounded-full">{tag}</span>)}
-                  </div>
-                )}
+                {/* Tags Mobile avec le nouveau système */}
+                {recipe.tags?.length > 0 && (() => {
+                  const validTags = recipe.tags.filter(tv => TAGS.some(t => t.value === tv));
+                  if (validTags.length === 0) return null;
+                  return (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {validTags.map(tv => {
+                        const ti = TAGS.find(t => t.value === tv);
+                        return (
+                          <span key={tv} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-semibold border shadow-sm"
+                            style={{ backgroundColor: ti.pillBg, color: ti.pillText, borderColor: ti.pillBg }}>
+                            <img src={`/icons/${ti.icon}.png`} alt="" style={{width: 14, height: 14, filter: "none", opacity: 1}} onError={e => { e.target.style.display = "none" }} />
+                            {ti.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="flex gap-2 flex-shrink-0 ml-4"><ActionButtons size="md" /></div>
             </div>

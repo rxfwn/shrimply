@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
+import { useTheme } from "../context/ThemeContext"
 
 const CATEGORIES = [
   { id: "legumes_fruits", label: "Fruits & Légumes", icon: "/icons/herb.png" },
@@ -45,19 +46,29 @@ function formatDate(date) {
   return date.toISOString().split("T")[0]
 }
 
-const inputStyle = {
-  width: "100%", borderRadius: 10, padding: "10px 14px",
-  fontSize: 13, outline: "none", background: "#111111",
-  border: "none", color: "#666666",
-  fontFamily: "Poppins, sans-serif", fontWeight: 500,
-  letterSpacing: "-0.05em", boxSizing: "border-box",
-}
-
-function AddItemModal({ onClose, onAdd }) {
+function AddItemModal({ onClose, onAdd, isDay }) {
   const [name, setName] = useState("")
   const [quantity, setQuantity] = useState("")
   const [unit, setUnit] = useState("")
   const [submitting, setSubmitting] = useState(false)
+
+  const surface = isDay ? "#FFFFFF" : "#091718"
+  const surfaceBorder = isDay ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"
+  const divider = isDay ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"
+  const textPrimary = isDay ? "#111111" : "#ffffff"
+  const closeColor = isDay ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.4)"
+  const cancelBg = isDay ? "#EDE8DF" : "#2d2d2d"
+  const cancelColor = isDay ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)"
+
+  const inputStyle = {
+    width: "100%", borderRadius: 10, padding: "10px 14px",
+    fontSize: 13, outline: "none",
+    background: isDay ? "#F5F0E8" : "#111111",
+    border: isDay ? "1.5px solid rgba(0,0,0,0.07)" : "none",
+    color: isDay ? "#111111" : "#666666",
+    fontFamily: "Poppins, sans-serif", fontWeight: 500,
+    letterSpacing: "-0.05em", boxSizing: "border-box",
+  }
 
   const handleSubmit = async () => {
     if (!name.trim()) return
@@ -69,10 +80,10 @@ function AddItemModal({ onClose, onAdd }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.7)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 16 }}>
-      <div style={{ backgroundColor: "#091718", borderRadius: 16, width: "100%", maxWidth: 400, border: "1px solid rgba(255,255,255,0.06)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#ffffff" }}>ajouter un article</h2>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer" }}>×</button>
+      <div style={{ backgroundColor: surface, borderRadius: 16, width: "100%", maxWidth: 400, border: surfaceBorder }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: divider }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: textPrimary }}>ajouter un article</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: closeColor, fontSize: 20, cursor: "pointer" }}>×</button>
         </div>
         <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
           <input autoFocus value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="ex : tomates cerises" style={inputStyle} />
@@ -81,7 +92,7 @@ function AddItemModal({ onClose, onAdd }) {
             <input value={unit} onChange={e => setUnit(e.target.value)} placeholder="unité" style={inputStyle} />
           </div>
           {name.trim() && (
-            <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>
+            <p style={{ margin: 0, fontSize: 11, color: isDay ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)", fontWeight: 500 }}>
               classé dans : <span style={{ color: "#d57bff" }}>
                 {CATEGORIES.find(c => c.id === assignCategory(name))?.label}
               </span>
@@ -90,7 +101,7 @@ function AddItemModal({ onClose, onAdd }) {
         </div>
         <div style={{ padding: "0 20px 20px", display: "flex", gap: 10 }}>
           <button onClick={onClose}
-            style={{ flex: 1, padding: "12px", borderRadius: 10, backgroundColor: "#2d2d2d", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, color: "rgba(255,255,255,0.5)", letterSpacing: "-0.05em" }}>
+            style={{ flex: 1, padding: "12px", borderRadius: 10, backgroundColor: cancelBg, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, color: cancelColor, letterSpacing: "-0.05em" }}>
             annuler
           </button>
           <button onClick={handleSubmit} disabled={!name.trim() || submitting}
@@ -108,8 +119,20 @@ function AddItemModal({ onClose, onAdd }) {
   )
 }
 
-function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDrop }) {
+function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDrop, isDay }) {
   const [dragOverItem, setDragOverItem] = useState(null)
+
+  const surface = isDay ? "#FFFFFF" : "#091718"
+  const surfaceBorder = isDragTarget
+    ? "1.5px solid #d57bff"
+    : isDay ? "1.5px solid rgba(0,0,0,0.07)" : "1.5px solid rgba(255,255,255,0.06)"
+  const divider = isDay ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)"
+  const rowDivider = isDay ? "1px solid rgba(0,0,0,0.04)" : "1px solid rgba(255,255,255,0.04)"
+  const headerLabel = isDay ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.6)"
+  const textPrimary = isDay ? "#111111" : "#ffffff"
+  const textQty = isDay ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)"
+  const deleteBtnColor = isDay ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
+  const checkBorderColor = isDay ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
 
   const handleDragStart = (e, item) => {
     e.dataTransfer.effectAllowed = "move"
@@ -120,10 +143,10 @@ function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDro
   return (
     <div
       style={{
-        backgroundColor: "#091718",
+        backgroundColor: surface,
         borderRadius: 12,
         overflow: "hidden",
-        border: isDragTarget ? "1.5px solid #d57bff" : "1.5px solid rgba(255,255,255,0.06)",
+        border: surfaceBorder,
         transition: "border-color 0.15s",
         marginBottom: 12,
         breakInside: "avoid",
@@ -138,9 +161,9 @@ function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDro
       }}
     >
       {/* En-tête */}
-      <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: divider }}>
         <img src={cat.icon} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.05em", flex: 1 }}>{cat.label}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: headerLabel, textTransform: "uppercase", letterSpacing: "0.05em", flex: 1 }}>{cat.label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#130b2d", backgroundColor: "#d57bff", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{cat.items.length}</span>
       </div>
 
@@ -155,31 +178,24 @@ function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDro
           style={{
             display: "flex", alignItems: "center", gap: 10,
             padding: "10px 14px",
-            borderBottom: "1px solid rgba(255,255,255,0.04)",
-            backgroundColor: dragOverItem === item.id ? "rgba(243,80,30,0.08)" : "transparent",
+            borderBottom: rowDivider,
+            backgroundColor: dragOverItem === item.id ? "rgba(213,123,255,0.08)" : "transparent",
             cursor: "grab", transition: "background-color 0.1s",
           }}
         >
-          {/* Checkbox */}
           <button onClick={() => onToggle(item)}
-            style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.2)", background: "none", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s" }}
+            style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${checkBorderColor}`, background: "none", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.borderColor = "#d57bff"}
-            onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"}
+            onMouseLeave={e => e.currentTarget.style.borderColor = checkBorderColor}
           />
-
-          {/* Nom */}
-          <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#ffffff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
-
-          {/* Quantité */}
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
           {item.quantity && (
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontWeight: 500, flexShrink: 0 }}>{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>
+            <span style={{ fontSize: 11, color: textQty, fontWeight: 500, flexShrink: 0 }}>{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>
           )}
-
-          {/* Supprimer */}
           <button onClick={() => onDelete(item.id)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.2)", fontSize: 18, lineHeight: 1, flexShrink: 0, padding: 0, transition: "color 0.15s" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: deleteBtnColor, fontSize: 18, lineHeight: 1, flexShrink: 0, padding: 0, transition: "color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+            onMouseLeave={e => e.currentTarget.style.color = deleteBtnColor}
           >×</button>
         </div>
       ))}
@@ -194,6 +210,20 @@ export default function Shopping() {
   const [success, setSuccess] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [dragTargetCat, setDragTargetCat] = useState(null)
+  const { isDay } = useTheme()
+
+  // Derived theme tokens
+  const bg = isDay ? "#F5F0E8" : "#111111"
+  const surface = isDay ? "#FFFFFF" : "#091718"
+  const surfaceBorder = isDay ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"
+  const divider = isDay ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)"
+  const rowDivider = isDay ? "1px solid rgba(0,0,0,0.04)" : "1px solid rgba(255,255,255,0.04)"
+  const textPrimary = isDay ? "#111111" : "#ffffff"
+  const textMuted = isDay ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)"
+  const textFaint = isDay ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
+  const textChecked = isDay ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"
+  const checkedBadgeBg = isDay ? "#EDE8DF" : "#2d2d2d"
+  const deleteBtnColor = isDay ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
 
   const monday = getMonday(new Date())
   const sunday = new Date(monday)
@@ -270,9 +300,9 @@ export default function Shopping() {
   const grouped = CATEGORIES.map(cat => ({ ...cat, items: unchecked.filter(i => (i.category || assignCategory(i.name)) === cat.id) })).filter(cat => cat.items.length > 0)
 
   return (
-    <div style={{ padding: "20px 24px", backgroundColor: "#111111", minHeight: "100%", fontFamily: "Poppins, sans-serif" }}>
+    <div style={{ padding: "20px 24px", backgroundColor: bg, minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.3s ease" }}>
 
-      {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={handleAddItem} />}
+      {showAddModal && <AddItemModal onClose={() => setShowAddModal(false)} onAdd={handleAddItem} isDay={isDay} />}
 
       {success && (
         <div style={{ position: "fixed", top: 24, right: 24, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
@@ -283,11 +313,11 @@ export default function Shopping() {
       {/* HEADER */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
             <img src="/icons/kart.png" alt="" style={{ width: 22, height: 22 }} />
             courses
           </h1>
-          <p className="text-light" style={{ margin: "4px 0 0", fontSize: 12, color: "rgba(255,255,255,0.35)" }}>semaine du {weekLabel}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: textMuted }}>semaine du {weekLabel}</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowAddModal(true)}
@@ -300,52 +330,41 @@ export default function Shopping() {
             + ajouter
           </button>
           <button
-  onClick={handleGenerate}
-  disabled={generating}
-  style={{
-    padding: "8px 14px",
-    borderRadius: 10,
-    backgroundColor: "#cfff79",
-    border: "none",
-    cursor: generating ? "not-allowed" : "pointer",
-    fontFamily: "Poppins, sans-serif",
-    fontWeight: 700,
-    fontSize: 12,
-    color: "#1a3d1a",
-    letterSpacing: "-0.05em",
-    opacity: generating ? 0.5 : 1,
-    transition: "transform 0.2s ease",
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-  }}
-  onMouseEnter={e => { if (!generating) e.currentTarget.style.transform = "scale(1.03)" }}
-  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-  onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
-  onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
->
-  {generating ? "génération..." : (
-    <>
-      <img src="/icons/spark.png" alt="" style={{ width: 14, height: 14 }} />
-      générer
-    </>
-  )}
-</button>
+            onClick={handleGenerate}
+            disabled={generating}
+            style={{
+              padding: "8px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none",
+              cursor: generating ? "not-allowed" : "pointer", fontFamily: "Poppins, sans-serif",
+              fontWeight: 700, fontSize: 12, color: "#1a3d1a", letterSpacing: "-0.05em",
+              opacity: generating ? 0.5 : 1, transition: "transform 0.2s ease",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+            onMouseEnter={e => { if (!generating) e.currentTarget.style.transform = "scale(1.03)" }}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+            onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+          >
+            {generating ? "génération..." : (
+              <>
+                <img src="/icons/spark.png" alt="" style={{ width: 14, height: 14 }} />
+                générer
+              </>
+            )}
+          </button>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>chargement...</div>
+        <div style={{ color: textMuted, fontSize: 13 }}>chargement...</div>
       ) : items.length === 0 ? (
-        <div style={{ backgroundColor: "#091718", borderRadius: 16, padding: 40, textAlign: "center", maxWidth: 360, border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ backgroundColor: surface, borderRadius: 16, padding: 40, textAlign: "center", maxWidth: 360, border: surfaceBorder }}>
           <img src="/icons/kart.png" alt="" style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.4 }} />
-          <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: "#ffffff" }}>aucun article cette semaine</p>
-          <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>génère depuis ton planning ou ajoute des articles manuellement.</p>
+          <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: textPrimary }}>aucun article cette semaine</p>
+          <p style={{ margin: 0, fontSize: 12, color: textMuted, fontWeight: 500 }}>génère depuis ton planning ou ajoute des articles manuellement.</p>
         </div>
       ) : (
         <div onDragEnd={() => setDragTargetCat(null)}>
 
-          {/* GRILLE CATÉGORIES */}
           {grouped.length > 0 && (
             <div style={{ columnCount: "auto", columnWidth: 280, columnGap: 12 }}>
               {grouped.map(cat => (
@@ -357,6 +376,7 @@ export default function Shopping() {
                   isDragTarget={dragTargetCat === cat.id}
                   onDragOver={() => setDragTargetCat(cat.id)}
                   onDrop={moveItem}
+                  isDay={isDay}
                 />
               ))}
             </div>
@@ -364,24 +384,24 @@ export default function Shopping() {
 
           {/* ARTICLES COCHÉS */}
           {checked.length > 0 && (
-            <div style={{ backgroundColor: "#091718", borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", marginTop: 12, opacity: 0.6 }}>
-              <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div style={{ backgroundColor: surface, borderRadius: 12, overflow: "hidden", border: surfaceBorder, marginTop: 12, opacity: 0.6 }}>
+              <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: divider }}>
                 <img src="/icons/check.png" alt="" style={{ width: 16, height: 16 }} />
-                <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", flex: 1 }}>dans le panier</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#ffffff", backgroundColor: "#2d2d2d", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>{checked.length}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: isDay ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", flex: 1 }}>dans le panier</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: textPrimary, backgroundColor: checkedBadgeBg, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>{checked.length}</span>
               </div>
               {checked.map(item => (
-                <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: rowDivider }}>
                   <button onClick={() => toggleChecked(item)}
                     style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid #d57bff", backgroundColor: "#d57bff", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ color: "#ffffff", fontSize: 10, fontWeight: 700 }}>✓</span>
                   </button>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)", textDecoration: "line-through" }}>{item.name}</span>
-                  {item.quantity && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", fontWeight: 500 }}>{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>}
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: textChecked, textDecoration: "line-through" }}>{item.name}</span>
+                  {item.quantity && <span style={{ fontSize: 11, color: textFaint, fontWeight: 500 }}>{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>}
                   <button onClick={() => deleteItem(item.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.15)", fontSize: 18, lineHeight: 1, padding: 0 }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: deleteBtnColor, fontSize: 18, lineHeight: 1, padding: 0 }}
                     onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-                    onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.15)"}
+                    onMouseLeave={e => e.currentTarget.style.color = deleteBtnColor}
                   >×</button>
                 </div>
               ))}

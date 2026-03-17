@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { supabase } from "../supabase"
 import { Link, useNavigate } from "react-router-dom"
+import { useTheme } from "../context/ThemeContext"
 
 export default function Register() {
   const [email, setEmail] = useState("")
@@ -13,6 +14,7 @@ export default function Register() {
   const [usernameError, setUsernameError] = useState("")
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { isDay } = useTheme()
 
   const validateUsername = async (value) => {
     setUsernameError("")
@@ -33,14 +35,12 @@ export default function Register() {
     if (password.length < 6) { setError("Le mot de passe doit faire au moins 6 caractères"); return }
     setLoading(true)
 
-    // Vérif pseudo dispo
     const { data: existing } = await supabase.from("profiles").select("id").eq("username", username).single()
     if (existing) { setError("Ce pseudo est déjà pris"); setLoading(false); return }
 
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
     if (signUpError) { setError(signUpError.message); setLoading(false); return }
 
-    // Créer le profil avec le pseudo
     if (data.user) {
       await supabase.from("profiles").insert({ id: data.user.id, username })
     }
@@ -58,9 +58,9 @@ export default function Register() {
     padding: "14px 16px",
     fontSize: "14px",
     outline: "none",
-    background: "#111111",
-    border: "0px solid rgba(255,255,255,0.08)",
-    color: "#666666",
+    background: isDay ? "#FFFFFF" : "#111111",
+    border: isDay ? "1.5px solid rgba(0,0,0,0.07)" : "0px solid rgba(255,255,255,0.08)",
+    color: isDay ? "#111111" : "#666666",
     fontFamily: "Poppins, sans-serif",
     fontWeight: 500,
     letterSpacing: "-0.05em",
@@ -87,11 +87,12 @@ export default function Register() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: "#111111",
+      backgroundColor: isDay ? "#F5F0E8" : "#111111",
       fontFamily: "Poppins, sans-serif",
       fontWeight: 700,
       letterSpacing: "-0.05em",
       padding: "24px",
+      transition: "background-color 0.3s ease",
     }}>
       <div style={{ width: "100%", maxWidth: "400px" }}>
 
@@ -99,22 +100,24 @@ export default function Register() {
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
             <img src="/icons/shrim.png" alt="Shrimply" style={{ width: 40, height: 40 }} />
-            <span style={{ fontSize: "28px", color: "#ffffff", fontWeight: 700 }}>
+            <span style={{ fontSize: "28px", color: isDay ? "#111111" : "#ffffff", fontWeight: 700 }}>
               Shrim<span style={{ color: "#f3501e" }}>ply</span>
             </span>
           </div>
-          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.35)", margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: "13px", color: isDay ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)", margin: 0, fontWeight: 500 }}>
             planification de repas facile
           </p>
         </div>
 
         {/* BLOC */}
         <div style={{
-          backgroundColor: "#091718",
+          backgroundColor: isDay ? "#FFFFFF" : "#091718",
           borderRadius: "10px",
           padding: "32px",
+          border: isDay ? "1.5px solid rgba(0,0,0,0.07)" : "none",
+          transition: "background-color 0.3s ease",
         }}>
-          <h2 style={{ fontSize: "20px", color: "#ffffff", margin: "0 0 24px 0", fontWeight: 700 }}>
+          <h2 style={{ fontSize: "20px", color: isDay ? "#111111" : "#ffffff", margin: "0 0 24px 0", fontWeight: 700 }}>
             créer un compte
           </h2>
 
@@ -133,7 +136,6 @@ export default function Register() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
 
-            {/* Email */}
             <input
               style={inputStyle}
               type="email"
@@ -142,12 +144,13 @@ export default function Register() {
               onChange={e => setEmail(e.target.value)}
             />
 
-            {/* Pseudo */}
             <div>
               <input
                 style={{
                   ...inputStyle,
-                  border: usernameError ? "1.5px solid rgba(239,68,68,0.5)" : "0px solid rgba(255,255,255,0.08)",
+                  border: usernameError
+                    ? "1.5px solid rgba(239,68,68,0.5)"
+                    : isDay ? "1.5px solid rgba(0,0,0,0.07)" : "0px solid rgba(255,255,255,0.08)",
                 }}
                 type="text"
                 placeholder="pseudo"
@@ -155,18 +158,17 @@ export default function Register() {
                 onChange={e => { setUsername(e.target.value); validateUsername(e.target.value) }}
               />
               {usernameError && (
-              <p style={{ fontSize: "12px", color: "#fca5a5", margin: "4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
-              <img src="/icons/cross.png" alt="" style={{ width: 14, height: 14 }} /> {usernameError}
-              </p>
+                <p style={{ fontSize: "12px", color: "#fca5a5", margin: "4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                  <img src="/icons/cross.png" alt="" style={{ width: 14, height: 14 }} /> {usernameError}
+                </p>
               )}
               {username.length >= 3 && !usernameError && /^[a-zA-Z0-9_]+$/.test(username) && (
-              <p style={{ fontSize: "12px", color: "#20ba59", margin: "4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
-              <img src="/icons/check.png" alt="" style={{ width: 14, height: 14 }} /> pseudo disponible
-              </p>
+                <p style={{ fontSize: "12px", color: "#20ba59", margin: "4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                  <img src="/icons/check.png" alt="" style={{ width: 14, height: 14 }} /> pseudo disponible
+                </p>
               )}
             </div>
 
-            {/* Mot de passe */}
             <div style={{ position: "relative" }}>
               <input
                 style={{ ...inputStyle, paddingRight: "44px" }}
@@ -183,13 +185,16 @@ export default function Register() {
               </button>
             </div>
 
-            {/* Confirmer mot de passe */}
             <div style={{ position: "relative" }}>
               <input
                 style={{
                   ...inputStyle,
                   paddingRight: "44px",
-                  border: passwordMismatch ? "1.5px solid rgba(239,68,68,0.5)" : passwordMatch ? "1.5px solid rgba(52,211,153,0.5)" : "0px solid rgba(255,255,255,0.08)",
+                  border: passwordMismatch
+                    ? "1.5px solid rgba(239,68,68,0.5)"
+                    : passwordMatch
+                    ? "1.5px solid rgba(52,211,153,0.5)"
+                    : isDay ? "1.5px solid rgba(0,0,0,0.07)" : "0px solid rgba(255,255,255,0.08)",
                 }}
                 type={showConfirm ? "text" : "password"}
                 placeholder="confirmer le mot de passe"
@@ -203,34 +208,41 @@ export default function Register() {
                 <img src={showConfirm ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
               </button>
             </div>
-        {passwordMatch && <p style={{ fontSize: "12px", color: "#34d399", margin: "-4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}><img src="/icons/check.png" alt="" style={{ width: 14, height: 14 }} /> les mots de passe correspondent</p>}
-{passwordMismatch && <p style={{ fontSize: "12px", color: "#fca5a5", margin: "-4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}><img src="/icons/cross.png" alt="" style={{ width: 14, height: 14 }} /> les mots de passe ne correspondent pas</p>}
 
-            {/* Bouton créer */}
+            {passwordMatch && (
+              <p style={{ fontSize: "12px", color: "#34d399", margin: "-4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                <img src="/icons/check.png" alt="" style={{ width: 14, height: 14 }} /> les mots de passe correspondent
+              </p>
+            )}
+            {passwordMismatch && (
+              <p style={{ fontSize: "12px", color: "#fca5a5", margin: "-4px 0 0 4px", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>
+                <img src="/icons/cross.png" alt="" style={{ width: 14, height: 14 }} /> les mots de passe ne correspondent pas
+              </p>
+            )}
+
             <button
-            onClick={handleRegister}
-            disabled={loading || !email || !password || !confirmPassword || !username || !!usernameError}
-            style={{
-            ...btnBaseStyle,
-           background: "#f3501e",
-           color: "#ffffff",
-           opacity: loading || !email || !password || !confirmPassword || !username || !!usernameError ? 0.4 : 1,
-           cursor: loading || !email || !password || !confirmPassword || !username || !!usernameError ? "not-allowed" : "pointer",
-          marginTop: "4px",
-          }}
-          onMouseEnter={e => { if (!loading && email && password && confirmPassword && username && !usernameError) e.currentTarget.style.transform = "scale(1.03)" }}
-          onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)" }}
-          onMouseDown={e => { e.currentTarget.style.transform = "scale(0.95)" }}
-          onMouseUp={e => { e.currentTarget.style.transform = "scale(1.03)" }}
-          >
-          {loading ? "création..." : "créer mon compte"}
-          </button>
-
+              onClick={handleRegister}
+              disabled={loading || !email || !password || !confirmPassword || !username || !!usernameError}
+              style={{
+                ...btnBaseStyle,
+                background: "#f3501e",
+                color: "#ffffff",
+                opacity: loading || !email || !password || !confirmPassword || !username || !!usernameError ? 0.4 : 1,
+                cursor: loading || !email || !password || !confirmPassword || !username || !!usernameError ? "not-allowed" : "pointer",
+                marginTop: "4px",
+              }}
+              onMouseEnter={e => { if (!loading && email && password && confirmPassword && username && !usernameError) e.currentTarget.style.transform = "scale(1.03)" }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)" }}
+              onMouseDown={e => { e.currentTarget.style.transform = "scale(0.95)" }}
+              onMouseUp={e => { e.currentTarget.style.transform = "scale(1.03)" }}
+            >
+              {loading ? "création..." : "créer mon compte"}
+            </button>
           </div>
 
-          <p style={{ textAlign: "center", fontSize: "13px", marginTop: "20px", marginBottom: 0, color: "#ffffff", fontWeight: 500 }}>
+          <p style={{ textAlign: "center", fontSize: "13px", marginTop: "20px", marginBottom: 0, color: isDay ? "#111111" : "#ffffff", fontWeight: 500 }}>
             déjà un compte ?{" "}
-            <Link to="/login" style={{ color: "#f3501e", textDecoration: "none", fontWeight: 700,  }}>
+            <Link to="/login" style={{ color: "#f3501e", textDecoration: "none", fontWeight: 700 }}>
               se connecter
             </Link>
           </p>

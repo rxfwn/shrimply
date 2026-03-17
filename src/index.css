@@ -1,56 +1,105 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 @keyframes shrink {
-  from { width: 0; }
-  to { width: 100%; }
+  from { width: 100%; }
+  to   { width: 0; }
 }
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* On applique à TOUT le monde car le preflight est désactivé */
+/* ── Reset universel ───────────────────────────────────────── */
 *, ::before, ::after {
   font-family: 'Poppins', sans-serif !important;
-  font-weight: 700 !important; /* Bold */
-  letter-spacing: -0.01em !important; /* Ton -100 Illustrator */
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
-}
-
-* { box-sizing: border-box; }
-
-/* ── MODE SOMBRE (défaut) ───────────────────────────────── */
-:root {
-  --bg-main: #111111;
-  --bg-sidebar: #091718;
-  --bg-card: #2d2d2d;
-  --text-main: #ffffff;
-  --text-muted: rgba(255,255,255,0.4);
-  --border: rgba(255,255,255,0.08);
-}
-
-/* ── MODE CLAIR ─────────────────────────────────────────── */
-:root.light {
-  --bg-main: #f5f5f5;
-  --bg-sidebar: #ffffff;
-  --bg-card: #ffffff;
-  --text-main: #111111;
-  --text-muted: rgba(0,0,0,0.4);
-  --border: rgba(0,0,0,0.08);
-}
-
-body {
-  margin: 0;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.05em;
   background: var(--bg-main);
   color: var(--text-main);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   THÈMES — variables CSS
+   Activé via la classe sur <html> :
+     night (défaut) → html  ou  html.dark
+     day            → html.day
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── NIGHT (défaut) ─────────────────────────────────────────── */
+:root,
+html.dark {
+  --bg-main:      #111111;
+  --bg-sidebar:   #091718;
+  --bg-card:      #1a1a1a;
+  --bg-card-2:    #2d2d2d;
+  --bg-input:     #1a1a1a;
+
+  --text-main:    #ffffff;
+  --text-muted:   rgba(255, 255, 255, 0.5);
+  --text-faint:   rgba(255, 255, 255, 0.3);
+  --text-ghost:   rgba(255, 255, 255, 0.12);
+
+  --border:       rgba(255, 255, 255, 0.06);
+  --border-2:     rgba(255, 255, 255, 0.12);
+
+  --input-border: rgba(255, 255, 255, 0.06);
+  --autofill-bg:  #111111;
+  --autofill-text:#666666;
+  --caret:        #ffffff;
+
+  --scrollbar:    #3B35D4;
+}
+
+/* ── DAY ────────────────────────────────────────────────────── */
+html.day {
+  --bg-main:      #F5F0E8;
+  --bg-sidebar:   #091718;   /* sidebar reste sombre */
+  --bg-card:      #FFFFFF;
+  --bg-card-2:    #EDE8DF;
+  --bg-input:     #FFFFFF;
+
+  --text-main:    #111111;
+  --text-muted:   rgba(0, 0, 0, 0.5);
+  --text-faint:   rgba(0, 0, 0, 0.35);
+  --text-ghost:   rgba(0, 0, 0, 0.10);
+
+  --border:       rgba(0, 0, 0, 0.07);
+  --border-2:     rgba(0, 0, 0, 0.14);
+
+  --input-border: rgba(0, 0, 0, 0.10);
+  --autofill-bg:  #FFFFFF;
+  --autofill-text:#444444;
+  --caret:        #111111;
+
+  --scrollbar:    #3B35D4;
+}
+
+/* ── Autofill ───────────────────────────────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--autofill-bg) inset !important;
+  -webkit-text-fill-color: var(--autofill-text) !important;
+  caret-color: var(--caret);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar         { width: 0px; height: 0px; }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   { background: var(--scrollbar); border-radius: 2px; }
+
+/* ── Boutons ────────────────────────────────────────────────── */
+button {
+  outline: none !important;
+  border: none;
 }
 
 .btn-purple {
@@ -58,52 +107,21 @@ body {
   color: #130b2d !important;
   transition: all 0.2s ease;
 }
-.btn-purple:hover {
-  transform: scale(1.03);
-}
-.btn-purple:active {
-  transform: scale(0.95);
-}
-.btn-purple * {
-  color: #130b2d !important;
-}
-
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0px 1000px #111111 inset !important;
-  -webkit-text-fill-color: #666666 !important;
-  caret-color: #ffffff;
-}
-
-::-webkit-scrollbar { width: 0px; height: 0px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3B35D4; border-radius: 2px; }
-
-button {
-  outline: none !important;
-  border: none;
-}
+.btn-purple:hover  { transform: scale(1.03); }
+.btn-purple:active { transform: scale(0.95); }
+.btn-purple * { color: #130b2d !important; }
 
 .btn-ghost {
   background: none !important;
-  color:#ffffff !important;
+  color: #ffffff !important;
   font-size: 18px;
-
 }
 
-.btn-nobg {
-  background: none !important;
-}
+.btn-nobg { background: none !important; }
 
-.text-light {
-  font-weight: 200 !important;
-}
+/* ── Typo helpers ───────────────────────────────────────────── */
+.text-light { font-weight: 200 !important; }
 
-.tag-pill-inactive {
-  opacity: 0.35 !important;
-}
-
-.tag-pill-active {
-  opacity: 1 !important;
-}
+/* ── Tags ───────────────────────────────────────────────────── */
+.tag-pill-inactive { opacity: 0.35 !important; }
+.tag-pill-active   { opacity: 1 !important; }

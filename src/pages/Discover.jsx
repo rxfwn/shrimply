@@ -1,9 +1,8 @@
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_TEXT, DEFAULT_CARD_BORDER, FILTER_ALL_BG, FILTER_ALL_TEXT } from "../tags"
+import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_TEXT, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { findBestMatch, calcIngredientPrice, computeCostDetails } from "../utils/priceEngine"
-
-const DEFAULT_CARD_COLOR = DEFAULT_CARD_BG
+import { useTheme } from "../context/ThemeContext"
 
 function getTextColor(hex) {
   if (!hex) return "#111111"
@@ -11,22 +10,32 @@ function getTextColor(hex) {
   return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
 }
 
-// ── Tag pill ─────────────────────────────────────────────────────────────────
 function TagPill({ tag, active, onClick }) {
   return (
     <button onClick={onClick}
-      className="flex items-center rounded-full font-semibold transition-colors px-3 py-1.5 text-xs gap-1.5"
       style={{
+        display: "flex", alignItems: "center", gap: 6,
+        padding: "6px 12px", borderRadius: 20, fontSize: 11,
+        fontWeight: 700, fontFamily: "Poppins, sans-serif",
+        border: "none", cursor: "pointer",
         backgroundColor: tag.pillBg,
+        transition: "opacity 0.2s, transform 0.2s",
+        opacity: active ? 1 : 0.7,
+        transform: active ? "scale(1.06)" : "scale(1)",
+        flexShrink: 0,
       }}
+      onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+      onMouseLeave={e => e.currentTarget.style.opacity = active ? "1" : "0.7"}
     >
-      <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 14, height: 14, filter: "none", opacity: 1 }} onError={e => { e.target.style.display = "none" }} />
-      <span style={{ color: tag.pillText, fontFamily: "inherit", fontWeight: "inherit" }}>{tag.label}</span>
+      <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+      <span style={{ color: tag.pillText }}>{tag.label}</span>
     </button>
   )
 }
 
 export default function Discover() {
+  const { isDay } = useTheme()
+
   const [recipes, setRecipes] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -39,29 +48,46 @@ export default function Discover() {
   const [previewSteps, setPreviewSteps] = useState([])
   const [previewLoading, setPreviewLoading] = useState(false)
 
-  useEffect(() => { fetchRecipes() }, [])
-
   const fetchRecipes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     setCurrentUser(user)
-    const { data } = await supabase.from("recipes").select("*").eq("is_public", true).neq("user_id", user.id).order("created_at", { ascending: false })
-    if (data) {
-      const userIds = [...new Set(data.map(r => r.user_id))]
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", userIds)
-      const profileMap = {}
-      profiles?.forEach(p => { profileMap[p.id] = p })
-      const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
-      const recipeIds = data.map(r => r.id)
-      const { data: allIngredients } = await supabase.from("ingredients").select("*").in("recipe_id", recipeIds)
-      const recipesWithData = data.map(r => {
-        const ings = allIngredients?.filter(i => i.recipe_id === r.id) || []
-        const { total, details } = computeCostDetails(ings, prices || [], r.servings)
-        const hasAnyMatch = details.some(d => d.found)
-        return { ...r, profiles: profileMap[r.user_id] || null, estimatedTotal: hasAnyMatch ? total : null }
-      })
-      setRecipes(recipesWithData)
-    }
+
+    // Première requête : recettes seulement — affichage immédiat
+    const { data } = await supabase
+      .from("recipes")
+      .select("*")
+      .eq("is_public", true)
+      .neq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(40)
+
+    if (!data) { setLoading(false); return }
+
+    // Afficher les cartes de suite sans les données enrichies
+    setRecipes(data.map(r => ({ ...r, profiles: null, estimatedTotal: null })))
     setLoading(false)
+
+    // Enrichissement en parallèle en arrière-plan
+    const userIds = [...new Set(data.map(r => r.user_id))]
+    const recipeIds = data.map(r => r.id)
+
+    const [profilesRes, pricesRes, ingredientsRes] = await Promise.all([
+      supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
+      supabase.from("ingredient_prices").select("name, price, unit"),
+      supabase.from("ingredients").select("*").in("recipe_id", recipeIds),
+    ])
+
+    const profileMap = {}
+    profilesRes.data?.forEach(p => { profileMap[p.id] = p })
+
+    const recipesWithData = data.map(r => {
+      const ings = ingredientsRes.data?.filter(i => i.recipe_id === r.id) || []
+      const { total, details } = computeCostDetails(ings, pricesRes.data || [], r.servings)
+      const hasAnyMatch = details.some(d => d.found)
+      return { ...r, profiles: profileMap[r.user_id] || null, estimatedTotal: hasAnyMatch ? total : null }
+    })
+
+    setRecipes(recipesWithData)
   }
 
   const checkBannedWords = async (textsToCheck) => {
@@ -112,93 +138,117 @@ export default function Discover() {
     return matchSearch && matchFilter
   })
 
+  const btnBase = {
+    fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12,
+    letterSpacing: "-0.05em", border: "none", cursor: "pointer",
+    borderRadius: 10, transition: "transform 0.15s",
+  }
+
+
   return (
-    <div className="p-4 md:p-6">
+    <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
       {/* Popup mot banni */}
       {bannedPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="rounded-[10px] p-6 shadow-2xl max-w-sm w-full border border-red-800 text-center" style={{ backgroundColor: "#2d2d2d" }}>
-            <div className="text-4xl mb-3">⚠️</div>
-            <h2 className="text-lg font-bold text-white mb-2">Importation bloquée</h2>
-            <p className="text-sm text-white/50 mb-1">Mot non autorisé détecté :</p>
-            <p className="text-sm font-bold text-red-400 bg-red-900/20 px-3 py-1.5 rounded-[10px] mb-4 inline-block">« {bannedPopup} »</p>
-            <p className="text-xs text-white/30 mb-5">Tu ne peux pas ajouter cette recette.</p>
-            <button onClick={() => setBannedPopup(null)} className="w-full bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-[10px] text-sm font-semibold transition">Fermer</button>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, maxWidth: 360, width: "100%", overflow: "hidden", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <div style={{ backgroundColor: "rgba(239,68,68,0.08)", padding: "28px 24px 20px", display: "flex", flexDirection: "column", alignItems: "center", borderBottom: "1px solid rgba(239,68,68,0.12)" }}>
+              <div style={{ width: 52, height: 52, backgroundColor: "var(--bg-card-2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 12 }}>⚠️</div>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-main)" }}>importation bloquée</h2>
+            </div>
+            <div style={{ padding: "20px 24px 24px", textAlign: "center" }}>
+              <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>mot non autorisé :</p>
+              <div style={{ display: "inline-block", backgroundColor: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", padding: "6px 16px", borderRadius: 8, fontWeight: 700, marginBottom: 16 }}>« {bannedPopup} »</div>
+              <button onClick={() => setBannedPopup(null)}
+                style={{ ...btnBase, width: "100%", padding: "11px", backgroundColor: "#f87171", color: "#ffffff" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >fermer</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Toast succès */}
+      {/* Toast */}
       {success && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-[10px] shadow-lg text-sm font-medium">
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
           ✅ {success}
         </div>
       )}
 
       {/* Modal preview */}
       {previewRecipe && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60" onClick={closePreview}>
-          <div className="rounded-t-2xl md:rounded-[10px] shadow-2xl w-full md:max-w-lg md:mx-4 border border-white/10 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: "#1a1a1f" }} onClick={e => e.stopPropagation()}>
-            <div className="flex justify-center pt-3 pb-1 md:hidden">
-              <div className="w-10 h-1 bg-white/20 rounded-full" />
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-end" }} onClick={closePreview}>
+          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "90vh", overflowY: "auto", border: "1px solid var(--border)" }} onClick={e => e.stopPropagation()}>
+            {/* Handle mobile */}
+            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+              <div style={{ width: 36, height: 4, backgroundColor: "var(--border-2)", borderRadius: 2 }} />
             </div>
-            <div className="p-5 md:p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1 pr-3">
-                  <h2 className="text-lg font-bold text-white leading-tight">{previewRecipe.name}</h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#f3501e33" }}>
-                      {previewRecipe.profiles?.avatar_url ? <img src={previewRecipe.profiles.avatar_url} className="w-full h-full object-cover" alt="" /> : <span className="text-xs">👤</span>}
+            <div style={{ padding: "12px 20px 32px" }}>
+              {/* Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <div style={{ flex: 1, paddingRight: 12 }}>
+                  <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>{previewRecipe.name}</h2>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", backgroundColor: "rgba(243,80,30,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {previewRecipe.profiles?.avatar_url
+                        ? <img src={previewRecipe.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                        : <span style={{ fontSize: 10 }}>👤</span>}
                     </div>
-                    <span className="text-xs text-white/40">{previewRecipe.profiles?.username || "Utilisateur"}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{previewRecipe.profiles?.username || "Utilisateur"}</span>
                   </div>
                 </div>
-                <button onClick={closePreview} className="text-white/40 hover:text-white text-xl font-bold leading-none p-1">✕</button>
+                <button onClick={closePreview}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
               </div>
-              {previewRecipe.description && <p className="text-sm text-white/50 mb-4">{previewRecipe.description}</p>}
-              <div className="flex flex-wrap gap-3 text-xs text-white/40 mb-3">
-                {previewRecipe.prep_time && <span>⏱ {previewRecipe.prep_time} min</span>}
-                {previewRecipe.servings && <span>🍽 {previewRecipe.servings} portions</span>}
-                {previewRecipe.estimatedTotal !== null && <span className="text-green-400 font-semibold">💰 {previewRecipe.estimatedTotal.toFixed(2)}€</span>}
+
+              {previewRecipe.description && <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>{previewRecipe.description}</p>}
+
+              {/* Meta */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {previewRecipe.prep_time && <span style={{ fontSize: 11, color: "var(--text-muted)", backgroundColor: "var(--bg-card-2)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>⏱ {previewRecipe.prep_time} min</span>}
+                {previewRecipe.servings && <span style={{ fontSize: 11, color: "var(--text-muted)", backgroundColor: "var(--bg-card-2)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>🍽 {previewRecipe.servings} pers.</span>}
+                {previewRecipe.estimatedTotal !== null && <span style={{ fontSize: 11, color: "#34d399", backgroundColor: "rgba(52,211,153,0.1)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>💰 {previewRecipe.estimatedTotal.toFixed(2)}€</span>}
               </div>
+
+              {/* Tags */}
               {previewRecipe.tags?.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-5">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
                   {previewRecipe.tags.map(tv => {
                     const t = TAGS.find(t => t.value === tv)
                     return t ? (
-                      <span key={tv} className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-semibold"
-                        style={{ backgroundColor: t.pillBg }}>
-                        <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 10, height: 10 }} onError={e => { e.target.style.display = "none" }} />
-                        <span style={{ color: t.pillText }}>{t.label}</span>
+                      <span key={tv} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: t.pillBg, color: t.pillText }}>
+                        <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                        {t.label}
                       </span>
-                    ) : <span key={tv} className="text-xs text-white/50 px-2 py-0.5 rounded-full border border-white/10">{tv}</span>
+                    ) : null
                   })}
                 </div>
               )}
-              {previewLoading ? <p className="text-sm text-white/40 text-center py-6">Chargement...</p> : (
+
+              {previewLoading ? (
+                <p style={{ fontSize: 13, color: "var(--text-faint)", textAlign: "center", padding: "24px 0" }}>chargement...</p>
+              ) : (
                 <>
                   {previewIngredients.length > 0 && (
-                    <div className="mb-5">
-                      <h3 className="font-bold text-white text-sm mb-2">🛒 Ingrédients</h3>
-                      <div className="flex flex-col">
-                        {previewIngredients.map((ing, i) => (
-                          <div key={i} className="flex justify-between text-sm py-2.5 border-b border-white/5 last:border-0">
-                            <span className="text-white/70">{ing.name}</span>
-                            <span className="text-white/40 ml-3 flex-shrink-0">{ing.quantity} {ing.unit}</span>
-                          </div>
-                        ))}
-                      </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <h3 style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>🛒 ingrédients</h3>
+                      {previewIngredients.map((ing, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: i < previewIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
+                          <span style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{ing.name}</span>
+                          <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 12, flexShrink: 0 }}>{ing.quantity} {ing.unit}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   {previewSteps.length > 0 && (
-                    <div className="mb-5">
-                      <h3 className="font-bold text-white text-sm mb-3">👨‍🍳 Préparation</h3>
-                      <div className="space-y-3">
+                    <div style={{ marginBottom: 16 }}>
+                      <h3 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>👨‍🍳 préparation</h3>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                         {previewSteps.map((step, i) => (
-                          <div key={i} className="flex gap-3">
-                            <span className="font-black text-sm w-5 flex-shrink-0" style={{ color: "#f3501e" }}>{i + 1}.</span>
-                            <p className="text-sm text-white/70 leading-relaxed">{step.description}</p>
+                          <div key={i} style={{ display: "flex", gap: 12 }}>
+                            <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(243,80,30,0.12)", color: "#f3501e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1 }}>{i + 1}</div>
+                            <p style={{ margin: 0, fontSize: 13, color: "var(--text-main)", lineHeight: 1.6, fontWeight: 500 }}>{step.description}</p>
                           </div>
                         ))}
                       </div>
@@ -206,15 +256,19 @@ export default function Discover() {
                   )}
                 </>
               )}
-              <div className="flex gap-2 pt-4 border-t border-white/10">
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 10, paddingTop: 16, borderTop: "1px solid var(--border)", marginTop: 8 }}>
                 <button onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
-                  className="flex-1 text-white py-3 rounded-[10px] text-sm font-semibold transition" style={{ backgroundColor: "#f3501e" }}>
-                  + Ajouter à mes recettes
-                </button>
+                  style={{ ...btnBase, flex: 1, padding: "12px", backgroundColor: "#f3501e", color: "#ffffff" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >+ ajouter à mes recettes</button>
                 <button onClick={closePreview}
-                  className="flex-1 text-white/70 hover:text-white py-3 rounded-[10px] text-sm font-medium transition" style={{ backgroundColor: "#2d2d2d" }}>
-                  Fermer
-                </button>
+                  style={{ ...btnBase, flex: 1, padding: "12px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >fermer</button>
               </div>
             </div>
           </div>
@@ -222,113 +276,205 @@ export default function Discover() {
       )}
 
       {/* Header */}
-      <div className="mb-5">
-      <h1 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-      <img src="/icons/spark.png" alt="" style={{ width: 24, height: 24 }} />
-      Découvrir
-      </h1>
-      <p className="text-sm  text-white">Recettes partagées par la communauté</p>
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.05em" }}>
+          <img src="/icons/spark.png" alt="" style={{ width: 22, height: 22 }} />
+          découvrir
+        </h1>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>recettes partagées par la communauté</p>
       </div>
 
       {/* Recherche */}
-      <div className="mb-4">
+      <div style={{ marginBottom: 14, position: "relative", maxWidth: 400 }}>
+        <img src="/icons/loupe.png" alt="" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, pointerEvents: "none" }} />
         <input
-          className="w-full md:max-w-md rounded-[10px] px-4 py-2.5 text-sm outline-none transition text-white  text-light"
-          style={{ backgroundColor: "#2d2d2d", border: "1px solid rgba(255,255,255,0.1)" }}
-          placeholder="🔍 Rechercher une recette..."
+          style={{ width: "100%", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", fontSize: 13, color: "var(--text-main)", outline: "none", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
+          placeholder="rechercher une recette..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          onFocus={e => e.target.style.borderColor = "#f3501e"}
+          onBlur={e => e.target.style.borderColor = "var(--border)"}
         />
       </div>
 
       {/* Filtres */}
-      <div className="-mx-4 px-4 md:mx-0 md:px-0 mb-5">
-        <div className="flex gap-2 overflow-x-auto pb-2 md:flex-wrap md:overflow-visible">
-          {/* Toutes */}
-          <button onClick={() => setFilter("all")}
-            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
-            style={{
-              backgroundColor: "#e8402a",
-              color: "#ffffff",
-              outline: filter === "all" ? "2px solid #ffffff" : "2px solid transparent",
-              outlineOffset: "2px",
-              boxShadow: filter === "all" ? "0 0 0 1px #e8402a" : "none",
-            }}>
-            <img src="/icons/book.png" alt="" style={{ width: 14, height: 14, filter: "none" }} onError={e => { e.target.style.display = "none" }} />
-            toutes
-          </button>
-          {TAGS.map(tag => (
-            <div key={tag.value} className="flex-shrink-0">
-              <TagPill tag={tag} active={filter === tag.value} onClick={() => setFilter(filter === tag.value ? "all" : tag.value)} />
-            </div>
-          ))}
-        </div>
+      <style>{`
+        .filters-desktop { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; align-items: center; }
+        .filters-mobile  { display: flex; gap: 6px; margin-bottom: 20px; align-items: center; overflow-x: auto; padding-bottom: 4px; }
+        @media (min-width: 768px) { .filters-mobile { display: none; } }
+        @media (max-width: 767px) { .filters-desktop { display: none; } }
+      `}</style>
+
+      {/* Desktop : tous les tags visibles, pas de voir plus */}
+      <div className="filters-desktop">
+        <button onClick={() => setFilter(filter === "all" ? "" : "all")}
+          style={{
+            ...btnBase, display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 12px", borderRadius: 20, fontSize: 11,
+            backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
+            opacity: filter !== "" && filter !== "all" ? 0.35 : 1,
+            transform: filter === "all" || filter === "" ? "scale(1)" : "scale(1)",
+            transition: "opacity 0.2s, transform 0.2s",
+          }}
+        >
+          <img src="/icons/book.png" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+          toutes
+        </button>
+        {TAGS.map(tag => {
+          const isActive = filter === tag.value
+          const anyActive = filter !== "" && filter !== "all"
+          return (
+            <button key={tag.value}
+              onClick={() => setFilter(isActive ? "all" : tag.value)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 12px", borderRadius: 20, fontSize: 11,
+                fontWeight: 700, fontFamily: "Poppins, sans-serif",
+                border: "none", cursor: "pointer", flexShrink: 0,
+                backgroundColor: tag.pillBg,
+                opacity: anyActive && !isActive ? 0.35 : 1,
+                transform: isActive ? "scale(1.08)" : "scale(1)",
+                boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.25)" : "none",
+                transition: "opacity 0.2s, transform 0.2s, box-shadow 0.2s",
+              }}
+            >
+              <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+              <span style={{ color: tag.pillText }}>{tag.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Mobile : scroll horizontal avec voir plus */}
+      <div className="filters-mobile">
+        <button onClick={() => setFilter(filter === "all" ? "" : "all")}
+          style={{
+            ...btnBase, display: "flex", alignItems: "center", gap: 6,
+            padding: "6px 12px", borderRadius: 20, fontSize: 11,
+            backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
+            opacity: filter !== "" && filter !== "all" ? 0.35 : 1,
+            transition: "opacity 0.2s",
+          }}
+        >
+          <img src="/icons/book.png" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+          toutes
+        </button>
+        {TAGS.map(tag => {
+          const isActive = filter === tag.value
+          const anyActive = filter !== "" && filter !== "all"
+          return (
+            <button key={tag.value}
+              onClick={() => setFilter(isActive ? "all" : tag.value)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 12px", borderRadius: 20, fontSize: 11,
+                fontWeight: 700, fontFamily: "Poppins, sans-serif",
+                border: "none", cursor: "pointer", flexShrink: 0,
+                backgroundColor: tag.pillBg,
+                opacity: anyActive && !isActive ? 0.35 : 1,
+                transform: isActive ? "scale(1.08)" : "scale(1)",
+                transition: "opacity 0.2s, transform 0.2s",
+              }}
+            >
+              <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+              <span style={{ color: tag.pillText }}>{tag.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Grille */}
       {loading ? (
-        <div className="text-white/40 text-sm">Chargement...</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} style={{ borderRadius: 16, overflow: "hidden", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
+              <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
+              <div style={{ padding: "10px 12px 14px" }}>
+                <div style={{ height: 10, borderRadius: 6, backgroundColor: "var(--bg-card-2)", marginBottom: 8, width: "75%", animation: "pulse 1.5s ease-in-out infinite" }} />
+                <div style={{ height: 8, borderRadius: 6, backgroundColor: "var(--bg-card-2)", marginBottom: 8, width: "50%", animation: "pulse 1.5s ease-in-out infinite" }} />
+                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+                  <div style={{ flex: 1, height: 28, borderRadius: 8, backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
+                  <div style={{ flex: 1, height: 28, borderRadius: 8, backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
+                </div>
+              </div>
+            </div>
+          ))}
+          <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+        </div>
       ) : filteredRecipes.length === 0 ? (
-        <div className="rounded-[10px] p-8 text-center max-w-md border border-white/10" style={{ backgroundColor: "#2d2d2d" }}>
-          <p className="text-white ">Aucune recette publique pour l'instant</p>
-          <p className="text-white/20 text-light" style={{ fontSize:"14px" }}>Partage tes recettes pour qu'elles apparaissent ici !</p>
+        <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, padding: "32px 24px", textAlign: "center", maxWidth: 400, border: "1px solid var(--border)" }}>
+          <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--text-main)", fontWeight: 700 }}>aucune recette publique</p>
+          <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>partage tes recettes pour qu'elles apparaissent ici !</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
           {filteredRecipes.map(recipe => {
             const primaryTag = TAGS.find(t => t.value === recipe.primary_tag)
-            const bg = primaryTag?.cardBg || DEFAULT_CARD_COLOR
+            const bg = primaryTag?.cardBg || DEFAULT_CARD_BG
+            const border = primaryTag?.cardBorder || DEFAULT_CARD_BORDER
             const textColor = getTextColor(bg)
-            const overlayBg = textColor === "#ffffff" ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.25)"
+            const overlayBg = textColor === "#ffffff" ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.22)"
+
             return (
-              <div key={recipe.id} className="rounded-[10px] overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col"
-                style={{ backgroundColor: bg, border: `2px solid ${border}` }}>
+              <div key={recipe.id}
+                style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)" }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
+              >
                 {recipe.photo_url ? (
-                  <img src={recipe.photo_url} alt={recipe.name} className="w-full aspect-[4/3] object-cover" />
+                  <img src={recipe.photo_url} alt={recipe.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
                 ) : (
-                  <div className="w-full aspect-[4/3] flex items-center justify-center" style={{ backgroundColor: bg }}>
-                    <span className="text-5xl opacity-20">🍽</span>
-                  </div>
+                  <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, opacity: 0.2, backgroundColor: bg }}>🍽</div>
                 )}
-                <div className="p-3 flex flex-col flex-1" style={{ color: textColor }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0" style={{ backgroundColor: overlayBg }}>
-                      {recipe.profiles?.avatar_url ? <img src={recipe.profiles.avatar_url} alt="avatar" className="w-full h-full object-cover" /> : <span className="text-xs">👤</span>}
+
+                <div style={{ padding: "8px 12px 12px", color: textColor, flex: 1, display: "flex", flexDirection: "column" }}>
+                  {/* Auteur */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: overlayBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {recipe.profiles?.avatar_url
+                        ? <img src={recipe.profiles.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ fontSize: 9 }}>👤</span>}
                     </div>
-                    <span className="text-xs opacity-70 truncate">{recipe.profiles?.username || "Utilisateur"}</span>
+                    <span style={{ fontSize: 10, opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipe.profiles?.username || "Utilisateur"}</span>
                   </div>
-                  <h3 className="font-black text-sm leading-tight mb-1 line-clamp-2">{recipe.name}</h3>
-                  <div className="flex items-center gap-2 text-xs mb-2 opacity-70">
+
+                  <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.04em" }}>
+                    {recipe.name}
+                  </h3>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 6, opacity: 0.7 }}>
                     {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
                     {recipe.servings && <span>🍽 {recipe.servings}p</span>}
-                    {recipe.estimatedTotal !== null && <span className="font-semibold">💰 {recipe.estimatedTotal.toFixed(2)}€</span>}
+                    {recipe.estimatedTotal !== null && <span style={{ color: "#34d399", opacity: 1, fontWeight: 700 }}>💰 {recipe.estimatedTotal.toFixed(2)}€</span>}
                   </div>
+
                   {recipe.tags?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                       {recipe.tags.slice(0, 2).map(tv => {
                         const t = TAGS.find(t => t.value === tv)
                         return (
-                          <span key={tv} className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                            style={{ backgroundColor: overlayBg }}>
-                            {t && <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => { e.target.style.display = "none" }} />}
-                            <span style={{ color: textColor }}>{t?.label || tv}</span>
+                          <span key={tv} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: overlayBg, color: textColor }}>
+                            {t && <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />}
+                            {t?.label || tv}
                           </span>
                         )
                       })}
-                      {recipe.tags.length > 2 && <span className="text-[10px] opacity-50">+{recipe.tags.length - 2}</span>}
+                      {recipe.tags.length > 2 && <span style={{ fontSize: 10, opacity: 0.5, fontWeight: 700 }}>+{recipe.tags.length - 2}</span>}
                     </div>
                   )}
-                  <div className="flex gap-2 mt-auto pt-2">
+
+                  {/* Boutons */}
+                  <div style={{ display: "flex", gap: 6, marginTop: "auto", paddingTop: 4 }}>
                     <button onClick={() => openPreview(recipe)}
-                      className="flex-1 py-2 rounded-[10px] text-xs font-semibold transition"
-                      style={{ backgroundColor: overlayBg, color: textColor }}>
-                      Voir +
-                    </button>
+                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: overlayBg, color: textColor, fontSize: 11 }}
+                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                    >voir +</button>
                     <button onClick={() => handleAddToMyRecipes(recipe)}
-                      className="flex-1 py-2 rounded-[10px] text-xs font-semibold transition"
-                      style={{ backgroundColor: "#f3501e", color: "#ffffff" }}>
-                      + Ajouter
-                    </button>
+                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: "#f3501e", color: "#ffffff", fontSize: 11 }}
+                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                    >+ ajouter</button>
                   </div>
                 </div>
               </div>

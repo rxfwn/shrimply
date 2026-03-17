@@ -3,8 +3,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import ImageUploadCropper from "./ImageUploadCropper"
-
-const DEFAULT_CARD_COLOR = DEFAULT_CARD_BG
+import { useTheme } from "../context/ThemeContext"
 
 const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce"]
 
@@ -19,39 +18,25 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
   const padding = size === "sm" ? "2px 8px" : "6px 12px"
   const fontSize = size === "sm" ? 10 : 12
   const opacity = !anyActive ? 1 : active ? 1 : 0.35
-
   return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: size === "sm" ? 4 : 6,
-        padding, borderRadius: 20, fontSize, fontWeight: 700,
-        fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-        border: "none", cursor: "pointer",
-        backgroundColor: tag.pillBg,
-        opacity,
-        transform: active ? "scale(1.1)" : "scale(1)",
-        transition: "opacity 0.2s ease, transform 0.2s ease",
-        boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
-      }}
-    >
+    <button onClick={onClick} style={{
+      display: "flex", alignItems: "center", gap: size === "sm" ? 4 : 6,
+      padding, borderRadius: 20, fontSize, fontWeight: 700,
+      fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
+      border: "none", cursor: "pointer", backgroundColor: tag.pillBg,
+      opacity, transform: active ? "scale(1.1)" : "scale(1)",
+      transition: "opacity 0.2s ease, transform 0.2s ease",
+      boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
+    }}>
       <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: iconSz, height: iconSz }} onError={e => e.target.style.display="none"} />
       <span style={{ color: tag.pillText }}>{tag.label}</span>
     </button>
   )
 }
 
-const inputStyle = (err) => ({
-  width: "100%", borderRadius: 10, padding: "10px 14px",
-  fontSize: 13, outline: "none",
-  background: err ? "rgba(239,68,68,0.08)" : "#1a1a1a",
-  border: err ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid rgba(255,255,255,0.06)",
-  color: "#ffffff", fontFamily: "Poppins, sans-serif", fontWeight: 500,
-  letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s",
-})
-
 export default function Recipes() {
   const navigate = useNavigate()
+  const { isDay } = useTheme()
   const ingredientRefs = useRef([])
   const stepRefs = useRef([])
   const dragItem = useRef(null)
@@ -211,27 +196,37 @@ export default function Recipes() {
     borderRadius: 10, transition: "transform 0.2s ease",
   }
 
+  const inputStyle = (err) => ({
+    width: "100%", borderRadius: 10, padding: "10px 14px",
+    fontSize: 13, outline: "none",
+    background: err ? "rgba(239,68,68,0.08)" : "var(--bg-card-2)",
+    border: err ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid var(--input-border)",
+    color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500,
+    letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s",
+  })
+
+  const labelStyle = {
+    fontSize: 11, fontWeight: 700, color: "var(--text-faint)",
+    textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6,
+  }
+
   return (
-    <div style={{ padding: "20px 24px", backgroundColor: "#111111", minHeight: "100%", fontFamily: "Poppins, sans-serif" }}>
+    <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
       {/* POPUP MODÉRATION */}
       {bannedPopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ backgroundColor: "#091718", borderRadius: 16, maxWidth: 360, width: "100%", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, maxWidth: 360, width: "100%", overflow: "hidden", border: "1px solid rgba(239,68,68,0.2)" }}>
             <div style={{ backgroundColor: "rgba(239,68,68,0.08)", padding: "32px 24px 24px", display: "flex", flexDirection: "column", alignItems: "center", borderBottom: "1px solid rgba(239,68,68,0.15)" }}>
-              <div style={{ width: 56, height: 56, backgroundColor: "#1a1a1a", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 12 }}>🚨</div>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff" }}>contenu bloqué</h2>
+              <div style={{ width: 56, height: 56, backgroundColor: "var(--bg-card-2)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 12 }}>🚨</div>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>contenu bloqué</h2>
             </div>
             <div style={{ padding: 24, textAlign: "center" }}>
-              <p style={{ margin: "0 0 12px", fontSize: 13, color: "rgba(255,255,255,0.4)", fontWeight: 500 }}>terme non autorisé :</p>
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)", fontWeight: 500 }}>terme non autorisé :</p>
               <div style={{ display: "inline-block", backgroundColor: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", padding: "8px 20px", borderRadius: 10, fontWeight: 700, marginBottom: 20 }}>« {bannedPopup} »</div>
-              <button onClick={() => setBannedPopup(null)}
-                style={{ ...btnBase, width: "100%", padding: "12px", backgroundColor: "#f87171", color: "#ffffff" }}
+              <button onClick={() => setBannedPopup(null)} style={{ ...btnBase, width: "100%", padding: "12px", backgroundColor: "#f87171", color: "#ffffff" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
-                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
-              >j'ai compris</button>
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>j'ai compris</button>
             </div>
           </div>
         </div>
@@ -239,16 +234,12 @@ export default function Recipes() {
 
       {/* TOASTS */}
       {draftRestored && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#3b82f6", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
-          📝 brouillon restauré !
-        </div>
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#3b82f6", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>📝 brouillon restauré !</div>
       )}
       {draftSaved && (name||description||ingredients[0]?.name) && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#1a1a1a", color: "#ffffff", padding: "12px 16px", borderRadius: 12, fontSize: 12, fontWeight: 500, width: 200, border: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span>💾</span><span>brouillon sauvegardé</span>
-          </div>
-          <div style={{ width: "100%", height: 3, backgroundColor: "#2d2d2d", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "var(--bg-card)", color: "var(--text-main)", padding: "12px 16px", borderRadius: 12, fontSize: 12, fontWeight: 500, width: 200, border: "1px solid var(--border)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}><span>💾</span><span>brouillon sauvegardé</span></div>
+          <div style={{ width: "100%", height: 3, backgroundColor: "var(--bg-card-2)", borderRadius: 2, overflow: "hidden" }}>
             <div style={{ height: "100%", backgroundColor: "#f3501e", borderRadius: 2, animation: "shrink 2s linear forwards", width: "100%" }} />
           </div>
         </div>
@@ -259,66 +250,57 @@ export default function Recipes() {
         </div>
       )}
       {dupError && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#f87171", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
-          ⚠️ {dupError}
-        </div>
+        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#f87171", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>⚠️ {dupError}</div>
       )}
 
       {/* FORMULAIRE */}
       {showForm ? (
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 10 }}>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 10 }}>
               <img src="/icons/pencil.png" alt="" style={{ width: 24, height: 24 }} />
               nouvelle recette
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {localStorage.getItem("recipe_draft") && (
-                <button className="btn-ghost" onClick={()=>{clearDraft();setName("");setDescription("");setPrepTime("");setServings("");setSelectedTags([]);setPrimaryTag("");setRecipeColor("");setIngredients([{name:"",quantity:"",unit:""}]);setSteps([{description:""}]);setPhotoUrl("")}}
-                  style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer" }}>
+                <button onClick={()=>{clearDraft();setName("");setDescription("");setPrepTime("");setServings("");setSelectedTags([]);setPrimaryTag("");setRecipeColor("");setIngredients([{name:"",quantity:"",unit:""}]);setSteps([{description:""}]);setPhotoUrl("")}}
+                  style={{ fontSize: 12, color: "var(--text-faint)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                   vider le brouillon
                 </button>
               )}
-              <button className="btn-ghost" onClick={() => { setShowForm(false); setErrors({}) }}
-                style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", background: "none", border: "none", cursor: "pointer" }}>
+              <button onClick={() => { setShowForm(false); setErrors({}) }}
+                style={{ fontSize: 13, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                 retour
               </button>
             </div>
           </div>
 
-          <div style={{ backgroundColor: "#091718", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 20, border: "1px solid var(--border)" }}>
             <ImageUploadCropper onImageSaved={(url) => setPhotoUrl(url||"")} recipeId={null} />
 
-            {/* Nom */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
-                nom <span style={{ color: "#f87171" }}>*</span>
-              </label>
+              <label style={labelStyle}>nom <span style={{ color: "#f87171" }}>*</span></label>
               <input style={inputStyle(errors.name)} placeholder="ex : pâtes carbonara" value={name}
-                onChange={e => { setName(e.target.value); setErrors(p=>({...p,name:false})) }} />
+                onChange={e => { setName(e.target.value); setErrors(p=>({...p,name:false})) }}
+                onFocus={e => e.target.style.borderColor = "#f3501e"}
+                onBlur={e => e.target.style.borderColor = errors.name ? "rgba(239,68,68,0.5)" : "var(--input-border)"} />
               {errors.name && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
             </div>
 
-            {/* Description */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>description</label>
+              <label style={labelStyle}>description</label>
               <textarea style={{ ...inputStyle(false), resize: "none", minHeight: 70 }} placeholder="décris ta recette..." rows={2} value={description} onChange={e => setDescription(e.target.value)} />
             </div>
 
-            {/* Temps + Portions */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
-                  temps (min) <span style={{ color: "#f87171" }}>*</span>
-                </label>
+                <label style={labelStyle}>temps (min) <span style={{ color: "#f87171" }}>*</span></label>
                 <input style={inputStyle(errors.prepTime)} placeholder="ex : 30" type="number" value={prepTime}
                   onChange={e => { setPrepTime(e.target.value); setErrors(p=>({...p,prepTime:false})) }} />
                 {errors.prepTime && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>
-                  portions <span style={{ color: "#f87171" }}>*</span>
-                </label>
+                <label style={labelStyle}>portions <span style={{ color: "#f87171" }}>*</span></label>
                 <input style={inputStyle(errors.servings)} placeholder="ex : 4" type="number" value={servings}
                   onChange={e => { setServings(e.target.value); setErrors(p=>({...p,servings:false})) }} />
                 {errors.servings && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
@@ -327,8 +309,8 @@ export default function Recipes() {
 
             {/* Tag principal */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
-                🎨 tag principal <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.25)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
+              <label style={labelStyle}>
+                🎨 tag principal <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {TAGS.map(tag => {
@@ -339,9 +321,9 @@ export default function Recipes() {
                         display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
                         borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
                         fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-                        border: isMain ? "none" : "1.5px solid rgba(255,255,255,0.1)",
+                        border: isMain ? "none" : "1.5px solid var(--border-2)",
                         backgroundColor: isMain ? tag.pillBg : "transparent",
-                        color: isMain ? tag.pillText : "rgba(255,255,255,0.5)",
+                        color: isMain ? tag.pillText : "var(--text-muted)",
                         transition: "all 0.15s",
                       }}>
                       <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
@@ -363,27 +345,20 @@ export default function Recipes() {
 
             {/* Tags secondaires */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
-                tags secondaires <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.25)", textTransform: "none", letterSpacing: "normal" }}>— optionnels</span>
+              <label style={labelStyle}>
+                tags secondaires <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— optionnels</span>
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {TAGS.filter(tag => tag.value !== primaryTag).map(tag => (
-                  <TagPill
-                    key={tag.value}
-                    tag={tag}
-                    active={selectedTags.includes(tag.value)}
-                    anyActive={selectedTags.length > 0}
-                    onClick={() => toggleTag(tag.value)}
-                  />
+                  <TagPill key={tag.value} tag={tag} active={selectedTags.includes(tag.value)}
+                    anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.value)} />
                 ))}
               </div>
             </div>
 
             {/* Ingrédients */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
-                ingrédients <span style={{ color: "#f87171" }}>*</span>
-              </label>
+              <label style={labelStyle}>ingrédients <span style={{ color: "#f87171" }}>*</span></label>
               {errors.noIngredients && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>au moins un ingrédient requis</p>}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {ingredients.map((ing, i) => (
@@ -401,20 +376,19 @@ export default function Recipes() {
                       <select style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none" }} value={ing.unit}
                         onChange={e => updateIngredient(i,"unit",e.target.value)}>
                         <option value="" disabled>unité *</option>
-                        {UNITS.map(u => <option key={u} value={u} style={{ backgroundColor: "#1a1a1a" }}>{u}</option>)}
+                        {UNITS.map(u => <option key={u} value={u} style={{ backgroundColor: "var(--bg-card-2)" }}>{u}</option>)}
                       </select>
                     </div>
                     {ingredients.length > 1 && (
                       <button onClick={() => removeIngredient(i)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.2)", fontSize: 20, lineHeight: 1, paddingTop: 10 }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-ghost)", fontSize: 20, lineHeight: 1, paddingTop: 10 }}
                         onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-ghost)"}
                       >×</button>
                     )}
                   </div>
                 ))}
-                <button onClick={addIngredient}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
+                <button onClick={addIngredient} style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
                   + ajouter un ingrédient
                 </button>
               </div>
@@ -422,15 +396,16 @@ export default function Recipes() {
 
             {/* Étapes */}
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 8 }}>
-                étapes <span style={{ color: "#f87171" }}>*</span> <span style={{ fontWeight: 400, color: "rgba(255,255,255,0.25)", textTransform: "none", letterSpacing: "normal" }}>— glisse ⠿ pour réordonner</span>
+              <label style={labelStyle}>
+                étapes <span style={{ color: "#f87171" }}>*</span>{" "}
+                <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— glisse ⠿ pour réordonner</span>
               </label>
               {errors.noSteps && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>au moins une étape requise</p>}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {steps.map((step, i) => (
                   <div key={i} draggable onDragStart={() => handleDragStart(i)} onDragEnter={() => handleDragEnter(i)} onDragEnd={handleDragEnd} onDragOver={e => e.preventDefault()}
                     style={{ display: "flex", gap: 8, alignItems: "center", borderRadius: 10, padding: "4px 0", backgroundColor: dragOverIndex===i && dragItem.current!==i ? "rgba(243,80,30,0.06)" : "transparent", transition: "background 0.15s" }}>
-                    <span style={{ color: "rgba(255,255,255,0.2)", cursor: "grab", fontSize: 16, flexShrink: 0, userSelect: "none" }}>⠿</span>
+                    <span style={{ color: "var(--text-ghost)", cursor: "grab", fontSize: 16, flexShrink: 0, userSelect: "none" }}>⠿</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: "#f3501e", width: 20, flexShrink: 0 }}>{i+1}.</span>
                     <div style={{ flex: 1 }}>
                       <textarea ref={el => stepRefs.current[i]=el}
@@ -441,15 +416,14 @@ export default function Recipes() {
                     </div>
                     {steps.length > 1 && (
                       <button onClick={() => removeStep(i)}
-                        style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.2)", fontSize: 20, lineHeight: 1, flexShrink: 0 }}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-ghost)", fontSize: 20, lineHeight: 1, flexShrink: 0 }}
                         onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
-                        onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.2)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-ghost)"}
                       >×</button>
                     )}
                   </div>
                 ))}
-                <button onClick={addStep}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
+                <button onClick={addStep} style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
                   + ajouter une étape
                 </button>
               </div>
@@ -457,30 +431,18 @@ export default function Recipes() {
 
             {/* Boutons sticky */}
             <div style={{ position: "sticky", bottom: 24, zIndex: 40, display: "flex", justifyContent: "center", marginTop: 8 }}>
-              <div style={{ display: "flex", gap: 14, boxShadow: "0 4px 12px #111111ff", backgroundColor: "#111111", backdropFilter: "blur(12px)", padding: "16px 24px", borderRadius: 10, width: "100%", maxWidth: 400 }}>
+              <div style={{ display: "flex", gap: 14, backgroundColor: "var(--bg-main)", boxShadow: "0 4px 20px rgba(0,0,0,0.2)", padding: "16px 24px", borderRadius: 10, width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
                 <button onClick={resetForm}
-                  style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#2d2d2d", color: "rgba(255,255,255,0.6)", borderRadius:6 }}
+                  style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 6 }}
                   onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                  onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
-                  onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
                 >annuler</button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  style={{ ...btnBase,flex: 1,padding: "10px",backgroundColor: "#d57bff",color: "#1d1138",borderRadius: 6,opacity: loading ? 0.6 : 1,display: "flex",alignItems: "center",justifyContent: "center",gap: 6,
-                  }}
+                <button onClick={handleSubmit} disabled={loading}
+                  style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#d57bff", color: "#1d1138", borderRadius: 6, opacity: loading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                   onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "scale(1.03)" }}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                  onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
-                  onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
                 >
-                  {loading ? "vérification..." : (
-                 <>
-                <img src="/icons/save.png" alt="" style={{ width: 14, height: 14 }} />
-                enregistrer
-                 </>
-                  )}
+                  {loading ? "vérification..." : <><img src="/icons/save.png" alt="" style={{ width: 14, height: 14 }} />enregistrer</>}
                 </button>
               </div>
             </div>
@@ -488,10 +450,9 @@ export default function Recipes() {
         </div>
 
       ) : (
-        /* LISTE */
         <div style={{ maxWidth: 1200 }}>
           <div style={{ marginBottom: 20 }}>
-            <h1 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
+            <h1 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8 }}>
               <img src="/icons/book.png" alt="" style={{ width: 24, height: 24 }} />
               mes recettes
             </h1>
@@ -500,112 +461,83 @@ export default function Recipes() {
               <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
                 <img src="/icons/loupe.png" alt="" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, pointerEvents: "none" }} />
                 <input
-                  style={{ width: "100%", backgroundColor: "#2d2d2d", border: "none", borderRadius: 10, padding: "9px 12px 9px 36px", fontSize: 13, color: "#ffffff", outline: "none", fontFamily: "Poppins, sans-serif", fontWeight: 700, letterSpacing: "-0.05em", boxSizing: "border-box" }}
+                  style={{ width: "100%", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", fontSize: 13, color: "var(--text-main)", outline: "none", fontFamily: "Poppins, sans-serif", fontWeight: 700, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
                   placeholder="rechercher une recette..."
                   value={search} onChange={e => setSearch(e.target.value)}
+                  onFocus={e => e.target.style.borderColor = "#f3501e"}
+                  onBlur={e => e.target.style.borderColor = "var(--border)"}
                 />
               </div>
               <button onClick={() => { setShowForm(true); loadDraft() }}
                 style={{ ...btnBase, padding: "9px 16px", backgroundColor: "#d57bff", color: "#130b2d", whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
-                onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
               >+ nouvelle recette</button>
             </div>
 
-           {/* Filtres */}
-<div style={{ overflowX: "hidden", paddingBottom: 8 }}>
-  {(() => {
-    const allTags = TAGS
-    const visibleTags = tagsExpanded ? allTags : allTags.slice(0, 4)
-    const hiddenCount = allTags.length - 4
-    return (
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
-          style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
-            fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer",
-            fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-            backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
-            opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1,
-            transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)",
-            transition: "all 0.2s ease",
-          }}>
-          <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
-          toutes
-        </button>
-        {visibleTags.map(tag => (
-          <div key={tag.value} style={{ flexShrink: 0 }}>
-            <TagPill
-              tag={tag}
-              active={activeFilter === tag.value}
-              anyActive={activeFilter !== ""}
-              onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)}
-            />
-          </div>
-        ))}
-        {!tagsExpanded && hiddenCount > 0 && (
-          <button onClick={() => setTagsExpanded(true)}
-            style={{
-              display: "flex", alignItems: "center", gap: 4, padding: "6px 12px",
-              borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(255,255,255,0.1)",
-              cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-              backgroundColor: "transparent", color: "rgba(255,255,255,0.5)", flexShrink: 0,
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = "#ffffff"}
-            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-          >
-            +{hiddenCount} voir plus
-          </button>
-        )}
-        {tagsExpanded && (
-          <button onClick={() => setTagsExpanded(false)}
-            style={{
-              display: "flex", alignItems: "center", gap: 4, padding: "6px 12px",
-              borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(255,255,255,0.1)",
-              cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-              backgroundColor: "transparent", color: "rgba(255,255,255,0.5)", flexShrink: 0,
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={e => e.currentTarget.style.color = "#ffffff"}
-            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
-            >réduire
-            </button>
-            )}
-          </div>
-          )
-          })()}
-          </div>    
+            {/* Filtres */}
+            <div style={{ overflowX: "hidden", paddingBottom: 8 }}>
+              {(() => {
+                const allTagsList = TAGS
+                const visibleTags = tagsExpanded ? allTagsList : allTagsList.slice(0, 4)
+                const hiddenCount = allTagsList.length - 4
+                return (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                    <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
+                      <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                      toutes
+                    </button>
+                    {visibleTags.map(tag => (
+                      <div key={tag.value} style={{ flexShrink: 0 }}>
+                        <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
+                          onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
+                      </div>
+                    ))}
+                    {!tagsExpanded && hiddenCount > 0 && (
+                      <button onClick={() => setTagsExpanded(true)}
+                        style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid var(--border-2)", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "transparent", color: "var(--text-muted)", flexShrink: 0, transition: "all 0.2s ease" }}
+                        onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                      >+{hiddenCount} voir plus</button>
+                    )}
+                    {tagsExpanded && (
+                      <button onClick={() => setTagsExpanded(false)}
+                        style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid var(--border-2)", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "transparent", color: "var(--text-muted)", flexShrink: 0, transition: "all 0.2s ease" }}
+                        onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
+                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
+                      >réduire</button>
+                    )}
+                  </div>
+                )
+              })()}
+            </div>
           </div>
 
           {/* Grille */}
           {recipes.length === 0 ? (
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette — ajoutes-en une !</div>
+            <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette — ajoutes-en une !</div>
           ) : filtered.length === 0 ? (
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette ne correspond.</div>
+            <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette ne correspond.</div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
               {filtered.map(recipe => {
                 const primaryTagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag || t.label === recipe.primary_tag)
-                const bg = primaryTagInfo?.cardBg || DEFAULT_CARD_COLOR
+                const bg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
                 const border = primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER
                 const textColor = primaryTagInfo?.cardText || getTextColor(bg)
                 const actionBg = primaryTagInfo?.actionBg || (textColor==="#ffffff" ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.09)")
                 const actionText = primaryTagInfo?.actionText || textColor
-
                 return (
                   <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)}
                     style={{ backgroundColor: bg, border: `3px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)" }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
                   >
-                    {recipe.photo_url ? (
-                      <img src={recipe.photo_url} alt={recipe.name} style={{ display: "block", width: "100%", aspectRatio: "4/3", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bg, fontSize: 40 }}>🍽</div>
-                    )}
+                    {recipe.photo_url
+                      ? <img src={recipe.photo_url} alt={recipe.name} style={{ display: "block", width: "100%", aspectRatio: "4/3", objectFit: "cover" }} />
+                      : <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bg, fontSize: 40 }}>🍽</div>
+                    }
                     <div style={{ padding: "8px 12px 12px", color: textColor }}>
                       <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.name}</h3>
                       {recipe.duplicated_from && <p style={{ margin: "0 0 4px", fontSize: 10, fontStyle: "italic", opacity: 0.7 }}>📋 copie</p>}
@@ -614,12 +546,12 @@ export default function Recipes() {
                         {recipe.servings && <span>🍽 {recipe.servings}p</span>}
                       </div>
                       {(() => {
-                        const allTags = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
-                        const validTags = allTags.filter(tv => TAGS.some(t => t.value === tv))
-                        if (validTags.length === 0) return null
+                        const allT = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
+                        const validT = allT.filter(tv => TAGS.some(t => t.value === tv))
+                        if (validT.length === 0) return null
                         return (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                            {validTags.slice(0, 2).map(tv => {
+                            {validT.slice(0, 2).map(tv => {
                               const ti = TAGS.find(t => t.value === tv)
                               return (
                                 <span key={tv} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText }}>
@@ -628,7 +560,7 @@ export default function Recipes() {
                                 </span>
                               )
                             })}
-                            {validTags.length > 2 && <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.7, display: "flex", alignItems: "center", color: textColor }}>+{validTags.length - 2}</span>}
+                            {validT.length > 2 && <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.7, display: "flex", alignItems: "center", color: textColor }}>+{validT.length - 2}</span>}
                           </div>
                         )
                       })()}

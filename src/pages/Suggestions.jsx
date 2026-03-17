@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
+import { useTheme } from "../context/ThemeContext"
 
 const TYPES = [
   { value: "bug", label: "Bug", icon: "🐛", bg: "#2d0a0a", color: "#fca5a5", border: "rgba(239,68,68,0.3)" },
@@ -21,14 +22,6 @@ const ROADMAP = [
   { icon: "🗺️", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
 ]
 
-const inputStyle = {
-  width: "100%", borderRadius: 10, padding: "10px 14px",
-  fontSize: 13, outline: "none",
-  background: "#111111", border: "1.5px solid rgba(255,255,255,0.06)",
-  color: "#ffffff", fontFamily: "Poppins, sans-serif", fontWeight: 500,
-  letterSpacing: "-0.05em", boxSizing: "border-box",
-}
-
 const btnBase = {
   fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13,
   letterSpacing: "-0.05em", border: "none", cursor: "pointer",
@@ -43,6 +36,31 @@ export default function Suggestions() {
   const [description, setDescription] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const { isDay } = useTheme()
+
+  // Derived theme tokens
+  const bg = isDay ? "#F5F0E8" : "#111111"
+  const surface = isDay ? "#FFFFFF" : "#091718"
+  const surfaceBorder = isDay ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"
+  const textPrimary = isDay ? "#111111" : "#ffffff"
+  const textMuted = isDay ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)"
+  const textSecondary = isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.4)"
+  const textFaint = isDay ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)"
+  const inputBg = isDay ? "#FFFFFF" : "#111111"
+  const inputBorder = isDay ? "1.5px solid rgba(0,0,0,0.07)" : "1.5px solid rgba(255,255,255,0.06)"
+  const cancelBg = isDay ? "#EDE8DF" : "#2d2d2d"
+  const cancelColor = isDay ? "rgba(0,0,0,0.5)" : "rgba(255,255,255,0.5)"
+  const emptyBorder = isDay ? "1.5px dashed rgba(0,0,0,0.10)" : "1.5px dashed rgba(255,255,255,0.08)"
+  const labelBg = isDay ? "#EDE8DF" : "#2d2d2d"
+  const labelColor = isDay ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)"
+
+  const inputStyle = {
+    width: "100%", borderRadius: 10, padding: "10px 14px",
+    fontSize: 13, outline: "none",
+    background: inputBg, border: inputBorder,
+    color: textPrimary, fontFamily: "Poppins, sans-serif", fontWeight: 500,
+    letterSpacing: "-0.05em", boxSizing: "border-box",
+  }
 
   useEffect(() => { fetchData() }, [])
 
@@ -66,7 +84,13 @@ export default function Suggestions() {
   }
 
   return (
-    <div style={{ padding: "20px 24px", backgroundColor: "#111111", minHeight: "100%", fontFamily: "Poppins, sans-serif" }}>
+    <div style={{
+      padding: "20px 24px",
+      backgroundColor: bg,
+      minHeight: "100%",
+      fontFamily: "Poppins, sans-serif",
+      transition: "background-color 0.3s ease",
+    }}>
 
       {success && (
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
@@ -76,11 +100,11 @@ export default function Suggestions() {
 
       {/* HEADER */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "#ffffff", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/icons/rainbow.png" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display="none"} />
+        <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
+          <img src="/icons/rainbow.png" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display = "none"} />
           suggestions & bugs
         </h1>
-        <p className="text-light" style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+        <p style={{ margin: 0, fontSize: 12, color: textMuted }}>
           consulte la roadmap et soumets tes idées ou signale un bug
         </p>
       </div>
@@ -89,18 +113,18 @@ export default function Suggestions() {
 
         {/* COLONNE GAUCHE — Roadmap */}
         <div style={{ flex: 1, minWidth: 280 }}>
-          <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             🗺️ roadmap
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {ROADMAP.map((item, i) => (
-              <div key={i} style={{ backgroundColor: "#091718", borderRadius: 12, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <div key={i} style={{ backgroundColor: surface, borderRadius: 12, padding: "14px 16px", border: surfaceBorder, display: "flex", alignItems: "flex-start", gap: 12 }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#ffffff" }}>{item.title}</h3>
-                  <p className="text-light" style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{item.desc}</p>
+                  <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: textPrimary }}>{item.title}</h3>
+                  <p style={{ margin: 0, fontSize: 12, color: textMuted }}>{item.desc}</p>
                 </div>
-                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, backgroundColor: "#2d2d2d", color: "rgba(255,255,255,0.4)", padding: "3px 10px", borderRadius: 20 }}>à venir</span>
+                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, backgroundColor: labelBg, color: labelColor, padding: "3px 10px", borderRadius: 20 }}>à venir</span>
               </div>
             ))}
           </div>
@@ -109,7 +133,7 @@ export default function Suggestions() {
         {/* COLONNE DROITE — Soumettre */}
         <div style={{ width: 340, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               🎫 soumettre
             </h2>
             <button onClick={() => setShowForm(!showForm)}
@@ -123,8 +147,8 @@ export default function Suggestions() {
 
           {/* Formulaire */}
           {showForm && (
-            <div style={{ backgroundColor: "#091718", borderRadius: 12, padding: 16, marginBottom: 16, border: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#ffffff" }}>nouveau ticket</h3>
+            <div style={{ backgroundColor: surface, borderRadius: 12, padding: 16, marginBottom: 16, border: surfaceBorder, display: "flex", flexDirection: "column", gap: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: textPrimary }}>nouveau ticket</h3>
 
               {/* Types */}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -134,9 +158,9 @@ export default function Suggestions() {
                       display: "flex", alignItems: "center", gap: 6,
                       padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
                       fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-                      border: `1.5px solid ${type === t.value ? t.border : "rgba(255,255,255,0.08)"}`,
+                      border: `1.5px solid ${type === t.value ? t.border : isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)"}`,
                       backgroundColor: type === t.value ? t.bg : "transparent",
-                      color: type === t.value ? t.color : "rgba(255,255,255,0.4)",
+                      color: type === t.value ? t.color : textMuted,
                       cursor: "pointer", transition: "all 0.15s",
                     }}>
                     {t.icon} {t.label}
@@ -161,7 +185,7 @@ export default function Suggestions() {
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setShowForm(false)}
-                  style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#2d2d2d", color: "rgba(255,255,255,0.5)" }}
+                  style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: cancelBg, color: cancelColor }}
                   onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                   onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
@@ -181,7 +205,7 @@ export default function Suggestions() {
           {/* Tickets */}
           {tickets.length > 0 ? (
             <div>
-              <p className="text-light" style={{ margin: "0 0 10px", fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              <p style={{ margin: "0 0 10px", fontSize: 12, color: textMuted }}>
                 tes tickets ({tickets.length})
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -189,7 +213,7 @@ export default function Suggestions() {
                   const typeInfo = TYPES.find(t => t.value === ticket.type)
                   const statusInfo = STATUS[ticket.status] || STATUS.open
                   return (
-                    <div key={ticket.id} style={{ backgroundColor: "#091718", borderRadius: 12, padding: "12px 14px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div key={ticket.id} style={{ backgroundColor: surface, borderRadius: 12, padding: "12px 14px", border: surfaceBorder }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 20, backgroundColor: typeInfo?.bg, color: typeInfo?.color, border: `1px solid ${typeInfo?.border}` }}>
                           {typeInfo?.icon} {typeInfo?.label}
@@ -198,11 +222,11 @@ export default function Suggestions() {
                           {statusInfo.label}
                         </span>
                       </div>
-                      <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#ffffff" }}>{ticket.title}</h3>
-                      <p className="text-light" style={{ margin: "0 0 6px", fontSize: 12, color: "rgba(255,255,255,0.4)", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: textPrimary }}>{ticket.title}</h3>
+                      <p style={{ margin: "0 0 6px", fontSize: 12, color: textSecondary, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                         {ticket.description}
                       </p>
-                      <span className="text-light" style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>
+                      <span style={{ fontSize: 11, color: textFaint }}>
                         {new Date(ticket.created_at).toLocaleDateString("fr-FR")}
                       </span>
                     </div>
@@ -211,8 +235,8 @@ export default function Suggestions() {
               </div>
             </div>
           ) : !showForm && (
-            <div style={{ backgroundColor: "#091718", borderRadius: 12, padding: 32, textAlign: "center", border: "1.5px dashed rgba(255,255,255,0.08)" }}>
-              <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>
+            <div style={{ backgroundColor: surface, borderRadius: 12, padding: 32, textAlign: "center", border: emptyBorder }}>
+              <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: textMuted }}>
                 aucun ticket soumis
               </p>
               <button onClick={() => setShowForm(true)}

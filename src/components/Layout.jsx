@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { NavLink, useNavigate, Outlet, useLocation } from "react-router-dom"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
+import { useProfile } from "../context/ProfileContext"
 
 function NavIcon({ name, size = 18 }) {
   return (
@@ -17,21 +18,11 @@ function NavIcon({ name, size = 18 }) {
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { darkMode } = useTheme()
-  const [profile, setProfile] = useState(null)
-  const [user, setUser] = useState(null)
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const { isDay } = useTheme()
+  const { profile, user } = useProfile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  useEffect(() => { fetchProfile() }, [])
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
-
-  const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setUser(user)
-    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
-    if (data) setProfile(data)
-  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -56,7 +47,7 @@ export default function Layout() {
 
   const SidebarContent = () => (
     <>
-      {/* Logo — aligné à gauche */}
+      {/* Logo */}
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 700, color: "white", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.03em" }}>
           <img src="/icons/shrim.png" alt="shrimp" style={{ width: 22, height: 22, filter: "none" }} />
@@ -77,16 +68,18 @@ export default function Layout() {
         >
           <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {profile?.avatar_url ? (
-              <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <img src={`${profile.avatar_url}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
               <span style={{ fontSize: 14 }}>👤</span>
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <p style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontSize: 15, fontWeight: 700, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.2 }}>
+            <p style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontSize: 13, fontWeight: 700, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
               {profile?.username || user?.email?.split("@")[0] || "Mon profil"}
             </p>
-            <p className="text-light"style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 100, fontSize: 9, color: "#ffffff", lineHeight: 1.4 }}>voir le profil</p>
+            <p style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 400, fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user?.email || "voir le profil"}
+            </p>
           </div>
         </div>
       </div>
@@ -96,14 +89,14 @@ export default function Layout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 flex flex-col gap-1 overflow-y-auto">
-        {navItem("/calendar",   "calendar", "calendrier")}
-        {navItem("/recipes",    "book",     "mes recettes")}
-        {navItem("/shopping",   "kart",     "courses")}
-        {navItem("/fridge",     "ice",      "mon frigo")}
-        {navItem("/friends",    "friends",  "amis")}
-        {navItem("/discover",   "spark",    "découvrir")}
-        {navItem("/nutrition",  "chart",    "bilan nutrition")}
-        {navItem("/suggestions","rainbow",  "améliorations à venir")}
+        {navItem("/calendar",    "calendar", "calendrier")}
+        {navItem("/recipes",     "book",     "mes recettes")}
+        {navItem("/shopping",    "kart",     "courses")}
+        {navItem("/fridge",      "ice",      "mon frigo")}
+        {navItem("/friends",     "friends",  "amis")}
+        {navItem("/discover",    "spark",    "découvrir")}
+        {navItem("/nutrition",   "chart",    "bilan nutrition")}
+        {navItem("/suggestions", "rainbow",  "améliorations à venir")}
       </nav>
 
       {/* Bottom */}
@@ -131,7 +124,7 @@ export default function Layout() {
         <div className="fixed inset-0 bg-black/60 z-30 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* SIDEBAR desktop */}
+      {/* SIDEBAR desktop — toujours sombre */}
       <div className="hidden md:flex w-52 flex-col flex-shrink-0 h-screen"
         style={{ backgroundColor: "#091718" }}>
         <SidebarContent />
@@ -143,31 +136,35 @@ export default function Layout() {
         <SidebarContent />
       </div>
 
-      {/* CONTENU PRINCIPAL */}
-      <div className="flex-1 flex flex-col overflow-y-auto" style={{ backgroundColor: "#111111" }}>
+      {/* CONTENU PRINCIPAL — fond thémé */}
+      <div
+        className="flex-1 flex flex-col overflow-y-auto"
+        style={{ backgroundColor: "var(--bg-main)", transition: "background-color 0.25s ease" }}
+      >
 
-      {/* TOPBAR mobile */}
-<div className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0">
-  <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-    <img src="/icons/burger.png" alt="menu" className="no-select" style={{ width: 24, height: 28, display: "block" }} />
-  </button>
+        {/* TOPBAR mobile */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
+          style={{ backgroundColor: "#091718" }}>
+          <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
+            <img src="/icons/burger.png" alt="menu" className="no-select" style={{ width: 24, height: 28, display: "block" }} />
+          </button>
 
-  <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-    <img src="/icons/shrim.png" alt="shrimp" className="no-select" style={{ width: 22, height: 22 }} />
-    <span>Shrim<span className="text-[#f3501e]">ply</span></span>
-  </span>
+          <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+            <img src="/icons/shrim.png" alt="shrimp" className="no-select" style={{ width: 22, height: 22 }} />
+            <span>Shrim<span className="text-[#f3501e]">ply</span></span>
+          </span>
 
-  <div
-    onClick={() => navigate("/profile")}
-    className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-[#f3501e]/30 border-2 border-[#f3501e]/60 cursor-pointer"
-  >
-    {profile?.avatar_url ? (
-      <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" className="w-full h-full object-cover" />
-    ) : (
-      <span className="text-sm">👤</span>
-    )}
-  </div>
-</div>
+          <div
+            onClick={() => navigate("/profile")}
+            className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-[#f3501e]/30 border-2 border-[#f3501e]/60 cursor-pointer"
+          >
+            {profile?.avatar_url ? (
+              <img src={`${profile.avatar_url}`} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-sm">👤</span>
+            )}
+          </div>
+        </div>
 
         <Outlet />
       </div>

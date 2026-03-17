@@ -150,15 +150,15 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
 
   // --- RENDU UI ---
   return (
-    <div className="flex flex-col gap-4 p-4 border rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+    <div className="flex flex-col gap-4 p-4 border rounded-2xl  bg-[#1A1A1A] shadow-sm">
       
       {/* ÉTAT INITIAL : ZONE DE DROP */}
       {stage === "idle" && (
         <div 
           onClick={() => fileInputRef.current.click()}
-          className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 h-52 flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-orange-50/50 dark:hover:bg-orange-900/5 transition"
+          className=" border-zinc-300 dark:border-zinc-700 h-52 flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-orange-50/50 dark:hover:bg-orange-900/5 transition"
         >
-          <img src="/icons/photo.png" alt="" style={{ width: 46, height: 46 }} className="mb-2" />
+          <img src="/icons/photo.png" alt="" style={{ width: 48, height: 48 }} className="mb-2" />
           <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Ajouter la photo du plat</p>
           <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
         </div>

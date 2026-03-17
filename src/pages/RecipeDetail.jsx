@@ -198,6 +198,9 @@ export default function RecipeDetail() {
 
   const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
 
+  // Bouton recalculer bloqué si tous les prix sont trouvés
+  const allPricesFound = costDetails?.details?.length > 0 && costDetails.details.every(i => i.found)
+
   const ActionButtons = ({ size = "md" }) => {
     const base = size === "sm" ? "p-2 text-base rounded-xl" : "p-2.5 rounded-xl"
     return (
@@ -253,7 +256,6 @@ export default function RecipeDetail() {
                   {ingredients.length > 0 && <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 px-3 py-1.5 rounded-full text-xs font-semibold"><span>🛒</span><span>{ingredients.length} ingr.</span></div>}
                   {steps.length > 0 && <div className="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 px-3 py-1.5 rounded-full text-xs font-semibold"><span>👨‍🍳</span><span>{steps.length} étapes</span></div>}
                 </div>
-                {/* Tags Desktop avec le nouveau système */}
                 {recipe.tags?.length > 0 && (() => {
                   const validTags = recipe.tags.filter(tv => TAGS.some(t => t.value === tv));
                   if (validTags.length === 0) return null;
@@ -276,9 +278,18 @@ export default function RecipeDetail() {
               <div className="mt-5 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30 rounded-2xl p-4">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">💰 Budget estimé</span>
-                  <button onClick={reestimate} disabled={estimating || cooldown > 0}
-                    className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all ${cooldown > 0 ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500" : "bg-green-500 text-white hover:bg-green-600"}`}>
-                    {estimating ? "⌛ Analyse..." : cooldown > 0 ? `⏳ ${cooldown}s` : "🔄 Recalculer"}
+                  <button
+                    onClick={reestimate}
+                    disabled={estimating || cooldown > 0 || allPricesFound}
+                    className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all ${
+                      allPricesFound
+                        ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500 cursor-not-allowed"
+                        : cooldown > 0
+                        ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500"
+                        : "bg-green-500 text-white hover:bg-green-600"
+                    }`}
+                  >
+                    {estimating ? "⌛ Analyse..." : allPricesFound ? "✅ Complet" : cooldown > 0 ? `⏳ ${cooldown}s` : "🔄 Recalculer"}
                   </button>
                 </div>
                 {apiError && <p className="text-[11px] text-red-500 mb-2 italic">{apiError}</p>}
@@ -358,7 +369,6 @@ export default function RecipeDetail() {
                   {recipe.prep_time && <span>⏱ {recipe.prep_time} min</span>}
                   {recipe.servings && <span>🍽 {recipe.servings} pers.</span>}
                 </div>
-                {/* Tags Mobile avec le nouveau système */}
                 {recipe.tags?.length > 0 && (() => {
                   const validTags = recipe.tags.filter(tv => TAGS.some(t => t.value === tv));
                   if (validTags.length === 0) return null;
@@ -384,9 +394,18 @@ export default function RecipeDetail() {
             <div className="mb-10 bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800/30 rounded-2xl p-5 shadow-inner">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-bold text-green-700 dark:text-green-400 uppercase tracking-widest">💰 Budget</h2>
-                <button onClick={reestimate} disabled={estimating || cooldown > 0}
-                  className={`text-[10px] font-black px-4 py-2 rounded-xl transition-all shadow-sm ${cooldown > 0 ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500" : "bg-green-500 text-white hover:bg-green-600 active:scale-95"}`}>
-                  {estimating ? "⌛ ANALYSE..." : cooldown > 0 ? `⏳ ${cooldown}S` : "🔄 RECALCULER"}
+                <button
+                  onClick={reestimate}
+                  disabled={estimating || cooldown > 0 || allPricesFound}
+                  className={`text-[10px] font-black px-4 py-2 rounded-xl transition-all shadow-sm ${
+                    allPricesFound
+                      ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500 cursor-not-allowed"
+                      : cooldown > 0
+                      ? "bg-zinc-200 text-zinc-400 dark:bg-zinc-700 dark:text-zinc-500"
+                      : "bg-green-500 text-white hover:bg-green-600 active:scale-95"
+                  }`}
+                >
+                  {estimating ? "⌛ ANALYSE..." : allPricesFound ? "✅ COMPLET" : cooldown > 0 ? `⏳ ${cooldown}S` : "🔄 RECALCULER"}
                 </button>
               </div>
               {apiError && <p className="text-[11px] text-red-500 mb-3 font-medium bg-white/50 dark:bg-black/20 p-2 rounded-lg italic text-center">⚠️ {apiError}</p>}

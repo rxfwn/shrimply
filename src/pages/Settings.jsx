@@ -16,15 +16,15 @@ export default function Settings() {
   const [success, setSuccess] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteInput, setDeleteInput] = useState("")
-
-  const [notifNewFollower, setNotifNewFollower] = useState(
-    localStorage.getItem("notif_follower") !== "false"
-  )
-  const [notifRecipeLiked, setNotifRecipeLiked] = useState(
-    localStorage.getItem("notif_liked") !== "false"
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") !== "false"
   )
 
   useEffect(() => { fetchProfile() }, [])
+
+  useEffect(() => {
+    document.body.style.backgroundColor = darkMode ? "#0a0a0a" : "#f5f5f5"
+  }, [darkMode])
 
   const fetchProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -39,6 +39,12 @@ export default function Settings() {
 
   const togglePref = (pref) => {
     setSelectedPrefs(prev => prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref])
+  }
+
+  const toggleDarkMode = () => {
+    const newMode = !darkMode
+    setDarkMode(newMode)
+    localStorage.setItem("darkMode", newMode)
   }
 
   const handleAvatarUpload = async (e) => {
@@ -59,8 +65,6 @@ export default function Settings() {
   const handleSave = async () => {
     setSaving(true)
     await supabase.from("profiles").upsert({ id: user.id, username, avatar_url: avatarUrl, preferences: selectedPrefs })
-    localStorage.setItem("notif_follower", notifNewFollower)
-    localStorage.setItem("notif_liked", notifRecipeLiked)
     setSaving(false)
     setSuccess("✅ profil sauvegardé !")
     setTimeout(() => setSuccess(""), 3000)
@@ -104,19 +108,25 @@ export default function Settings() {
 
   const Section = ({ title, icon, children }) => (
     <div style={{
-      backgroundColor: "#1a1a1a",
+      backgroundColor: darkMode ? "#1a1a1a" : "#ffffff",
       borderRadius: 14,
-      border: "1px solid rgba(255,255,255,0.06)",
+      border: darkMode ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.08)",
       overflow: "hidden",
       marginBottom: 12,
     }}>
       <div style={{
         padding: "14px 18px 10px",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        borderBottom: darkMode ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(0,0,0,0.05)",
         display: "flex", alignItems: "center", gap: 8,
       }}>
         {icon && <img src={`/icons/${icon}.png`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}
-        <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+        <span style={{ 
+          fontSize: 10, 
+          fontWeight: 700, 
+          color: darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)", 
+          textTransform: "uppercase", 
+          letterSpacing: "0.08em" 
+        }}>
           {title}
         </span>
       </div>
@@ -130,16 +140,27 @@ export default function Settings() {
       style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "13px 18px",
-        borderBottom: noBorder ? "none" : "1px solid rgba(255,255,255,0.04)",
+        borderBottom: noBorder ? "none" : darkMode ? "1px solid rgba(255,255,255,0.04)" : "1px solid rgba(0,0,0,0.04)",
         cursor: onClick ? "pointer" : "default",
         transition: "background 0.12s",
       }}
-      onMouseEnter={e => { if (onClick) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)" }}
+      onMouseEnter={e => { if (onClick) e.currentTarget.style.backgroundColor = darkMode ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}
       onMouseLeave={e => { if (onClick) e.currentTarget.style.backgroundColor = "transparent" }}
     >
       <div>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: danger ? "#f87171" : "#ffffff", letterSpacing: "-0.03em" }}>{label}</p>
-        {sub && <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>{sub}</p>}
+        <p style={{ 
+          margin: 0, 
+          fontSize: 13, 
+          fontWeight: 600, 
+          color: danger ? "#f87171" : darkMode ? "#ffffff" : "#000000", 
+          letterSpacing: "-0.03em" 
+        }}>{label}</p>
+        {sub && <p style={{ 
+          margin: "2px 0 0", 
+          fontSize: 11, 
+          color: darkMode ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)", 
+          fontWeight: 500 
+        }}>{sub}</p>}
       </div>
       {right}
     </div>
@@ -148,10 +169,14 @@ export default function Settings() {
   const inputStyle = {
     width: "100%", borderRadius: 10, padding: "10px 14px",
     fontSize: 13, outline: "none",
-    backgroundColor: "#2d2d2d",
-    border: "1.5px solid rgba(255,255,255,0.06)",
-    color: "#ffffff", fontFamily: "Poppins, sans-serif", fontWeight: 500,
-    letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s",
+    backgroundColor: darkMode ? "#2d2d2d" : "#f8f8f8",
+    border: darkMode ? "1.5px solid rgba(255,255,255,0.06)" : "1.5px solid rgba(0,0,0,0.08)",
+    color: darkMode ? "#ffffff" : "#000000", 
+    fontFamily: "Poppins, sans-serif", 
+    fontWeight: 500,
+    letterSpacing: "-0.05em", 
+    boxSizing: "border-box", 
+    transition: "border-color 0.15s",
   }
 
   const btnBase = {
@@ -161,11 +186,29 @@ export default function Settings() {
   }
 
   return (
-    <div style={{ backgroundColor: "#111111", minHeight: "100%", padding: "24px", fontFamily: "Poppins, sans-serif", maxWidth: 560 }}>
+    <div style={{ 
+      backgroundColor: darkMode ? "#0a0a0a" : "#f5f5f5", 
+      minHeight: "100vh", 
+      padding: "24px", 
+      fontFamily: "Poppins, sans-serif", 
+      maxWidth: 560,
+      margin: "0 auto"
+    }}>
 
       {/* Toast */}
       {success && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: success.startsWith("❌") ? "#f87171" : "#34d399", color: success.startsWith("❌") ? "#ffffff" : "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
+        <div style={{ 
+          position: "fixed", 
+          top: 16, 
+          right: 16, 
+          zIndex: 50, 
+          backgroundColor: success.startsWith("❌") ? "#f87171" : "#34d399", 
+          color: success.startsWith("❌") ? "#ffffff" : "#064e3b", 
+          padding: "12px 20px", 
+          borderRadius: 12, 
+          fontSize: 13, 
+          fontWeight: 700 
+        }}>
           {success}
         </div>
       )}
@@ -173,8 +216,24 @@ export default function Settings() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
         <img src="/icons/settings.png" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.05em" }}>paramètres</h1>
+        <h1 style={{ 
+          margin: 0, 
+          fontSize: 18, 
+          fontWeight: 700, 
+          color: darkMode ? "#ffffff" : "#000000", 
+          letterSpacing: "-0.05em" 
+        }}>paramètres</h1>
       </div>
+
+      {/* ── APPARENCE ───────────────────────────────────────────────────────── */}
+      <Section title="apparence" icon="sun">
+        <Row
+          label={darkMode ? "mode sombre" : "mode clair"}
+          sub="basculer entre le thème clair et sombre"
+          right={<Toggle value={darkMode} onChange={toggleDarkMode} />}
+          noBorder
+        />
+      </Section>
 
       {/* ── PROFIL ─────────────────────────────────────────────────────────── */}
       <Section title="profil" icon="book">
@@ -187,7 +246,7 @@ export default function Settings() {
               style={{
                 width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
                 border: "2.5px solid rgba(243,80,30,0.5)",
-                backgroundColor: "#2d2d2d",
+                backgroundColor: darkMode ? "#2d2d2d" : "#e5e5e5",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", transition: "border-color 0.15s",
               }}
@@ -203,18 +262,40 @@ export default function Settings() {
             <div>
               <button
                 onClick={() => fileRef.current.click()}
-                style={{ ...btnBase, background: "none", border: "none", padding: 0, color: "#f3501e", fontSize: 13, display: "block", marginBottom: 4 }}
+                style={{ 
+                  ...btnBase, 
+                  background: "none", 
+                  border: "none", 
+                  padding: 0, 
+                  color: "#f3501e", 
+                  fontSize: 13, 
+                  display: "block", 
+                  marginBottom: 4 
+                }}
               >
                 {uploading ? "upload en cours..." : "changer la photo"}
               </button>
-              <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 500 }}>JPG, PNG — max 2MB</p>
+              <p style={{ 
+                margin: 0, 
+                fontSize: 11, 
+                color: darkMode ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)", 
+                fontWeight: 500 
+              }}>JPG, PNG — max 2MB</p>
             </div>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} />
           </div>
 
           {/* Nom d'utilisateur */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+            <label style={{ 
+              fontSize: 10, 
+              fontWeight: 700, 
+              color: darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)", 
+              textTransform: "uppercase", 
+              letterSpacing: "0.06em", 
+              display: "block", 
+              marginBottom: 6 
+            }}>
               nom d'utilisateur
             </label>
             <input
@@ -223,17 +304,31 @@ export default function Settings() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               onFocus={e => e.target.style.borderColor = "#f3501e"}
-              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.06)"}
+              onBlur={e => e.target.style.borderColor = darkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"}
             />
           </div>
 
           {/* Email (désactivé) */}
           <div>
-            <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+            <label style={{ 
+              fontSize: 10, 
+              fontWeight: 700, 
+              color: darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)", 
+              textTransform: "uppercase", 
+              letterSpacing: "0.06em", 
+              display: "block", 
+              marginBottom: 6 
+            }}>
               email
             </label>
             <input
-              style={{ ...inputStyle, backgroundColor: "#141414", color: "rgba(255,255,255,0.3)", cursor: "not-allowed", border: "1.5px solid rgba(255,255,255,0.03)" }}
+              style={{ 
+                ...inputStyle, 
+                backgroundColor: darkMode ? "#141414" : "#ececec", 
+                color: darkMode ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)", 
+                cursor: "not-allowed", 
+                border: darkMode ? "1.5px solid rgba(255,255,255,0.03)" : "1.5px solid rgba(0,0,0,0.05)" 
+              }}
               value={user?.email || ""}
               disabled
             />
@@ -244,7 +339,13 @@ export default function Settings() {
       {/* ── PRÉFÉRENCES ALIMENTAIRES ────────────────────────────────────────── */}
       <Section title="préférences alimentaires" icon="salad">
         <div style={{ padding: "12px 18px 16px" }}>
-          <p style={{ margin: "0 0 12px", fontSize: 12, color: "rgba(255,255,255,0.3)", fontWeight: 500, lineHeight: 1.5 }}>
+          <p style={{ 
+            margin: "0 0 12px", 
+            fontSize: 12, 
+            color: darkMode ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.4)", 
+            fontWeight: 500, 
+            lineHeight: 1.5 
+          }}>
             utilisées pour personnaliser tes suggestions de recettes.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -260,8 +361,8 @@ export default function Settings() {
                     fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em",
                     cursor: "pointer", transition: "all 0.15s",
                     backgroundColor: active ? tag.pillBg : "transparent",
-                    color: active ? tag.pillText : "rgba(255,255,255,0.4)",
-                    border: active ? "1.5px solid transparent" : "1.5px solid rgba(255,255,255,0.1)",
+                    color: active ? tag.pillText : darkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.4)",
+                    border: active ? "1.5px solid transparent" : darkMode ? "1.5px solid rgba(255,255,255,0.1)" : "1.5px solid rgba(0,0,0,0.15)",
                     transform: active ? "scale(1.05)" : "scale(1)",
                   }}
                 >
@@ -274,31 +375,19 @@ export default function Settings() {
         </div>
       </Section>
 
-      {/* ── NOTIFICATIONS ───────────────────────────────────────────────────── */}
-      <Section title="notifications" icon="clock">
-        <Row
-          label="nouveaux abonnés"
-          sub="quand quelqu'un commence à te suivre"
-          right={<Toggle value={notifNewFollower} onChange={setNotifNewFollower} />}
-        />
-        <Row
-          label="recette aimée"
-          sub="quand quelqu'un aime une de tes recettes"
-          right={<Toggle value={notifRecipeLiked} onChange={setNotifRecipeLiked} />}
-          noBorder
-        />
-      </Section>
-
       {/* ── CONFIDENTIALITÉ ─────────────────────────────────────────────────── */}
       <Section title="confidentialité">
         <Row
           label="profil public"
           sub="tes recettes publiques sont visibles par tous"
-          right={<span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontWeight: 600 }}>toujours actif</span>}
+          right={<span style={{ 
+            fontSize: 11, 
+            color: darkMode ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.3)", 
+            fontWeight: 600 
+          }}>toujours actif</span>}
         />
         <Row
           label="voir mes recettes publiées"
-          right={<span style={{ color: "rgba(255,255,255,0.25)", fontSize: 16 }}>→</span>}
           onClick={() => navigate("/profile")}
           noBorder
         />
@@ -308,7 +397,6 @@ export default function Settings() {
       <Section title="compte">
         <Row
           label="se déconnecter"
-          right={<span style={{ color: "rgba(255,255,255,0.25)", fontSize: 16 }}>→</span>}
           onClick={handleLogout}
         />
         <Row
@@ -341,25 +429,85 @@ export default function Settings() {
 
       {/* ── POPUP SUPPRESSION ───────────────────────────────────────────────── */}
       {confirmDelete && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ backgroundColor: "#1a1a1a", borderRadius: 16, maxWidth: 380, width: "100%", overflow: "hidden", border: "1px solid rgba(239,68,68,0.2)" }}>
+        <div style={{ 
+          position: "fixed", 
+          inset: 0, 
+          zIndex: 50, 
+          backgroundColor: "rgba(0,0,0,0.75)", 
+          display: "flex", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          padding: 24 
+        }}>
+          <div style={{ 
+            backgroundColor: darkMode ? "#1a1a1a" : "#ffffff", 
+            borderRadius: 16, 
+            maxWidth: 380, 
+            width: "100%", 
+            overflow: "hidden", 
+            border: "1px solid rgba(239,68,68,0.2)" 
+          }}>
 
             {/* Header rouge */}
-            <div style={{ backgroundColor: "rgba(239,68,68,0.08)", padding: "28px 24px 20px", display: "flex", flexDirection: "column", alignItems: "center", borderBottom: "1px solid rgba(239,68,68,0.12)" }}>
-              <div style={{ width: 52, height: 52, backgroundColor: "#2d2d2d", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, marginBottom: 12 }}>⚠️</div>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.05em" }}>supprimer mon compte</h2>
+            <div style={{ 
+              backgroundColor: "rgba(239,68,68,0.08)", 
+              padding: "28px 24px 20px", 
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "center", 
+              borderBottom: "1px solid rgba(239,68,68,0.12)" 
+            }}>
+              <div style={{ 
+                width: 52, 
+                height: 52, 
+                backgroundColor: darkMode ? "#2d2d2d" : "#f5f5f5", 
+                borderRadius: "50%", 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "center", 
+                fontSize: 22, 
+                marginBottom: 12 
+              }}>⚠️</div>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: 16, 
+                fontWeight: 700, 
+                color: darkMode ? "#ffffff" : "#000000", 
+                letterSpacing: "-0.05em" 
+              }}>supprimer mon compte</h2>
             </div>
 
             <div style={{ padding: "20px 24px 24px" }}>
-              <p style={{ margin: "0 0 16px", fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, textAlign: "center", fontWeight: 500 }}>
-                action <strong style={{ color: "rgba(255,255,255,0.7)" }}>irréversible</strong> — toutes tes recettes seront supprimées.
+              <p style={{ 
+                margin: "0 0 16px", 
+                fontSize: 12, 
+                color: darkMode ? "rgba(255,255,255,0.4)" : "rgba(0,0,0,0.5)", 
+                lineHeight: 1.6, 
+                textAlign: "center", 
+                fontWeight: 500 
+              }}>
+                action <strong style={{ 
+                  color: darkMode ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.8)" 
+                }}>irréversible</strong> — toutes tes recettes seront supprimées.
               </p>
 
-              <label style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+              <label style={{ 
+                fontSize: 10, 
+                fontWeight: 700, 
+                color: darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.4)", 
+                textTransform: "uppercase", 
+                letterSpacing: "0.06em", 
+                display: "block", 
+                marginBottom: 6 
+              }}>
                 tape « {username} » pour confirmer
               </label>
               <input
-                style={{ ...inputStyle, border: "1.5px solid rgba(239,68,68,0.3)", marginBottom: 16 }}
+                style={{ 
+                  ...inputStyle, 
+                  border: "1.5px solid rgba(239,68,68,0.3)", 
+                  marginBottom: 16 
+                }}
                 placeholder={username}
                 value={deleteInput}
                 onChange={e => setDeleteInput(e.target.value)}
@@ -370,7 +518,13 @@ export default function Settings() {
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={() => { setConfirmDelete(false); setDeleteInput("") }}
-                  style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#2d2d2d", color: "rgba(255,255,255,0.6)" }}
+                  style={{ 
+                    ...btnBase, 
+                    flex: 1, 
+                    padding: "11px", 
+                    backgroundColor: darkMode ? "#2d2d2d" : "#e5e5e5", 
+                    color: darkMode ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)" 
+                  }}
                   onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                 >
@@ -379,7 +533,14 @@ export default function Settings() {
                 <button
                   onClick={handleDeleteAccount}
                   disabled={deleteInput !== username}
-                  style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#ef4444", color: "#ffffff", opacity: deleteInput !== username ? 0.35 : 1 }}
+                  style={{ 
+                    ...btnBase, 
+                    flex: 1, 
+                    padding: "11px", 
+                    backgroundColor: "#ef4444", 
+                    color: "#ffffff", 
+                    opacity: deleteInput !== username ? 0.35 : 1 
+                  }}
                   onMouseEnter={e => { if (deleteInput === username) e.currentTarget.style.transform = "scale(1.02)" }}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                 >

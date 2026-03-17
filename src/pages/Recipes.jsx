@@ -81,6 +81,7 @@ export default function Recipes() {
   const [dragOverIndex, setDragOverIndex] = useState(null)
   const [search, setSearch] = useState("")
   const [activeFilter, setActiveFilter] = useState("")
+  const [tagsExpanded, setTagsExpanded] = useState(false)
 
   const DRAFT_KEY = "recipe_draft"
   const saveDraft = (data) => localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
@@ -513,34 +514,70 @@ export default function Recipes() {
               >+ nouvelle recette</button>
             </div>
 
-            {/* Filtres */}
-            <div style={{ overflowX: "auto", paddingBottom: 8 }}>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
-                    fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer",
-                    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-                    backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
-                    opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1,
-                    transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)",
-                    transition: "all 0.2s ease",
-                  }}>
-                  <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
-                  toutes
-                </button>
-                {TAGS.map(tag => (
-                  <div key={tag.value} style={{ flexShrink: 0 }}>
-                    <TagPill
-                      tag={tag}
-                      active={activeFilter === tag.value}
-                      anyActive={activeFilter !== ""}
-                      onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+           {/* Filtres */}
+<div style={{ overflowX: "hidden", paddingBottom: 8 }}>
+  {(() => {
+    const allTags = TAGS
+    const visibleTags = tagsExpanded ? allTags : allTags.slice(0, 4)
+    const hiddenCount = allTags.length - 4
+    return (
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
+            fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer",
+            fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
+            backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
+            opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1,
+            transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)",
+            transition: "all 0.2s ease",
+          }}>
+          <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+          toutes
+        </button>
+        {visibleTags.map(tag => (
+          <div key={tag.value} style={{ flexShrink: 0 }}>
+            <TagPill
+              tag={tag}
+              active={activeFilter === tag.value}
+              anyActive={activeFilter !== ""}
+              onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)}
+            />
+          </div>
+        ))}
+        {!tagsExpanded && hiddenCount > 0 && (
+          <button onClick={() => setTagsExpanded(true)}
+            style={{
+              display: "flex", alignItems: "center", gap: 4, padding: "6px 12px",
+              borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(255,255,255,0.1)",
+              cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
+              backgroundColor: "transparent", color: "rgba(255,255,255,0.5)", flexShrink: 0,
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = "#ffffff"}
+            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+          >
+            +{hiddenCount} voir plus
+          </button>
+        )}
+        {tagsExpanded && (
+          <button onClick={() => setTagsExpanded(false)}
+            style={{
+              display: "flex", alignItems: "center", gap: 4, padding: "6px 12px",
+              borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid rgba(255,255,255,0.1)",
+              cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
+              backgroundColor: "transparent", color: "rgba(255,255,255,0.5)", flexShrink: 0,
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = "#ffffff"}
+            onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.5)"}
+            >réduire
+            </button>
+            )}
+          </div>
+          )
+          })()}
+          </div>    
           </div>
 
           {/* Grille */}

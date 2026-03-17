@@ -3,7 +3,7 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class",
   corePlugins: {
-    preflight: false, // Attention, comme tu as désactivé le preflight, on gèrera le body à la main !
+    preflight: false,
   },
   theme: {
     extend: {
@@ -17,14 +17,15 @@ export default {
           cream: "#F5F0E8",
           dark: "#111111",
           sidebar: "#091718",
+          darker:"#2D2D2D",
         }
       },
       fontFamily: {
         sans: ["Poppins", "sans-serif"],
       },
-      // 👇 AJOUTE JUSTE CE BLOC ICI 👇
+    
       letterSpacing: {
-        'illustrator': '-0.3em', // Correspond à ton -100 sur Illustrator
+        'illustrator': '-0.3em', 
       }
     },
   },

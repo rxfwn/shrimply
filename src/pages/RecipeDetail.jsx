@@ -228,7 +228,7 @@ export default function RecipeDetail() {
 
       {/* ===== DESKTOP ===== */}
       <div className="hidden md:block">
-        <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-zinc-700">
+        <div style={{ backgroundColor: "#091718", border: "1px solid rgba(255,255,255,0.06)" }} className="rounded-3xl overflow-hidden shadow-sm">
           <div className="grid grid-cols-[5fr_4fr] min-h-[340px]">
             <div className="relative overflow-hidden">
               {recipe.photo_url ? (
@@ -352,7 +352,7 @@ export default function RecipeDetail() {
 
       {/* ===== MOBILE ===== */}
       <div className="block md:hidden">
-        <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-zinc-700">
+        <div style={{ backgroundColor: "#091718", border: "1px solid rgba(255,255,255,0.06)" }} className="rounded-3xl overflow-hidden shadow-sm">
           {recipe.photo_url ? (
             <div className="w-full aspect-[4/3] overflow-hidden"><img src={recipe.photo_url} alt={recipe.name} className="w-full h-full object-cover" /></div>
           ) : (

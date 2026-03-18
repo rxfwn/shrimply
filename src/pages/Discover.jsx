@@ -126,6 +126,7 @@ export default function Discover() {
     const { data: newRecipe, error } = await supabase.from("recipes").insert({
       user_id: user.id, name: recipe.name, description: recipe.description,
       prep_time: recipe.prep_time, servings: recipe.servings, tags: recipe.tags,
+      primary_tag: recipe.primary_tag || null,
       is_public: false, photo_url: recipe.photo_url || null,
     }).select().single()
     if (error) { console.error(error); return }
@@ -390,7 +391,7 @@ export default function Discover() {
 
       {/* Grille */}
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} style={{ borderRadius: 16, overflow: "hidden", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
@@ -412,18 +413,23 @@ export default function Discover() {
           <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>partage tes recettes pour qu'elles apparaissent ici !</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
           {filteredRecipes.map(recipe => {
             const primaryTag = TAGS.find(t => t.value === recipe.primary_tag)
             const bg = primaryTag?.cardBg || DEFAULT_CARD_BG
             const border = primaryTag?.cardBorder || DEFAULT_CARD_BORDER
-            const textColor = getTextColor(bg)
-            const overlayBg = textColor === "#ffffff" ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.22)"
+            const textColor = primaryTag?.cardText || getTextColor(bg)
+            const actionBg = primaryTag?.actionBg || (textColor === "#ffffff" ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)")
+            const actionText = getTextColor(actionBg) === "#111111" ? "#111111" : "#ffffff"
+
+            // Tags : primary tag en premier, puis les autres sans doublon
+            const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
+            const validTags = allTagValues.map(tv => TAGS.find(t => t.value === tv)).filter(Boolean)
 
             return (
               <div key={recipe.id}
                 style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)" }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
               >
                 {recipe.photo_url ? (
@@ -435,50 +441,71 @@ export default function Discover() {
                 <div style={{ padding: "8px 12px 12px", color: textColor, flex: 1, display: "flex", flexDirection: "column" }}>
                   {/* Auteur */}
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                    <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: overlayBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: actionBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {recipe.profiles?.avatar_url
                         ? <img src={recipe.profiles.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ fontSize: 9 }}>👤</span>}
                     </div>
-                    <span style={{ fontSize: 10, opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipe.profiles?.username || "Utilisateur"}</span>
+                    <span style={{ fontSize: 10, color: textColor, opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipe.profiles?.username || "Utilisateur"}</span>
                   </div>
 
-                  <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.04em" }}>
+                  <h3 style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.04em", color: textColor }}>
                     {recipe.name}
                   </h3>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 6, opacity: 0.7 }}>
+                  {/* Meta : temps + portions sans pill, budget en pill */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap", fontSize: 11, color: textColor, opacity: 1 }}>
                     {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
                     {recipe.servings && <span>🍽 {recipe.servings}p</span>}
-                    {recipe.estimatedTotal !== null && <span style={{ color: "#34d399", opacity: 1, fontWeight: 700 }}>💰 {recipe.estimatedTotal.toFixed(2)}€</span>}
+                    {recipe.estimatedTotal !== null && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, opacity: 1 }}><img src="/icons/money.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} /> {recipe.estimatedTotal.toFixed(2)}€</span>}
                   </div>
 
-                  {recipe.tags?.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
-                      {recipe.tags.slice(0, 2).map(tv => {
-                        const t = TAGS.find(t => t.value === tv)
-                        return (
-                          <span key={tv} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: overlayBg, color: textColor }}>
-                            {t && <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />}
-                            {t?.label || tv}
+                  {/* Tags : primary en premier */}
+                  {validTags.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8, flexWrap: "nowrap" }}>
+                      {validTags.slice(0, 2).map(ti => (
+                        <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, flexShrink: 0 }}>
+                          <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
+                          {ti.label}
+                        </span>
+                      ))}
+                      {validTags.length > 2 && (
+                        <span style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}
+                          onMouseEnter={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "flex"}
+                          onMouseLeave={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "none"}
+                        >
+                          <span style={{ fontSize: 10, fontWeight: 700, color: textColor, opacity: 0.6, cursor: "default" }}>
+                            +{validTags.length - 2}
                           </span>
-                        )
-                      })}
-                      {recipe.tags.length > 2 && <span style={{ fontSize: 10, opacity: 0.5, fontWeight: 700 }}>+{recipe.tags.length - 2}</span>}
+                          <div className="tag-tooltip" style={{
+                            display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0,
+                            backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
+                            borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column",
+                            zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120,
+                          }}>
+                            {validTags.slice(2).map(ti => (
+                              <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
+                                <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
+                                {ti.label}
+                              </span>
+                            ))}
+                          </div>
+                        </span>
+                      )}
                     </div>
                   )}
 
-                  {/* Boutons */}
+                  {/* Boutons avec actionBg */}
                   <div style={{ display: "flex", gap: 6, marginTop: "auto", paddingTop: 4 }}>
                     <button onClick={() => openPreview(recipe)}
-                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: overlayBg, color: textColor, fontSize: 11 }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11 }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                     >voir +</button>
                     <button onClick={() => handleAddToMyRecipes(recipe)}
-                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: "#f3501e", color: "#ffffff", fontSize: 11 }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11, fontWeight: 800 }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+                      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                     >+ ajouter</button>
                   </div>
                 </div>

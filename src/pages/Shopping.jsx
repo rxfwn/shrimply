@@ -142,15 +142,7 @@ function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDro
 
   return (
     <div
-      style={{
-        backgroundColor: surface,
-        borderRadius: 12,
-        overflow: "hidden",
-        border: surfaceBorder,
-        transition: "border-color 0.15s",
-        marginBottom: 12,
-        breakInside: "avoid",
-      }}
+      style={{ backgroundColor: surface, borderRadius: 12, overflow: "hidden", border: surfaceBorder, transition: "border-color 0.15s", marginBottom: 12, breakInside: "avoid" }}
       onDragOver={e => { e.preventDefault(); onDragOver() }}
       onDrop={e => {
         e.preventDefault()
@@ -160,38 +152,21 @@ function CategoryCard({ cat, onToggle, onDelete, isDragTarget, onDragOver, onDro
         setDragOverItem(null)
       }}
     >
-      {/* En-tête */}
       <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: divider }}>
         <img src={cat.icon} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
         <span style={{ fontSize: 11, fontWeight: 700, color: headerLabel, textTransform: "uppercase", letterSpacing: "0.05em", flex: 1 }}>{cat.label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#130b2d", backgroundColor: "#d57bff", borderRadius: "50%", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{cat.items.length}</span>
       </div>
-
-      {/* Items */}
       {cat.items.map(item => (
-        <div
-          key={item.id}
-          draggable
-          onDragStart={e => handleDragStart(e, item)}
-          onDragEnter={() => setDragOverItem(item.id)}
-          onDragLeave={() => setDragOverItem(null)}
-          style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 14px",
-            borderBottom: rowDivider,
-            backgroundColor: dragOverItem === item.id ? "rgba(213,123,255,0.08)" : "transparent",
-            cursor: "grab", transition: "background-color 0.1s",
-          }}
-        >
+        <div key={item.id} draggable onDragStart={e => handleDragStart(e, item)} onDragEnter={() => setDragOverItem(item.id)} onDragLeave={() => setDragOverItem(null)}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: rowDivider, backgroundColor: dragOverItem === item.id ? "rgba(213,123,255,0.08)" : "transparent", cursor: "grab", transition: "background-color 0.1s" }}>
           <button onClick={() => onToggle(item)}
             style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${checkBorderColor}`, background: "none", cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.borderColor = "#d57bff"}
             onMouseLeave={e => e.currentTarget.style.borderColor = checkBorderColor}
           />
           <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
-          {item.quantity && (
-            <span style={{ fontSize: 11, color: textQty, fontWeight: 500, flexShrink: 0 }}>{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>
-          )}
+          {item.quantity && <span style={{ fontSize: 11, color: textQty, fontWeight: 500, flexShrink: 0 }}>{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>}
           <button onClick={() => onDelete(item.id)}
             style={{ background: "none", border: "none", cursor: "pointer", color: deleteBtnColor, fontSize: 18, lineHeight: 1, flexShrink: 0, padding: 0, transition: "color 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.color = "#f87171"}
@@ -212,7 +187,6 @@ export default function Shopping() {
   const [dragTargetCat, setDragTargetCat] = useState(null)
   const { isDay } = useTheme()
 
-  // Derived theme tokens
   const bg = isDay ? "#F5F0E8" : "#111111"
   const surface = isDay ? "#FFFFFF" : "#091718"
   const surfaceBorder = isDay ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"
@@ -326,30 +300,15 @@ export default function Shopping() {
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
             onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
-          >
-            + ajouter
-          </button>
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            style={{
-              padding: "8px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none",
-              cursor: generating ? "not-allowed" : "pointer", fontFamily: "Poppins, sans-serif",
-              fontWeight: 700, fontSize: 12, color: "#1a3d1a", letterSpacing: "-0.05em",
-              opacity: generating ? 0.5 : 1, transition: "transform 0.2s ease",
-              display: "flex", alignItems: "center", gap: 6,
-            }}
+          >+ ajouter</button>
+          <button onClick={handleGenerate} disabled={generating}
+            style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: generating ? "not-allowed" : "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12, color: "#1a3d1a", letterSpacing: "-0.05em", opacity: generating ? 0.5 : 1, transition: "transform 0.2s ease", display: "flex", alignItems: "center", gap: 6 }}
             onMouseEnter={e => { if (!generating) e.currentTarget.style.transform = "scale(1.03)" }}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
             onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
           >
-            {generating ? "génération..." : (
-              <>
-                <img src="/icons/spark.png" alt="" style={{ width: 14, height: 14 }} />
-                générer
-              </>
-            )}
+            {generating ? "génération..." : <><img src="/icons/spark.png" alt="" style={{ width: 14, height: 14 }} />générer</>}
           </button>
         </div>
       </div>
@@ -357,27 +316,22 @@ export default function Shopping() {
       {loading ? (
         <div style={{ color: textMuted, fontSize: 13 }}>chargement...</div>
       ) : items.length === 0 ? (
-        <div style={{ backgroundColor: surface, borderRadius: 16, padding: 40, textAlign: "center", maxWidth: 360, border: surfaceBorder }}>
-          <img src="/icons/kart.png" alt="" style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.4 }} />
-          <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: textPrimary }}>aucun article cette semaine</p>
-          <p style={{ margin: 0, fontSize: 12, color: textMuted, fontWeight: 500 }}>génère depuis ton planning ou ajoute des articles manuellement.</p>
+        /* ── ÉTAT VIDE — centré horizontalement et verticalement ── */
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+          <div style={{ backgroundColor: surface, borderRadius: 16, padding: "40px 32px", textAlign: "center", maxWidth: 360, width: "100%", border: surfaceBorder }}>
+            <img src="/icons/kart.png" alt="" style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.4 }} />
+            <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: textPrimary }}>aucun article cette semaine</p>
+            <p style={{ margin: 0, fontSize: 12, color: textMuted, fontWeight: 500, lineHeight: 1.6 }}>génère depuis ton planning ou ajoute des articles manuellement.</p>
+          </div>
         </div>
       ) : (
         <div onDragEnd={() => setDragTargetCat(null)}>
-
           {grouped.length > 0 && (
             <div style={{ columnCount: "auto", columnWidth: 280, columnGap: 12 }}>
               {grouped.map(cat => (
-                <CategoryCard
-                  key={cat.id}
-                  cat={cat}
-                  onToggle={toggleChecked}
-                  onDelete={deleteItem}
-                  isDragTarget={dragTargetCat === cat.id}
-                  onDragOver={() => setDragTargetCat(cat.id)}
-                  onDrop={moveItem}
-                  isDay={isDay}
-                />
+                <CategoryCard key={cat.id} cat={cat} onToggle={toggleChecked} onDelete={deleteItem}
+                  isDragTarget={dragTargetCat === cat.id} onDragOver={() => setDragTargetCat(cat.id)}
+                  onDrop={moveItem} isDay={isDay} />
               ))}
             </div>
           )}

@@ -527,7 +527,7 @@ export default function Calendar() {
           <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, padding: 32, maxWidth: 360, width: "100%", textAlign: "center", border: "1px solid var(--border)" }}>
             <img src="/icons/salad.png" alt="" style={{ width: 48, height: 48, marginBottom: 16 }} />
             <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>bientôt disponible !</h2>
-            <p style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-muted)", fontWeight: 500, lineHeight: 1.6 }}>
+            <p className="text-light" style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
               la fonctionnalité d'équilibrage automatique de ton planning est en cours de développement
             </p>
             <button onClick={() => setShowBalancePopup(false)}

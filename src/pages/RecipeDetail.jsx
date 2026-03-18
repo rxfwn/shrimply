@@ -16,6 +16,106 @@ const S = {
   pill: { display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" },
 }
 
+const MIN_SERVINGS = 1
+const MAX_SERVINGS = 35
+
+function scaleQuantity(qty, baseServings, currentServings) {
+  if (!qty || !baseServings || baseServings === 0) return qty
+  const scaled = (parseFloat(qty) * currentServings) / baseServings
+  // Smart rounding: keep 1 decimal for small values, integer for bigger
+  if (scaled < 10) return Math.round(scaled * 10) / 10
+  return Math.round(scaled)
+}
+
+function formatQuantity(value) {
+  if (value === null || value === undefined || value === "") return ""
+  const num = parseFloat(value)
+  if (isNaN(num)) return value
+  if (num < 10) return (Math.round(num * 10) / 10).toString().replace(".", ",")
+  return Math.round(num).toString()
+}
+
+// Serving stepper component
+function ServingStepper({ servings, onChange, baseServings }) {
+  const atMin = servings <= MIN_SERVINGS
+  const atMax = servings >= MAX_SERVINGS
+  const changed = servings !== baseServings
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{
+        display: "inline-flex", alignItems: "center",
+        border: "1.5px solid var(--border)",
+        borderRadius: 40, overflow: "hidden",
+        backgroundColor: "var(--bg-card-2)",
+        height: 38,
+      }}>
+        <button
+          onClick={() => !atMin && onChange(servings - 1)}
+          disabled={atMin}
+          style={{
+            ...S.btn,
+            width: 38, height: "100%", borderRadius: 0,
+            background: "none", fontSize: 18, fontWeight: 300,
+            color: atMin ? "var(--text-ghost)" : "#f3501e",
+            cursor: atMin ? "not-allowed" : "pointer",
+            flexShrink: 0,
+          }}
+        >−</button>
+
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6,
+          padding: "0 14px", minWidth: 110, justifyContent: "center",
+          borderLeft: "1.5px solid var(--border)",
+          borderRight: "1.5px solid var(--border)",
+        }}>
+          <span style={{
+            fontSize: 14, fontWeight: 800,
+            color: "#f3501e",
+            fontFamily: "Poppins, sans-serif",
+            letterSpacing: "-0.05em",
+            minWidth: 20, textAlign: "center",
+          }}>{servings}</span>
+          <span style={{
+            fontSize: 12, fontWeight: 600,
+            color: "var(--text-muted)",
+            fontFamily: "Poppins, sans-serif",
+          }}>personne{servings > 1 ? "s" : ""}</span>
+        </div>
+
+        <button
+          onClick={() => !atMax && onChange(servings + 1)}
+          disabled={atMax}
+          style={{
+            ...S.btn,
+            width: 38, height: "100%", borderRadius: 0,
+            background: "none", fontSize: 18, fontWeight: 300,
+            color: atMax ? "var(--text-ghost)" : "#f3501e",
+            cursor: atMax ? "not-allowed" : "pointer",
+            flexShrink: 0,
+          }}
+        >+</button>
+      </div>
+
+      {changed && (
+        <button
+          onClick={() => onChange(baseServings)}
+          style={{
+            ...S.btn,
+            background: "none", border: "none",
+            fontSize: 10, color: "var(--text-faint)",
+            padding: 0, textAlign: "center",
+            cursor: "pointer", textDecoration: "underline",
+            fontFamily: "Poppins, sans-serif",
+          }}
+        >
+          réinitialiser ({baseServings} pers.)
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function RecipeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -33,6 +133,9 @@ export default function RecipeDetail() {
   const [cooldown, setCooldown] = useState(0)
   const estimatingRef = useRef(false)
   const [copied, setCopied] = useState(false)
+
+  // Serving calculator state
+  const [currentServings, setCurrentServings] = useState(null) // null until recipe loaded
 
   const handleShare = async () => {
     const url = window.location.href
@@ -54,6 +157,8 @@ export default function RecipeDetail() {
     const { data: ingredientsData } = await supabase.from("ingredients").select("*").eq("recipe_id", id)
     const { data: stepsData } = await supabase.from("steps").select("*").eq("recipe_id", id).order("step_number")
     setRecipe(recipeData); setIngredients(ingredientsData || []); setSteps(stepsData || []); setLoading(false)
+    // Init serving calculator with recipe's base servings
+    if (recipeData?.servings) setCurrentServings(parseInt(recipeData.servings))
     if (!recipeData || !ingredientsData?.length) return
     await loadCostDetails(recipeData, ingredientsData)
   }
@@ -107,19 +212,40 @@ export default function RecipeDetail() {
   }
 
   const handlePrint = () => {
+    const baseServings = recipe?.servings || 1
     const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
-    const ingredientsHtml = displayIngredients.map(item => `<li><span>${item.name}</span><span>${item.quantity || ""} ${item.unit || ""}</span></li>`).join("")
+    const scaledIngredients = displayIngredients.map(item => ({
+      ...item,
+      quantity: scaleQuantity(item.quantity, baseServings, currentServings || baseServings),
+    }))
+    const ingredientsHtml = scaledIngredients.map(item => `<li><span>${item.name}</span><span>${formatQuantity(item.quantity)} ${item.unit || ""}</span></li>`).join("")
     const stepsHtml = steps.map((step, i) => `<div class="step"><div class="step-num">${i + 1}</div><p>${step.description}</p></div>`).join("")
-    const budgetHtml = costDetails ? `<div class="budget"><span>💰 ${costDetails.total.toFixed(2)}€ total — ${costDetails.per_serving.toFixed(2)}€ / pers.</span></div>` : ""
+    const scaledCost = costDetails ? (costDetails.total * (currentServings || baseServings) / baseServings) : null
+    const budgetHtml = scaledCost ? `<div class="budget"><span>💰 ${scaledCost.toFixed(2)}€ total — ${(scaledCost / (currentServings || baseServings)).toFixed(2)}€ / pers.</span></div>` : ""
+    const servingsNote = (currentServings && currentServings !== baseServings) ? `<p style="font-size:12px;color:#888;margin-bottom:12px">Recette adaptée pour ${currentServings} personne${currentServings > 1 ? "s" : ""} (base : ${baseServings})</p>` : ""
     const photoHtml = recipe.photo_url ? `<img src="${recipe.photo_url}" class="photo" alt="${recipe.name}" />` : ""
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/><title>${recipe.name}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Georgia',serif;color:#1a1a1a;background:white;padding:40px 48px;max-width:800px;margin:0 auto}.header{display:flex;gap:28px;margin-bottom:28px;padding-bottom:24px;border-bottom:2px solid #f97316}.photo{width:180px;height:135px;object-fit:cover;border-radius:12px;flex-shrink:0}h1{font-size:28px;font-weight:700;margin-bottom:8px}.budget{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;margin-bottom:28px;font-size:13px;color:#166534;font-weight:700}.columns{display:grid;grid-template-columns:1fr 1.6fr;gap:32px}h2{font-size:13px;font-weight:700;text-transform:uppercase;color:#ea580c;margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid #fed7aa}ul{list-style:none}ul li{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px}.step{display:flex;gap:14px;margin-bottom:16px}.step-num{flex-shrink:0;width:24px;height:24px;background:#f97316;color:white;border-radius:50%;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}.step p{font-size:13px;line-height:1.65;color:#333}.footer{margin-top:36px;padding-top:16px;border-top:1px solid #e5e5e5;font-size:11px;color:#aaa}@media print{body{padding:20px 28px}}</style></head><body><div class="header">${photoHtml}<div><h1>${recipe.name}</h1></div></div>${budgetHtml}<div class="columns"><div><h2>Ingrédients</h2><ul>${ingredientsHtml}</ul></div><div><h2>Préparation</h2>${stepsHtml}</div></div><div class="footer">Shrímply 🍤</div><script>window.onload=()=>{window.print()}<\/script></body></html>`
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/><title>${recipe.name}</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Georgia',serif;color:#1a1a1a;background:white;padding:40px 48px;max-width:800px;margin:0 auto}.header{display:flex;gap:28px;margin-bottom:28px;padding-bottom:24px;border-bottom:2px solid #f97316}.photo{width:180px;height:135px;object-fit:cover;border-radius:12px;flex-shrink:0}h1{font-size:28px;font-weight:700;margin-bottom:8px}.budget{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 14px;margin-bottom:28px;font-size:13px;color:#166534;font-weight:700}.columns{display:grid;grid-template-columns:1fr 1.6fr;gap:32px}h2{font-size:13px;font-weight:700;text-transform:uppercase;color:#ea580c;margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid #fed7aa}ul{list-style:none}ul li{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px}.step{display:flex;gap:14px;margin-bottom:16px}.step-num{flex-shrink:0;width:24px;height:24px;background:#f97316;color:white;border-radius:50%;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}.step p{font-size:13px;line-height:1.65;color:#333}.footer{margin-top:36px;padding-top:16px;border-top:1px solid #e5e5e5;font-size:11px;color:#aaa}@media print{body{padding:20px 28px}}</style></head><body><div class="header">${photoHtml}<div><h1>${recipe.name}</h1></div></div>${servingsNote}${budgetHtml}<div class="columns"><div><h2>Ingrédients</h2><ul>${ingredientsHtml}</ul></div><div><h2>Préparation</h2>${stepsHtml}</div></div><div class="footer">Shrímply 🍤</div><script>window.onload=()=>{window.print()}<\/script></body></html>`
     const win = window.open("", "_blank"); win.document.write(html); win.document.close()
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: "center", fontFamily: "Poppins, sans-serif", color: "var(--text-faint)", fontSize: 13 }}>chargement...</div>
   if (!recipe) return <div style={{ padding: 40, textAlign: "center", fontFamily: "Poppins, sans-serif", color: "var(--text-faint)", fontSize: 13 }}>recette introuvable.</div>
 
+  const baseServings = parseInt(recipe.servings) || 1
+  const activeServings = currentServings ?? baseServings
+
   const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
+
+  // Scale ingredients and cost for current servings
+  const scaledIngredients = displayIngredients.map(item => ({
+    ...item,
+    quantity: item.quantity != null ? scaleQuantity(item.quantity, baseServings, activeServings) : item.quantity,
+    estimated_price: item.found ? (item.estimated_price * activeServings / baseServings) : 0,
+  }))
+
+  const scaledTotal = costDetails ? costDetails.total * activeServings / baseServings : null
+  const scaledPerServing = costDetails ? costDetails.per_serving : null // per serving stays the same
+
   const allPricesFound = costDetails?.details?.length > 0 && costDetails.details.every(i => i.found)
   const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
   const validTags = allTagValues.filter(tv => TAGS.some(t => t.value === tv))
@@ -146,6 +272,11 @@ export default function RecipeDetail() {
           .hero-img { width: 100%; height: 200px; }
           .hero-img-placeholder { width: 100%; height: 140px; }
           .hero-right { padding: 12px 14px; }
+        }
+        .qty-changed { 
+          color: #f3501e !important;
+          font-weight: 800 !important;
+          transition: color 0.2s;
         }
       `}</style>
 
@@ -174,7 +305,6 @@ export default function RecipeDetail() {
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {recipe.prep_time && <span style={{ ...S.pill, padding: "4px 10px", fontSize: 11, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}>⏱ {recipe.prep_time} min</span>}
-              {recipe.servings && <span style={{ ...S.pill, padding: "4px 10px", fontSize: 11, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}>🍽 {recipe.servings} pers.</span>}
               {validTags.slice(0, 3).map(tv => {
                 const ti = TAGS.find(t => t.value === tv)
                 return <span key={tv} style={{ ...S.pill, padding: "4px 10px", fontSize: 11, backgroundColor: ti.pillBg, color: ti.pillText }}><img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display="none"} />{ti.label}</span>
@@ -193,9 +323,12 @@ export default function RecipeDetail() {
               </button>
             </div>
             {apiError && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 6px", fontStyle: "italic" }}>⚠️ {apiError}</p>}
-            {costDetails ? (
+            {scaledTotal != null ? (
               <div style={{ display: "flex", gap: 8 }}>
-                {[{ label: "total", value: `${costDetails.total.toFixed(2)}€` }, { label: "/ pers.", value: `${costDetails.per_serving.toFixed(2)}€` }].map(({ label, value }) => (
+                {[
+                  { label: "total", value: `${scaledTotal.toFixed(2)}€` },
+                  { label: "/ pers.", value: `${scaledPerServing.toFixed(2)}€` }
+                ].map(({ label, value }) => (
                   <div key={label} style={{ backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 12px", textAlign: "center", flex: 1 }}>
                     <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#34d399", letterSpacing: "-0.04em" }}>{value}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
@@ -210,26 +343,67 @@ export default function RecipeDetail() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        {/* INGREDIENTS PANEL */}
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, border: "1px solid var(--border)", padding: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>🛒 ingrédients</div>
-          {displayIngredients.map((item, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 0", borderBottom: i < displayIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
-              <span style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{item.name}</span>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexShrink: 0, marginLeft: 12 }}>
-                <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{item.quantity} {item.unit}</span>
-                {item.found && <span style={{ fontSize: 11, fontWeight: 700, color: "#34d399" }}>{item.estimated_price.toFixed(2)}€</span>}
-              </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
+              🛒 ingrédients
             </div>
-          ))}
+
+            {/* SERVING STEPPER */}
+            {baseServings > 0 && (
+              <ServingStepper
+                servings={activeServings}
+                onChange={setCurrentServings}
+                baseServings={baseServings}
+              />
+            )}
+          </div>
+
+          {activeServings !== baseServings && (
+            <div style={{
+              marginBottom: 12, padding: "6px 12px", borderRadius: 8,
+              backgroundColor: "rgba(243,80,30,0.07)",
+              border: "1px solid rgba(243,80,30,0.15)",
+              fontSize: 11, color: "#f3501e", fontWeight: 600,
+              fontFamily: "Poppins, sans-serif",
+            }}>
+              ✨ quantités adaptées pour {activeServings} personne{activeServings > 1 ? "s" : ""}
+            </div>
+          )}
+
+          {scaledIngredients.map((item, i) => {
+            const isScaled = activeServings !== baseServings
+            return (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 0", borderBottom: i < scaledIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
+                <span style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{item.name}</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexShrink: 0, marginLeft: 12 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: isScaled ? 800 : 500,
+                    color: isScaled ? "#f3501e" : "var(--text-muted)",
+                    transition: "color 0.2s, font-weight 0.2s",
+                  }}>
+                    {formatQuantity(item.quantity)} {item.unit}
+                  </span>
+                  {item.found && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#34d399" }}>
+                      {item.estimated_price.toFixed(2)}€
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
+        {/* STEPS PANEL */}
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, border: "1px solid var(--border)", padding: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>👨‍🍳 préparation</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {steps.map((step, i) => (
               <div key={i} onClick={() => setCheckedSteps(prev => ({ ...prev, [i]: !prev[i] }))}
                 style={{ display: "flex", gap: 14, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}>
-                <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 2, backgroundColor: checkedSteps[i] ? "var(--bg-card-2)" : "var(--bg-card-2)", color: "var(--text-muted)", transition: "all 0.2s" }}>
+                <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 2, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", transition: "all 0.2s" }}>
                   {checkedSteps[i] ? "✓" : i + 1}
                 </div>
                 <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>

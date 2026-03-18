@@ -3,6 +3,14 @@ import { supabase } from "../supabase"
 import { Link, useNavigate } from "react-router-dom"
 import { useTheme } from "../context/ThemeContext"
 
+// Détecte si l'app tourne en mode PWA standalone (ajoutée à l'écran d'accueil)
+function isPWA() {
+  return (
+    window.navigator.standalone === true || // iOS Safari
+    window.matchMedia("(display-mode: standalone)").matches // Android / Chrome
+  )
+}
+
 export default function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -20,10 +28,75 @@ export default function Login() {
   }
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin + "/auth/callback" }
-    })
+    if (isPWA()) {
+      // En mode PWA sur iOS : ouvre un popup pour éviter de quitter l'app
+      const width = 500
+      const height = 600
+      const left = window.screenX + (window.outerWidth - width) / 2
+      const top = window.screenY + (window.outerHeight - height) / 2
+
+      const popup = window.open(
+        "",
+        "google-oauth",
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      )
+
+      // Récupère l'URL OAuth de Supabase puis redirige le popup vers elle
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/auth/callback",
+          skipBrowserRedirect: true, // Ne redirige pas la fenêtre principale
+        }
+      })
+
+      if (error || !data?.url) {
+        popup?.close()
+        setError("Erreur lors de la connexion Google")
+        return
+      }
+
+      popup.location.href = data.url
+
+      // Surveille le popup pour détecter quand l'auth est terminée
+      const timer = setInterval(async () => {
+        try {
+          // Si le popup est fermé manuellement
+          if (popup.closed) {
+            clearInterval(timer)
+            // Vérifie si une session existe maintenant
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) navigate("/calendar")
+            return
+          }
+
+          // Vérifie si le popup est revenu sur notre domaine (après le callback)
+          if (popup.location.href.includes(window.location.origin)) {
+            clearInterval(timer)
+            popup.close()
+            // Attend que Supabase traite la session
+            await new Promise(resolve => setTimeout(resolve, 500))
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) navigate("/calendar")
+          }
+        } catch {
+          // Cross-origin errors pendant la redirection Google — normal, on ignore
+        }
+      }, 500)
+
+      // Timeout de sécurité : arrête de surveiller après 5 minutes
+      setTimeout(() => {
+        clearInterval(timer)
+        if (!popup.closed) popup.close()
+      }, 5 * 60 * 1000)
+
+    } else {
+      // Hors PWA (navigateur normal) : redirection classique
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + "/auth/callback" }
+      })
+    }
   }
 
   const inputStyle = {

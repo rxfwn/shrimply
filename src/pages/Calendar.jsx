@@ -366,7 +366,7 @@ function MobileMonthDayCell({ date, meals, onRemove, isToday, handleMobileTap, i
   )
 }
 
-// ─── Modal recette mobile ─────────────────────────────────────────────────────
+// ─── Modal recette mobile — FIXED: couleurs des tags ─────────────────────────
 function MobileRecipeModal({ recipes, onSelect, onClose, isDay }) {
   const [search, setSearch] = useState("")
   const filtered = recipes.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
@@ -388,21 +388,76 @@ function MobileRecipeModal({ recipes, onSelect, onClose, isDay }) {
           />
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.map(recipe => (
-            <button key={recipe.id} onClick={() => onSelect(recipe)}
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, backgroundColor: "var(--bg-card-2)", border: "none", borderRadius: 10, cursor: "pointer", textAlign: "left" }}>
-              {recipe.photo_url ? (
-                <img src={recipe.photo_url} alt={recipe.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: "var(--bg-main)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🍽</div>
-              )}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipe.name}</p>
-                {recipe.prep_time && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>⏱ {recipe.prep_time} min</p>}
-              </div>
-              <img src="/icons/plus.png" alt="+" style={{ width: 16, height: 16 }} />
-            </button>
-          ))}
+          {filtered.map(recipe => {
+            // Récupère les couleurs du tag principal
+            const tagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+            const cardBg = tagInfo?.cardBg || (isDay ? "var(--bg-card-2)" : "#2d2d2d")
+            const cardBorder = tagInfo?.cardBorder || "var(--border)"
+            const textColor = tagInfo ? getTextColor(tagInfo.cardBg) : "var(--text-main)"
+            const mutedColor = tagInfo
+              ? (getTextColor(tagInfo.cardBg) === "#ffffff" ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.45)")
+              : "var(--text-muted)"
+
+            return (
+              <button key={recipe.id} onClick={() => onSelect(recipe)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: 10,
+                  backgroundColor: cardBg,
+                  border: `1.5px solid ${cardBorder}`,
+                  borderRadius: 12, cursor: "pointer", textAlign: "left",
+                  transition: "transform 0.1s",
+                }}
+                onTouchStart={e => e.currentTarget.style.transform = "scale(0.97)"}
+                onTouchEnd={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                {recipe.photo_url ? (
+                  <img src={recipe.photo_url} alt={recipe.name}
+                    style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 8, flexShrink: 0,
+                    backgroundColor: "rgba(0,0,0,0.12)",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                  }}>🍽</div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{
+                    margin: 0, fontSize: 13, fontWeight: 700, color: textColor,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em",
+                  }}>{recipe.name}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                    {recipe.prep_time && (
+                      <p style={{ margin: 0, fontSize: 11, color: mutedColor, fontFamily: "Poppins, sans-serif" }}>
+                        ⏱ {recipe.prep_time} min
+                      </p>
+                    )}
+                    {tagInfo && (
+                      <span style={{
+                        display: "inline-flex", alignItems: "center", gap: 3,
+                        fontSize: 10, fontWeight: 700,
+                        color: tagInfo.pillText, backgroundColor: tagInfo.pillBg,
+                        padding: "1px 7px", borderRadius: 20,
+                        fontFamily: "Poppins, sans-serif",
+                      }}>
+                        <img src={`/icons/${tagInfo.icon}.png`} alt=""
+                          style={{ width: 9, height: 9 }}
+                          onError={e => e.target.style.display = "none"} />
+                        {tagInfo.label}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{
+                  width: 24, height: 24, borderRadius: "50%",
+                  backgroundColor: "rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <img src="/icons/plus.png" alt="+" style={{ width: 12, height: 12 }} />
+                </div>
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -548,8 +603,6 @@ export default function Calendar() {
 
           {/* HEADER */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-
-            {/* Ligne 1 : titre + toggle vue */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <img src="/icons/calendar.png" alt="" style={{ width: 22, height: 22 }} />
               <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>mon planning</h1>
@@ -559,7 +612,6 @@ export default function Calendar() {
               </div>
             </div>
 
-            {/* Ligne 2 : navigation date */}
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button onClick={prevPeriod}
                 style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "var(--bg-card-2)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -574,7 +626,6 @@ export default function Calendar() {
               </button>
             </div>
 
-            {/* Ligne 3 : boutons action */}
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button onClick={() => setShowBalancePopup(true)}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }}

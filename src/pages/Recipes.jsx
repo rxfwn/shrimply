@@ -89,9 +89,15 @@ export default function Recipes() {
   useEffect(() => { fetchRecipes() }, [])
 
   const fetchRecipes = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
-    if (data) setRecipes(data)
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) { console.error("Auth error:", authError); return }
+      const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
+      if (error) { console.error("Fetch recipes error:", error); return }
+      if (data) setRecipes(data)
+    } catch (e) {
+      console.error("fetchRecipes exception:", e)
+    }
   }
 
   useEffect(() => {

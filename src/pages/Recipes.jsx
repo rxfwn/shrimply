@@ -482,41 +482,43 @@ export default function Recipes() {
             </div>
 
             {/* Filtres */}
-            <div style={{ overflowX: "hidden", paddingBottom: 8 }}>
-              {(() => {
-                const allTagsList = TAGS
-                const visibleTags = tagsExpanded ? allTagsList : allTagsList.slice(0, 4)
-                const hiddenCount = allTagsList.length - 4
-                return (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
-                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
-                      <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
-                      toutes
-                    </button>
-                    {visibleTags.map(tag => (
-                      <div key={tag.value} style={{ flexShrink: 0 }}>
-                        <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
-                          onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
-                      </div>
-                    ))}
-                    {!tagsExpanded && hiddenCount > 0 && (
-                      <button onClick={() => setTagsExpanded(true)}
-                        style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid var(--border-2)", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "transparent", color: "var(--text-muted)", flexShrink: 0, transition: "all 0.2s ease" }}
-                        onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
-                      >+{hiddenCount} voir plus</button>
-                    )}
-                    {tagsExpanded && (
-                      <button onClick={() => setTagsExpanded(false)}
-                        style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "1.5px solid var(--border-2)", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "transparent", color: "var(--text-muted)", flexShrink: 0, transition: "all 0.2s ease" }}
-                        onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
-                        onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
-                      >réduire</button>
-                    )}
+            <div style={{ paddingBottom: 8 }}>
+              <style>{`
+                .filters-recipes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+                .filters-recipes-mobile { display: flex; gap: 8px; align-items: center; overflow-x: auto; padding-bottom: 4px; }
+                @media (min-width: 768px) { .filters-recipes-mobile { display: none; } }
+                @media (max-width: 767px) { .filters-recipes { display: none; } }
+              `}</style>
+
+              {/* Desktop : tous les tags visibles */}
+              <div className="filters-recipes">
+                <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
+                  <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                  toutes
+                </button>
+                {TAGS.map(tag => (
+                  <div key={tag.value} style={{ flexShrink: 0 }}>
+                    <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
+                      onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
                   </div>
-                )
-              })()}
+                ))}
+              </div>
+
+              {/* Mobile : scroll horizontal simple */}
+              <div className="filters-recipes-mobile">
+                <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transition: "all 0.2s ease" }}>
+                  <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                  toutes
+                </button>
+                {TAGS.map(tag => (
+                  <div key={tag.value} style={{ flexShrink: 0 }}>
+                    <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
+                      onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

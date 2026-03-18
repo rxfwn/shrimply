@@ -70,15 +70,15 @@ export default function Layout() {
             {profile?.avatar_url ? (
               <img src={`${profile.avatar_url}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
-              <span style={{ fontSize: 14 }}>👤</span>
+              <img src="/icons/profile.png" alt="profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display="none" }} />
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
             <p style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontSize: 13, fontWeight: 700, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
               {profile?.username || user?.email?.split("@")[0] || "Mon profil"}
             </p>
-            <p style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 400, fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {user?.email || "voir le profil"}
+            <p className="text-light" style={{ margin: 0, fontFamily: "'Poppins', sans-serif", fontSize: 9, color: "rgba(255,255,255,1)", lineHeight: 1.4 }}>
+              voir le profil
             </p>
           </div>
         </div>

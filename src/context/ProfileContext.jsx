@@ -9,23 +9,46 @@ export function ProfileProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { fetchProfile() }, [])
-
-  const fetchProfile = async () => {
+  const fetchProfile = async (userId) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      setUser(user)
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
+      const { data } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle()
       if (data) setProfile(data)
     } catch (e) {
-      console.error("ProfileContext fetch error:", e)
+      console.error("ProfileContext fetchProfile error:", e)
     } finally {
       setLoading(false)
     }
   }
 
-  const refreshProfile = () => fetchProfile()
+  useEffect(() => {
+    // Session existante au montage
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user)
+        fetchProfile(session.user.id)
+      } else {
+        setLoading(false)
+      }
+    })
+
+    // Écoute login / logout / token refresh
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user)
+        fetchProfile(session.user.id)
+      } else {
+        setUser(null)
+        setProfile(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const refreshProfile = async () => {
+    if (!user) return
+    await fetchProfile(user.id)
+  }
 
   return (
     <ProfileContext.Provider value={{ profile, user, loading, refreshProfile, setProfile }}>

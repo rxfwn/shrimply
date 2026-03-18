@@ -5,8 +5,11 @@ import { useTheme } from "../context/ThemeContext"
 
 function Avatar({ url, size = 36 }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", backgroundColor: "var(--bg-card-2)", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.4 }}>
-      {url ? <img src={url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+    <div style={{ width: size, height: size, borderRadius: "50%", backgroundColor: "var(--bg-card-2)", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {url
+        ? <img src={url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : <img src="/icons/profile.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.target.style.display = "none"} />
+      }
     </div>
   )
 }
@@ -86,6 +89,10 @@ export default function Friends() {
 
   return (
     <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
+      <style>{`
+        .friends-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 600px) { .friends-grid { grid-template-columns: 1fr; } }
+      `}</style>
 
       {success && (
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
@@ -163,7 +170,7 @@ export default function Friends() {
       </div>
 
       {/* Abonnements + Abonnés */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="friends-grid">
         {[
           { title: "abonnements", count: following.length, list: following, idKey: "following_id", empty: "tu ne suis personne encore" },
           { title: "abonnés", count: followers.length, list: followers, idKey: "follower_id", empty: "personne ne te suit encore" },

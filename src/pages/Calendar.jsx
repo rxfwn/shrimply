@@ -758,7 +758,7 @@ export default function Calendar() {
               }
             </div>
             <div style={{ padding: "10px 12px", borderTop: "1px solid var(--border)" }}>
-              <p style={{ fontSize: 11, color: "var(--text-ghost)", textAlign: "center", margin: 0 }}>⠿ glisse une recette sur un créneau</p>
+              <p className="text-light" style={{ fontSize: 11, color: "var(--text-ghost)", textAlign: "center", margin: 0 }}>⠿ glisse une recette sur un créneau</p>
             </div>
           </div>
         )}

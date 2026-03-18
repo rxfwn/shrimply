@@ -48,9 +48,13 @@ export default function Discover() {
   const [previewSteps, setPreviewSteps] = useState([])
   const [previewLoading, setPreviewLoading] = useState(false)
 
+  useEffect(() => { fetchRecipes() }, [])
+
   const fetchRecipes = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    setCurrentUser(user)
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) { setLoading(false); return }
+      setCurrentUser(user)
 
     // Première requête : recettes seulement — affichage immédiat
     const { data } = await supabase
@@ -88,6 +92,7 @@ export default function Discover() {
     })
 
     setRecipes(recipesWithData)
+    } catch (e) { console.error("fetchRecipes error:", e); setLoading(false) }
   }
 
   const checkBannedWords = async (textsToCheck) => {

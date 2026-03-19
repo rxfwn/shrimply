@@ -10,7 +10,6 @@ function getTextColor(hex) {
   return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
 }
 
-// Badge officiel réutilisable
 function OfficialBadge({ small = false }) {
   return (
     <img
@@ -28,6 +27,30 @@ function OfficialBadge({ small = false }) {
   )
 }
 
+const S = {
+  btn: {
+    fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12,
+    letterSpacing: "-0.05em", border: "none", cursor: "pointer",
+    borderRadius: 10, transition: "transform 0.15s, opacity 0.15s"
+  },
+  pill: {
+    display: "inline-flex", alignItems: "center", gap: 5,
+    padding: "4px 10px", borderRadius: 40,
+    fontSize: 11, fontWeight: 700,
+    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em",
+    border: "1.5px solid transparent",
+    lineHeight: 1.2,
+  },
+}
+
+function formatQuantity(value) {
+  if (value === null || value === undefined || value === "") return ""
+  const num = parseFloat(value)
+  if (isNaN(num)) return value
+  if (num < 10) return (Math.round(num * 10) / 10).toString().replace(".", ",")
+  return Math.round(num).toString()
+}
+
 export default function Discover() {
   const { isDay } = useTheme()
 
@@ -42,6 +65,7 @@ export default function Discover() {
   const [previewIngredients, setPreviewIngredients] = useState([])
   const [previewSteps, setPreviewSteps] = useState([])
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [checkedSteps, setCheckedSteps] = useState({})
 
   useEffect(() => { fetchRecipes() }, [])
 
@@ -68,7 +92,6 @@ export default function Discover() {
       const recipeIds = data.map(r => r.id)
 
       const [profilesRes, pricesRes, ingredientsRes] = await Promise.all([
-        // is_official ajouté ici
         supabase.from("profiles").select("id, username, avatar_url, is_official").in("id", userIds),
         supabase.from("ingredient_prices").select("name, price, unit"),
         supabase.from("ingredients").select("*").in("recipe_id", recipeIds),
@@ -101,6 +124,7 @@ export default function Discover() {
   const openPreview = async (recipe) => {
     setPreviewRecipe(recipe)
     setPreviewLoading(true)
+    setCheckedSteps({})
     const { data: ingredients } = await supabase.from("ingredients").select("*").eq("recipe_id", recipe.id)
     const { data: steps } = await supabase.from("steps").select("*").eq("recipe_id", recipe.id).order("step_number")
     setPreviewIngredients(ingredients || [])
@@ -108,7 +132,12 @@ export default function Discover() {
     setPreviewLoading(false)
   }
 
-  const closePreview = () => { setPreviewRecipe(null); setPreviewIngredients([]); setPreviewSteps([]) }
+  const closePreview = () => {
+    setPreviewRecipe(null)
+    setPreviewIngredients([])
+    setPreviewSteps([])
+    setCheckedSteps({})
+  }
 
   const handleAddToMyRecipes = async (recipe) => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -174,112 +203,203 @@ export default function Discover() {
         </div>
       )}
 
-      {/* Modal preview */}
+      {/* ── MODAL PREVIEW style RecipeDetails ── */}
       {previewRecipe && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-end" }} onClick={closePreview}>
-          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "90vh", overflowY: "auto", border: "1px solid var(--border)" }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-end" }}
+          onClick={closePreview}
+        >
+          <div
+            style={{ backgroundColor: "var(--bg-main)", borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "94vh", overflowY: "auto" }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
               <div style={{ width: 36, height: 4, backgroundColor: "var(--border-2)", borderRadius: 2 }} />
             </div>
-            <div style={{ padding: "12px 20px 32px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div style={{ flex: 1, paddingRight: 12 }}>
-                  <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>{previewRecipe.name}</h2>
-                  {/* Auteur preview + badge officiel */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", backgroundColor: "rgba(243,80,30,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {previewRecipe.profiles?.avatar_url
-                        ? <img src={previewRecipe.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-                        : <span style={{ fontSize: 10 }}>👤</span>}
+
+            <div style={{ padding: "0 16px 32px" }}>
+
+              {/* ── HERO CARD ── */}
+              <style>{`
+                .discover-hero {
+                  display: flex; align-items: stretch;
+                  background: var(--bg-card); border: 1px solid var(--border);
+                  border-radius: 14px; overflow: hidden; margin-bottom: 12px;
+                  height: 220px;
+                }
+                .discover-hero-photo { width: 45%; flex-shrink: 0; object-fit: cover; display: block; height: 100%; }
+                .discover-hero-placeholder { width: 45%; flex-shrink: 0; height: 100%; background: var(--bg-card-2); display: flex; align-items: center; justify-content: center; font-size: 52px; opacity: 0.12; }
+                .discover-hero-right { flex: 1; min-width: 0; padding: 16px 18px; display: flex; flex-direction: column; justify-content: space-between; }
+                .discover-budget-bar { display: flex; align-items: center; gap: 8px; background: var(--bg-card-2); border-radius: 40px; padding: 7px 12px; flex-wrap: wrap; }
+                .discover-budget-chip { display: flex; align-items: center; gap: 6px; background: ${isDay ? "#E8E1D5" : "rgba(255,255,255,0.1)"}; border-radius: 40px; padding: 5px 12px; }
+                @media (max-width: 560px) {
+                  .discover-hero { height: auto; flex-direction: column; }
+                  .discover-hero-photo { width: 100%; height: 200px; }
+                  .discover-hero-placeholder { width: 100%; height: 140px; }
+                  .discover-budget-bar { border-radius: 12px; }
+                }
+              `}</style>
+
+              <div className="discover-hero">
+                {previewRecipe.photo_url
+                  ? <img src={previewRecipe.photo_url} alt={previewRecipe.name} className="discover-hero-photo" />
+                  : <div className="discover-hero-placeholder">🍽</div>
+                }
+
+                <div className="discover-hero-right">
+                  <div>
+                    {/* Titre + close */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
+                      <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--text-main)", lineHeight: 1.2, letterSpacing: "-0.05em", flex: 1, minWidth: 0 }}>
+                        {previewRecipe.name}
+                      </h2>
+                      <button onClick={closePreview}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 2, flexShrink: 0 }}>✕</button>
                     </div>
-                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                      {previewRecipe.profiles?.username || "Utilisateur"}
-                    </span>
-                    {previewRecipe.profiles?.is_official && <OfficialBadge />}
+
+                    {/* Description */}
+                    {previewRecipe.description && (
+                      <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45, fontWeight: 400, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {previewRecipe.description}
+                      </p>
+                    )}
+
+                    {/* Auteur */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                      <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: "rgba(243,80,30,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {previewRecipe.profiles?.avatar_url
+                          ? <img src={previewRecipe.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                          : <span style={{ fontSize: 9 }}>👤</span>}
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>
+                        {previewRecipe.profiles?.username || "Utilisateur"}
+                      </span>
+                      {previewRecipe.profiles?.is_official && <OfficialBadge small />}
+                    </div>
+
+                    {/* Pills : note, temps, tags */}
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
+                      {previewRecipe.rating > 0 && (
+                        <span style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", color: "var(--text-main)" }}>
+                          ★ {previewRecipe.rating},0
+                        </span>
+                      )}
+                      {previewRecipe.prep_time && (
+                        <span style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", color: "var(--text-muted)" }}>
+                          ⏱ {previewRecipe.prep_time} min
+                        </span>
+                      )}
+                      {[...new Set([previewRecipe.primary_tag, ...(previewRecipe.tags || [])])].filter(Boolean).slice(0, 3).map(tv => {
+                        const ti = TAGS.find(t => t.value === tv)
+                        return ti ? (
+                          <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
+                            <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                            {ti.label}
+                          </span>
+                        ) : null
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Budget bar + bouton ajouter inline */}
+                  <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
+                    <div className="discover-budget-bar" style={{ flex: 1, borderRadius: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        <img src="/icons/money.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
+                        <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>budget</span>
+                      </div>
+                      {previewRecipe.estimatedTotal != null ? (
+                        <>
+                          <div className="discover-budget-chip" style={{ borderRadius: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{previewRecipe.estimatedTotal.toFixed(2)}€</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>total</span>
+                          </div>
+                          {previewRecipe.servings > 0 && (
+                            <div className="discover-budget-chip" style={{ borderRadius: 6 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{(previewRecipe.estimatedTotal / previewRecipe.servings).toFixed(2)}€</span>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>/personne</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <span style={{ fontSize: 11, color: "var(--text-faint)", fontFamily: "Poppins, sans-serif", fontStyle: "italic" }}>non estimé</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
+                      style={{ ...S.btn, padding: "0 16px", fontSize: 12, backgroundColor: "#f3501e", color: "#ffffff", borderRadius: 10, whiteSpace: "nowrap", flexShrink: 0, alignSelf: "stretch" }}
+                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                    >+ ajouter à mes recettes</button>
                   </div>
                 </div>
-                <button onClick={closePreview}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
               </div>
 
-              {previewRecipe.description && <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>{previewRecipe.description}</p>}
-
-              {/* Meta */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                {previewRecipe.rating > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: "rgba(245,158,11,0.12)", color: "#f59e0b", padding: "4px 10px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    ★ {previewRecipe.rating},0
-                  </span>
-                )}
-                {previewRecipe.prep_time && <span style={{ fontSize: 11, color: "var(--text-muted)", backgroundColor: "var(--bg-card-2)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>⏱ {previewRecipe.prep_time} min</span>}
-                {previewRecipe.servings && <span style={{ fontSize: 11, color: "var(--text-muted)", backgroundColor: "var(--bg-card-2)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>🍽 {previewRecipe.servings} pers.</span>}
-                {previewRecipe.estimatedTotal !== null && <span style={{ fontSize: 11, color: "#34d399", backgroundColor: "rgba(52,211,153,0.1)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>💰 {previewRecipe.estimatedTotal.toFixed(2)}€</span>}
-              </div>
-
-              {/* Tags */}
-              {previewRecipe.tags?.length > 0 && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-                  {previewRecipe.tags.map(tv => {
-                    const t = TAGS.find(t => t.value === tv)
-                    return t ? (
-                      <span key={tv} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: t.pillBg, color: t.pillText }}>
-                        <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
-                        {t.label}
-                      </span>
-                    ) : null
-                  })}
-                </div>
-              )}
-
+              {/* ── GRILLE ingrédients / préparation ── */}
               {previewLoading ? (
-                <p style={{ fontSize: 13, color: "var(--text-faint)", textAlign: "center", padding: "24px 0" }}>chargement...</p>
+                <div style={{ textAlign: "center", padding: "32px 0", fontSize: 13, color: "var(--text-faint)", fontFamily: "Poppins, sans-serif" }}>chargement...</div>
               ) : (
-                <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 16 }}>
+
+                  {/* Ingrédients */}
                   {previewIngredients.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <h3 style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>🛒 ingrédients</h3>
+                    <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <img src="/icons/cart.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
+                        </div>
+                        {previewRecipe.servings && (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>
+                            {previewRecipe.servings} pers.
+                          </span>
+                        )}
+                      </div>
                       {previewIngredients.map((ing, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: i < previewIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "9px 0", borderBottom: i < previewIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
                           <span style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{ing.name}</span>
-                          <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 12, flexShrink: 0 }}>{ing.quantity} {ing.unit}</span>
+                          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--text-muted)", marginLeft: 12, flexShrink: 0 }}>
+                            {formatQuantity(ing.quantity)} {ing.unit}
+                          </span>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  {/* Préparation */}
                   {previewSteps.length > 0 && (
-                    <div style={{ marginBottom: 16 }}>
-                      <h3 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>👨‍🍳 préparation</h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+                        <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                         {previewSteps.map((step, i) => (
-                          <div key={i} style={{ display: "flex", gap: 12 }}>
-                            <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", backgroundColor: "rgba(243,80,30,0.12)", color: "#f3501e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1 }}>{i + 1}</div>
-                            <p style={{ margin: 0, fontSize: 13, color: "var(--text-main)", lineHeight: 1.6, fontWeight: 500 }}>{step.description}</p>
+                          <div key={i}
+                            onClick={() => setCheckedSteps(prev => ({ ...prev, [i]: !prev[i] }))}
+                            style={{ display: "flex", gap: 12, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}
+                          >
+                            <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1, backgroundColor: checkedSteps[i] ? "#22C55E" : "var(--bg-card-2)", color: checkedSteps[i] ? "#fff" : "var(--text-muted)", transition: "all 0.2s" }}>
+                              {checkedSteps[i] ? "✓" : i + 1}
+                            </div>
+                            <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>
+                              {step.description}
+                            </p>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-                </>
+                </div>
               )}
 
-              <div style={{ display: "flex", gap: 10, paddingTop: 16, borderTop: "1px solid var(--border)", marginTop: 8 }}>
-                <button onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
-                  style={{ ...btnBase, flex: 1, padding: "12px", backgroundColor: "#f3501e", color: "#ffffff" }}
-                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
-                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                >+ ajouter à mes recettes</button>
-                <button onClick={closePreview}
-                  style={{ ...btnBase, flex: 1, padding: "12px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}
-                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
-                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                >fermer</button>
-              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.05em" }}>
           <img src="/icons/spark.png" alt="" style={{ width: 22, height: 22 }} />
@@ -360,10 +480,7 @@ export default function Discover() {
               <div style={{ padding: "10px 12px 14px" }}>
                 <div style={{ height: 10, borderRadius: 6, backgroundColor: "var(--bg-card-2)", marginBottom: 8, width: "75%", animation: "pulse 1.5s ease-in-out infinite" }} />
                 <div style={{ height: 8, borderRadius: 6, backgroundColor: "var(--bg-card-2)", marginBottom: 8, width: "50%", animation: "pulse 1.5s ease-in-out infinite" }} />
-                <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
-                  <div style={{ flex: 1, height: 28, borderRadius: 8, backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
-                  <div style={{ flex: 1, height: 28, borderRadius: 8, backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
-                </div>
+                <div style={{ height: 28, borderRadius: 8, backgroundColor: "var(--bg-card-2)", marginTop: 12, animation: "pulse 1.5s ease-in-out infinite" }} />
               </div>
             </div>
           ))}
@@ -389,6 +506,7 @@ export default function Discover() {
 
             return (
               <div key={recipe.id}
+                onClick={() => openPreview(recipe)}
                 style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)" }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
@@ -463,19 +581,16 @@ export default function Discover() {
                     </div>
                   )}
 
-                  {/* Boutons */}
-                  <div style={{ display: "flex", gap: 6, marginTop: "auto", paddingTop: 4 }}>
-                    <button onClick={() => openPreview(recipe)}
-                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11 }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                      onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                    >voir +</button>
-                    <button onClick={() => handleAddToMyRecipes(recipe)}
-                      style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11, fontWeight: 800 }}
+                  {/* Bouton ajouter uniquement */}
+                  <div style={{ marginTop: "auto", paddingTop: 4 }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleAddToMyRecipes(recipe) }}
+                      style={{ ...btnBase, width: "100%", padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11, fontWeight: 800 }}
                       onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
                       onMouseLeave={e => e.currentTarget.style.opacity = "1"}
                     >+ ajouter</button>
                   </div>
+
                 </div>
               </div>
             )

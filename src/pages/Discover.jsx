@@ -1,7 +1,7 @@
 import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_TEXT, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { findBestMatch, calcIngredientPrice, computeCostDetails } from "../utils/priceEngine"
+import { computeCostDetails } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
 
 function getTextColor(hex) {
@@ -10,41 +10,21 @@ function getTextColor(hex) {
   return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
 }
 
-// Pill étoile lecture seule
-function StarPill({ rating, textColor, actionBg, actionText }) {
-  if (!rating || rating === 0) return null
+// Badge officiel réutilisable
+function OfficialBadge({ small = false }) {
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 3,
-      fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700,
-      backgroundColor: actionBg, color: actionText,
-      flexShrink: 0,
-    }}>
-      ★ {rating},0
-    </span>
-  )
-}
-
-function TagPill({ tag, active, onClick }) {
-  return (
-    <button onClick={onClick}
+    <img
+      src="/icons/badge.png"
+      alt="Compte officiel Shrimply"
+      title="Compte officiel Shrimply"
       style={{
-        display: "flex", alignItems: "center", gap: 6,
-        padding: "6px 12px", borderRadius: 20, fontSize: 11,
-        fontWeight: 700, fontFamily: "Poppins, sans-serif",
-        border: "none", cursor: "pointer",
-        backgroundColor: tag.pillBg,
-        transition: "opacity 0.2s, transform 0.2s",
-        opacity: active ? 1 : 0.7,
-        transform: active ? "scale(1.06)" : "scale(1)",
+        width: small ? 16 : 18,
+        height: small ? 16 : 18,
+        verticalAlign: "middle",
         flexShrink: 0,
+        objectFit: "contain",
       }}
-      onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-      onMouseLeave={e => e.currentTarget.style.opacity = active ? "1" : "0.7"}
-    >
-      <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
-      <span style={{ color: tag.pillText }}>{tag.label}</span>
-    </button>
+    />
   )
 }
 
@@ -88,7 +68,8 @@ export default function Discover() {
       const recipeIds = data.map(r => r.id)
 
       const [profilesRes, pricesRes, ingredientsRes] = await Promise.all([
-        supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
+        // is_official ajouté ici
+        supabase.from("profiles").select("id, username, avatar_url, is_official").in("id", userIds),
         supabase.from("ingredient_prices").select("name, price, unit"),
         supabase.from("ingredients").select("*").in("recipe_id", recipeIds),
       ])
@@ -204,13 +185,17 @@ export default function Discover() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
                   <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>{previewRecipe.name}</h2>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {/* Auteur preview + badge officiel */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     <div style={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", backgroundColor: "rgba(243,80,30,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {previewRecipe.profiles?.avatar_url
                         ? <img src={previewRecipe.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
                         : <span style={{ fontSize: 10 }}>👤</span>}
                     </div>
-                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{previewRecipe.profiles?.username || "Utilisateur"}</span>
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                      {previewRecipe.profiles?.username || "Utilisateur"}
+                    </span>
+                    {previewRecipe.profiles?.is_official && <OfficialBadge />}
                   </div>
                 </div>
                 <button onClick={closePreview}
@@ -219,9 +204,8 @@ export default function Discover() {
 
               {previewRecipe.description && <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>{previewRecipe.description}</p>}
 
-              {/* Meta + note */}
+              {/* Meta */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-                {/* Note étoile en preview */}
                 {previewRecipe.rating > 0 && (
                   <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: "rgba(245,158,11,0.12)", color: "#f59e0b", padding: "4px 10px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
                     ★ {previewRecipe.rating},0
@@ -416,32 +400,34 @@ export default function Discover() {
                 )}
 
                 <div style={{ padding: "8px 12px 12px", color: textColor, flex: 1, display: "flex", flexDirection: "column" }}>
-                  {/* Auteur */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+
+                  {/* Auteur + badge officiel */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5, flexWrap: "nowrap", overflow: "hidden" }}>
                     <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: actionBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {recipe.profiles?.avatar_url
                         ? <img src={recipe.profiles.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ fontSize: 9 }}>👤</span>}
                     </div>
-                    <span style={{ fontSize: 10, color: textColor, opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{recipe.profiles?.username || "Utilisateur"}</span>
+                    <span style={{ fontSize: 10, color: textColor, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                      {recipe.profiles?.username || "Utilisateur"}
+                    </span>
+                    {recipe.profiles?.is_official && <OfficialBadge small />}
                   </div>
 
                   <h3 style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 800, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", letterSpacing: "-0.04em", color: textColor }}>
                     {recipe.name}
                   </h3>
 
-                  {/* Meta : temps + portions + budget + note */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap", fontSize: 11, color: textColor }}>
-                    {recipe.prep_time && <span style={{ opacity: 0.8 }}>⏱ {recipe.prep_time}min</span>}
-                    {recipe.servings && <span style={{ opacity: 0.8 }}>🍽 {recipe.servings}p</span>}
-                    {/* Budget pill */}
+                  {/* Meta */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 7, flexWrap: "wrap", fontSize: 11, color: textColor }}>
+                    {recipe.prep_time && <span style={{ opacity: 0.75 }}>⏱ {recipe.prep_time}min</span>}
+                    {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
                     {recipe.estimatedTotal !== null && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
                         <img src="/icons/money.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                         {recipe.estimatedTotal.toFixed(2)}€
                       </span>
                     )}
-                    {/* Note étoile — uniquement si notée */}
                     {recipe.rating > 0 && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
                         ★ {recipe.rating},0

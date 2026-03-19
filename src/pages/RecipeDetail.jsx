@@ -2,12 +2,11 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { TAGS } from "../tags"
-import { computeCostDetails } from "../utils/priceEngine"
+import { computeCostDetails, getMatchWords } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
 
 const S = {
   btn: { fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "-0.05em", border: "none", cursor: "pointer", borderRadius: 10, transition: "transform 0.15s, opacity 0.15s" },
-  // Pill de base — toutes les pills utilisent ça
   pill: {
     display: "inline-flex", alignItems: "center", gap: 5,
     padding: "4px 10px", borderRadius: 40,
@@ -71,7 +70,6 @@ function ServingStepper({ servings, onChange, baseServings }) {
   )
 }
 
-// Pill étoiles — même taille et style que les autres pills
 function StarRating({ recipeId, initialRating }) {
   const [rating, setRating] = useState(initialRating || 0)
   const [hovered, setHovered] = useState(0)
@@ -89,17 +87,10 @@ function StarRating({ recipeId, initialRating }) {
     finally { setSaving(false) }
   }
 
-  // Après notation : pill compacte "★ 4,0" — même hauteur que les autres
   if (!editing && rating > 0) {
     return (
       <button onClick={() => setEditing(true)} title="Modifier la note"
-        style={{
-          ...S.pill,
-          backgroundColor: "var(--bg-card-2)",
-          border: "1.5px solid var(--border)",
-          color: "var(--text-main)",
-          cursor: "pointer",
-        }}
+        style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", color: "var(--text-main)", cursor: "pointer" }}
       >
         <span style={{ fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center" }}>★</span>
         <span style={{ fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center" }}>{rating},0</span>
@@ -107,33 +98,19 @@ function StarRating({ recipeId, initialRating }) {
     )
   }
 
-  // Mode sélection : 5 étoiles — même pill
   const displayed = hovered || rating
   return (
-    <div style={{
-      ...S.pill,
-      backgroundColor: "var(--bg-card-2)",
-      border: "1.5px solid var(--border)",
-      gap: 2, paddingLeft: 8, paddingRight: 8,
-    }}>
+    <div style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", gap: 2, paddingLeft: 8, paddingRight: 8 }}>
       {[1, 2, 3, 4, 5].map(star => (
         <button key={star} onClick={() => handleRate(star)}
-          onMouseEnter={() => setHovered(star)}
-          onMouseLeave={() => setHovered(0)}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            padding: "0 1px", fontSize: 14, lineHeight: 1,
-            color: star <= displayed ? "var(--text-main)" : "var(--border)",
-            transition: "transform 0.1s",
-            transform: star <= displayed ? "scale(1.1)" : "scale(1)",
-          }}
+          onMouseEnter={() => setHovered(star)} onMouseLeave={() => setHovered(0)}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: "0 1px", fontSize: 14, lineHeight: 1, color: star <= displayed ? "var(--text-main)" : "var(--border)", transition: "transform 0.1s", transform: star <= displayed ? "scale(1.1)" : "scale(1)" }}
         >★</button>
       ))}
     </div>
   )
 }
 
-// Popup confirmation suppression
 function DeleteConfirmModal({ onConfirm, onCancel }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
@@ -162,7 +139,6 @@ function DeleteConfirmModal({ onConfirm, onCancel }) {
   )
 }
 
-// Toast "lien copié"
 function CopyToast({ visible }) {
   return (
     <div style={{
@@ -175,8 +151,7 @@ function CopyToast({ visible }) {
       fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12,
       letterSpacing: "-0.04em", padding: "10px 20px",
       borderRadius: 40, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-      display: "flex", alignItems: "center", gap: 8,
-      whiteSpace: "nowrap",
+      display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap",
     }}>
       <span style={{ fontSize: 14 }}>🔗</span> lien copié !
     </div>
@@ -253,7 +228,17 @@ export default function RecipeDetail() {
     try {
       const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
       const missing = getMissingIngredients(ingredients, prices)
+
+      // ── DEBUG LOGS ──
+      console.group("🔍 Diagnostic prix")
+      console.log("🟡 Prix en base:", prices?.map(p => `${p.name} → [${getMatchWords(p.name).join(", ")}]`))
+      console.log("🔴 Manquants:")
+      missing.forEach(m => console.log(`  "${m.name}" → mots clés: [${getMatchWords(m.name).join(", ")}] | unité: "${m.unit}" | qté: "${m.quantity}"`))
+      console.groupEnd()
+      // ── FIN DEBUG ──
+
       if (missing.length === 0) { await loadCostDetails(recipe, ingredients); setCooldown(COOLDOWN_SECONDS); return }
+
       const { data: gemini_prices, error: funcError } = await supabase.functions.invoke("estimate-costs", {
         body: { ingredients: missing.map(m => ({ name: m.name, quantity: m.quantity, unit: m.unit })) }
       })
@@ -338,10 +323,7 @@ export default function RecipeDetail() {
   return (
     <div style={{ padding: "16px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
-      {/* Toast copie */}
       <CopyToast visible={copied} />
-
-      {/* Modal suppression */}
       {showDeleteModal && <DeleteConfirmModal onConfirm={handleDelete} onCancel={() => setShowDeleteModal(false)} />}
 
       <style>{`
@@ -364,14 +346,12 @@ export default function RecipeDetail() {
         }
       `}</style>
 
-      {/* Retour */}
       <button onClick={() => navigate("/recipes")}
         style={{ ...S.btn, background: "none", color: "var(--text-faint)", fontSize: 12, padding: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}
         onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
         onMouseLeave={e => e.currentTarget.style.color = "var(--text-faint)"}
       >retour</button>
 
-      {/* ── HERO CARD ── */}
       <div className="hero-card">
         {recipe.photo_url
           ? <img src={recipe.photo_url} alt={recipe.name} className="hero-photo" />
@@ -379,7 +359,6 @@ export default function RecipeDetail() {
         }
 
         <div className="hero-right">
-          {/* Titre + actions */}
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -397,16 +376,13 @@ export default function RecipeDetail() {
               </div>
             </div>
 
-            {/* Pills harmonisées : étoiles + temps + tags — même style, même taille */}
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
               <StarRating recipeId={id} initialRating={recipe.rating || 0} />
-
               {recipe.prep_time && (
                 <span style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", color: "var(--text-muted)" }}>
                   ⏱ {recipe.prep_time} min
                 </span>
               )}
-
               {validTags.slice(0, 3).map(tv => {
                 const ti = TAGS.find(t => t.value === tv)
                 return (
@@ -419,7 +395,6 @@ export default function RecipeDetail() {
             </div>
           </div>
 
-          {/* Barre budget */}
           <div>
             <div className="budget-bar">
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -455,16 +430,13 @@ export default function RecipeDetail() {
                 {btnLabel}
               </button>
             </div>
-
             {apiError && <p style={{ fontSize: 10, color: "#f87171", margin: "5px 0 0", fontStyle: "italic", fontFamily: "Poppins, sans-serif" }}>⚠️ {apiError}</p>}
           </div>
         </div>
       </div>
 
-      {/* Grille ingrédients + étapes */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
 
-        {/* Ingrédients */}
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -496,7 +468,6 @@ export default function RecipeDetail() {
           })}
         </div>
 
-        {/* Étapes */}
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
             <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />

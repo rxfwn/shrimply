@@ -21,6 +21,7 @@ export const UNIT_CONVERSIONS = {
   "c. à soupe": { base: "l", factor: 0.015 },
   "c.à soupe": { base: "l", factor: 0.015 },
   "càs": { base: "l", factor: 0.015 },
+  "cs": { base: "l", factor: 0.015 },
   soupe: { base: "l", factor: 0.015 },
   "cuillère à soupe": { base: "l", factor: 0.015 },
   "cuillères à soupe": { base: "l", factor: 0.015 },
@@ -30,6 +31,7 @@ export const UNIT_CONVERSIONS = {
   "c. a cafe": { base: "l", factor: 0.005 },
   "c.à café": { base: "l", factor: 0.005 },
   "càc": { base: "l", factor: 0.005 },
+  "cc": { base: "l", factor: 0.005 },
   cafe: { base: "l", factor: 0.005 },
   café: { base: "l", factor: 0.005 },
   "cuillère à café": { base: "l", factor: 0.005 },
@@ -48,6 +50,11 @@ export const UNIT_CONVERSIONS = {
   bottes: { base: "piece", factor: 1 },
   tete: { base: "piece", factor: 1 },
   tête: { base: "piece", factor: 1 },
+  // paquet/sachet = ~40g pour épices/poudres
+  paquet: { base: "kg", factor: 0.040 },
+  paquets: { base: "kg", factor: 0.040 },
+  sachet: { base: "kg", factor: 0.040 },
+  sachets: { base: "kg", factor: 0.040 },
   cm: { base: "cm", factor: 1 },
 }
 
@@ -64,6 +71,9 @@ export function convertUnit(quantity, fromUnit, toUnit) {
 
 export function normalizeStr(str) {
   return (str || "")
+    // Caractères spéciaux français non gérés par NFD
+    .replace(/[Œœ]/g, "oe")
+    .replace(/[Ææ]/g, "ae")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -87,7 +97,7 @@ export const STOP_WORDS = new Set([
   "extra", "vierge", "guerande",
   "en", "de", "du", "la", "le", "les", "un", "une", "des", "au", "aux", "pour", "avec", "par",
   // contenants
-  "sachet", "paquet", "boite", "bouteille", "bocal", "brique",
+  "boite", "bouteille", "bocal", "brique",
   "bouquet", "buche", "pot", "barquette", "conserve", "tube",
   // variétés
   "iceberg", "romaine", "batavia", "frisee",
@@ -99,6 +109,12 @@ export const STOP_WORDS = new Set([
   "cuit", "cuite", "cuits", "cuites",
   "plein", "air", "elevees", "type", "igp", "anglais", "table",
   "entier", "entiere", "entiers",
+  "poudre",
+  // parties/préparations — trop génériques
+  "filet", "filets", "chair", "tranche", "tranches",
+  // temporalité / état
+  "nouveau", "nouvelle", "nouveaux", "nouvelles",
+  "jeune", "jeunes",
 ])
 
 export const CATEGORY_UNIT_RULES = [
@@ -109,12 +125,15 @@ export const CATEGORY_UNIT_RULES = [
   { keywords: ["ail"], unit: "piece" },
   { keywords: ["persil", "basilic", "coriandre", "menthe", "ciboulette", "thym", "romarin", "aneth", "estragon", "laurier"], unit: "piece" },
   { keywords: ["cube", "bouillon"], unit: "piece" },
-  { keywords: ["oeuf", "oeufs"], unit: "piece" },
+  { keywords: ["oeuf"], unit: "piece" },
   { keywords: ["huile"], unit: "l" },
   { keywords: ["chevre", "feta", "camembert", "brie", "roquefort", "comte", "parmesan", "gruyere", "fromage"], unit: "kg" },
   { keywords: ["pesto", "moutarde", "ketchup", "mayonnaise", "sauce"], unit: "kg" },
   { keywords: ["riz", "pate", "farine", "semoule", "boulgour", "quinoa", "lentille", "pois"], unit: "kg" },
   { keywords: ["sel", "poivre", "sucre", "cannelle", "curcuma", "paprika", "cumin", "curry", "epice", "miel"], unit: "kg" },
+  { keywords: ["lieu", "saumon", "cabillaud", "colin", "merlan", "dorade", "truite", "poisson"], unit: "kg" },
+  { keywords: ["poulet", "porc", "boeuf", "veau", "agneau", "dinde", "viande"], unit: "kg" },
+  { keywords: ["crevette", "moule", "fruit", "mer"], unit: "kg" },
 ]
 
 export const DENSITY_KG_PER_L = {
@@ -122,33 +141,58 @@ export const DENSITY_KG_PER_L = {
   cannelle: 0.50, curcuma: 0.50, paprika: 0.50, cumin: 0.50,
   curry: 0.50, levure: 0.55, cacao: 0.50, maizena: 0.60,
   miel: 1.40, sauce: 1.05, soja: 1.05, huile: 0.92,
+  vinaigre: 1.00, lait: 1.03, creme: 1.00, eau: 1.00,
 }
 
 export const PIECE_WEIGHTS = {
+  // herbes
   persil: 0.030, basilic: 0.025, coriandre: 0.025, menthe: 0.025, ciboulette: 0.020,
+  // salades
   salade: 0.300, laitue: 0.250, epinard: 0.200, roquette: 0.100, mache: 0.100,
-  citron: 0.100, orange: 0.200, tomate: 0.150, oignon: 0.100, echalote: 0.050,
-  ail: 0.050, gousse: 0.008, courgette: 0.250, carotte: 0.100, poivron: 0.200,
-  gingembre: 0.050, poulet: 0.180,
+  // fruits
+  citron: 0.100, orange: 0.200, tomate: 0.150,
+  // légumes
+  oignon: 0.100, echalote: 0.050, ail: 0.050, gousse: 0.008,
+  courgette: 0.250, carotte: 0.100, poivron: 0.200,
+  // autres
+  gingembre: 0.050,
+  // viandes
+  poulet: 0.180, porc: 0.200,
+  // poissons — poids moyen d'un filet
+  poisson: 0.150, lieu: 0.150, saumon: 0.150,
+  cabillaud: 0.150, colin: 0.130, merlan: 0.130,
+  dorade: 0.200, truite: 0.180,
+}
+
+// Volume en litres par pièce (ex: 1 cube bouillon = 0.5l de bouillon reconstitué)
+export const VOLUME_PER_PIECE = {
+  bouillon: 0.500, // 1 cube = 500ml
+  cube: 0.500,
 }
 
 // Poids moyen en kg d'un "cm" de l'ingrédient
 const CM_WEIGHTS = {
-  gingembre: 0.005, // ~5g par cm
+  gingembre: 0.005,
 }
 
 // Synonymes : remplace un mot par un autre pour le matching
 const SYNONYMS = {
+  // salades
   laitue: "salade", mache: "salade", roquette: "salade",
   epinard: "salade", endive: "salade", cresson: "salade",
-  gousse: "ail",
-  tete: "ail",
-  filet: "poulet",
-  // "blanc" n'est PAS un synonyme — trop générique (blanc d'oeuf, blanc de poireau...)
-  // "Blanc de poulet" → "blanc" est dans STOP_WORDS → reste juste ["poulet"] → match OK
+  // ail
+  gousse: "ail", tete: "ail",
+  // oeufs (Œuf → normalizeStr → oeuf)
+  oeuf: "oeuf",
+  // poissons
+  lieu: "poisson", cabillaud: "poisson", saumon: "poisson",
+  colin: "poisson", merlan: "poisson", dorade: "poisson", truite: "poisson",
+  // viandes
+  poulet: "poulet", blanc: "poulet",
 }
 
 function stem(word) {
+  if (word.length > 4 && word.endsWith("aux")) return word.slice(0, -3) + "al"
   return word.length > 3 && word.endsWith("s") ? word.slice(0, -1) : word
 }
 
@@ -158,7 +202,7 @@ export function getMatchWords(name) {
     .filter(w => w.length > 1 && !STOP_WORDS.has(w))
     .map(stem)
     .map(w => SYNONYMS[w] || w)
-  return [...new Set(words)] // dédoublonnage important
+  return [...new Set(words)]
 }
 
 export function findBestMatch(ingredientName, prices) {
@@ -178,9 +222,6 @@ export function findBestMatch(ingredientName, prices) {
     const covR = score / ingredientWords.length
     const covP = score / priceWords.length
 
-    // Bon match si :
-    // - un côté est couvert à 100%
-    // - OU les deux côtés ont au moins 50% de mots en commun
     const isGoodMatch = covR === 1 || covP === 1 || (score >= 1 && covR >= 0.5 && covP >= 0.5)
 
     if (isGoodMatch) {
@@ -210,10 +251,6 @@ export function getCategoryUnit(ingredientName) {
   return null
 }
 
-/**
- * Calcule le prix estimé d'un ingrédient donné un match de prix.
- * Retourne { estimatedPrice, found }
- */
 export function calcIngredientPrice(ing, match) {
   const quantity = parseFloat(ing.quantity) || 0
   const recipeUnit = (ing.unit || "").toLowerCase().trim()
@@ -221,7 +258,7 @@ export function calcIngredientPrice(ing, match) {
   const recipeBase = getIngredientBaseUnit(recipeUnit)
   const priceBase = getIngredientBaseUnit(priceUnit) || (match.unit === "piece" ? "piece" : null)
 
-  // Cas spécial : unité "cm" (ex: gingembre 2 cm)
+  // Cas spécial : unité "cm"
   if (recipeBase === "cm") {
     const normalized = normalizeStr(ing.name)
     const cmWeight = Object.entries(CM_WEIGHTS).find(([k]) => normalized.includes(k))?.[1]
@@ -245,7 +282,7 @@ export function calcIngredientPrice(ing, match) {
     return { estimatedPrice: convertedQty * match.price, found: true }
   }
 
-  // Liquide (l) → solide (kg) via densité
+  // Liquide → kg via densité
   if (recipeBase === "l" && priceBase === "kg") {
     const normalized = normalizeStr(ing.name)
     const density = Object.entries(DENSITY_KG_PER_L).find(([k]) => normalized.includes(k))?.[1] || 0.80
@@ -253,7 +290,7 @@ export function calcIngredientPrice(ing, match) {
     return { estimatedPrice: qtyL * density * match.price, found: true }
   }
 
-  // Solide (kg) → pièce via poids moyen
+  // kg → pièce via poids moyen
   if (recipeBase === "kg" && priceBase === "piece") {
     const normalized = normalizeStr(ing.name)
     const pieceWeightKg = Object.entries(PIECE_WEIGHTS).find(([k]) => normalized.includes(k))?.[1]
@@ -263,17 +300,33 @@ export function calcIngredientPrice(ing, match) {
     }
   }
 
-  // Pièce → pièce (ou unité inconnue → pièce)
+  // Liquide → pièce via volume par pièce (ex: 175ml de bouillon → X cubes)
+  if (recipeBase === "l" && priceBase === "piece") {
+    const normalized = normalizeStr(ing.name)
+    const volPerPiece = Object.entries(VOLUME_PER_PIECE).find(([k]) => normalized.includes(k))?.[1]
+    if (volPerPiece) {
+      const qtyL = convertUnit(quantity, recipeUnit, "l")
+      return { estimatedPrice: (qtyL / volPerPiece) * match.price, found: true }
+    }
+  }
+
+  // Pièce → pièce
   if (recipeBase === "piece" || !recipeUnit || recipeBase === null) {
     if (priceBase === "piece") {
       return { estimatedPrice: quantity * match.price, found: true }
     }
-    // Pièce → kg via poids moyen
+    // Pièce → kg via poids moyen (ex: 2 filets de lieu → kg)
     if (priceBase === "kg") {
       const normalized = normalizeStr(ing.name)
       const pieceWeightKg = Object.entries(PIECE_WEIGHTS).find(([k]) => normalized.includes(k))?.[1]
       if (pieceWeightKg) {
         return { estimatedPrice: quantity * pieceWeightKg * match.price, found: true }
+      }
+      // Fallback : utiliser le poids de la catégorie si défini
+      const categoryUnit = getCategoryUnit(ing.name)
+      if (categoryUnit === "kg") {
+        // On ne peut pas calculer sans poids de référence → found: false
+        return { estimatedPrice: 0, found: false }
       }
     }
   }
@@ -281,10 +334,6 @@ export function calcIngredientPrice(ing, match) {
   return { estimatedPrice: 0, found: false }
 }
 
-/**
- * Calcule le coût total d'une liste d'ingrédients.
- * Retourne { details, total, per_serving }
- */
 export function computeCostDetails(ingredientsData, prices, servings) {
   const details = ingredientsData.map(i => {
     const match = findBestMatch(i.name, prices)

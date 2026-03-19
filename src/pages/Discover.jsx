@@ -10,6 +10,21 @@ function getTextColor(hex) {
   return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
 }
 
+// Pill étoile lecture seule
+function StarPill({ rating, textColor, actionBg, actionText }) {
+  if (!rating || rating === 0) return null
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 3,
+      fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700,
+      backgroundColor: actionBg, color: actionText,
+      flexShrink: 0,
+    }}>
+      ★ {rating},0
+    </span>
+  )
+}
+
 function TagPill({ tag, active, onClick }) {
   return (
     <button onClick={onClick}
@@ -56,42 +71,39 @@ export default function Discover() {
       if (authError || !user) { setLoading(false); return }
       setCurrentUser(user)
 
-    // Première requête : recettes seulement — affichage immédiat
-    const { data } = await supabase
-      .from("recipes")
-      .select("*")
-      .eq("is_public", true)
-      .neq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(40)
+      const { data } = await supabase
+        .from("recipes")
+        .select("*")
+        .eq("is_public", true)
+        .neq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(40)
 
-    if (!data) { setLoading(false); return }
+      if (!data) { setLoading(false); return }
 
-    // Afficher les cartes de suite sans les données enrichies
-    setRecipes(data.map(r => ({ ...r, profiles: null, estimatedTotal: null })))
-    setLoading(false)
+      setRecipes(data.map(r => ({ ...r, profiles: null, estimatedTotal: null })))
+      setLoading(false)
 
-    // Enrichissement en parallèle en arrière-plan
-    const userIds = [...new Set(data.map(r => r.user_id))]
-    const recipeIds = data.map(r => r.id)
+      const userIds = [...new Set(data.map(r => r.user_id))]
+      const recipeIds = data.map(r => r.id)
 
-    const [profilesRes, pricesRes, ingredientsRes] = await Promise.all([
-      supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
-      supabase.from("ingredient_prices").select("name, price, unit"),
-      supabase.from("ingredients").select("*").in("recipe_id", recipeIds),
-    ])
+      const [profilesRes, pricesRes, ingredientsRes] = await Promise.all([
+        supabase.from("profiles").select("id, username, avatar_url").in("id", userIds),
+        supabase.from("ingredient_prices").select("name, price, unit"),
+        supabase.from("ingredients").select("*").in("recipe_id", recipeIds),
+      ])
 
-    const profileMap = {}
-    profilesRes.data?.forEach(p => { profileMap[p.id] = p })
+      const profileMap = {}
+      profilesRes.data?.forEach(p => { profileMap[p.id] = p })
 
-    const recipesWithData = data.map(r => {
-      const ings = ingredientsRes.data?.filter(i => i.recipe_id === r.id) || []
-      const { total, details } = computeCostDetails(ings, pricesRes.data || [], r.servings)
-      const hasAnyMatch = details.some(d => d.found)
-      return { ...r, profiles: profileMap[r.user_id] || null, estimatedTotal: hasAnyMatch ? total : null }
-    })
+      const recipesWithData = data.map(r => {
+        const ings = ingredientsRes.data?.filter(i => i.recipe_id === r.id) || []
+        const { total, details } = computeCostDetails(ings, pricesRes.data || [], r.servings)
+        const hasAnyMatch = details.some(d => d.found)
+        return { ...r, profiles: profileMap[r.user_id] || null, estimatedTotal: hasAnyMatch ? total : null }
+      })
 
-    setRecipes(recipesWithData)
+      setRecipes(recipesWithData)
     } catch (e) { console.error("fetchRecipes error:", e); setLoading(false) }
   }
 
@@ -150,7 +162,6 @@ export default function Discover() {
     borderRadius: 10, transition: "transform 0.15s",
   }
 
-
   return (
     <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
@@ -186,12 +197,10 @@ export default function Discover() {
       {previewRecipe && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-end" }} onClick={closePreview}>
           <div style={{ backgroundColor: "var(--bg-card)", borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "90vh", overflowY: "auto", border: "1px solid var(--border)" }} onClick={e => e.stopPropagation()}>
-            {/* Handle mobile */}
             <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
               <div style={{ width: 36, height: 4, backgroundColor: "var(--border-2)", borderRadius: 2 }} />
             </div>
             <div style={{ padding: "12px 20px 32px" }}>
-              {/* Header */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <div style={{ flex: 1, paddingRight: 12 }}>
                   <h2 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>{previewRecipe.name}</h2>
@@ -210,8 +219,14 @@ export default function Discover() {
 
               {previewRecipe.description && <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>{previewRecipe.description}</p>}
 
-              {/* Meta */}
+              {/* Meta + note */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {/* Note étoile en preview */}
+                {previewRecipe.rating > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 700, backgroundColor: "rgba(245,158,11,0.12)", color: "#f59e0b", padding: "4px 10px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    ★ {previewRecipe.rating},0
+                  </span>
+                )}
                 {previewRecipe.prep_time && <span style={{ fontSize: 11, color: "var(--text-muted)", backgroundColor: "var(--bg-card-2)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>⏱ {previewRecipe.prep_time} min</span>}
                 {previewRecipe.servings && <span style={{ fontSize: 11, color: "var(--text-muted)", backgroundColor: "var(--bg-card-2)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>🍽 {previewRecipe.servings} pers.</span>}
                 {previewRecipe.estimatedTotal !== null && <span style={{ fontSize: 11, color: "#34d399", backgroundColor: "rgba(52,211,153,0.1)", padding: "4px 10px", borderRadius: 20, fontWeight: 700 }}>💰 {previewRecipe.estimatedTotal.toFixed(2)}€</span>}
@@ -263,7 +278,6 @@ export default function Discover() {
                 </>
               )}
 
-              {/* Actions */}
               <div style={{ display: "flex", gap: 10, paddingTop: 16, borderTop: "1px solid var(--border)", marginTop: 8 }}>
                 <button onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
                   style={{ ...btnBase, flex: 1, padding: "12px", backgroundColor: "#f3501e", color: "#ffffff" }}
@@ -311,17 +325,9 @@ export default function Discover() {
         @media (max-width: 767px) { .filters-desktop { display: none; } }
       `}</style>
 
-      {/* Desktop : tous les tags visibles, pas de voir plus */}
       <div className="filters-desktop">
         <button onClick={() => setFilter(filter === "all" ? "" : "all")}
-          style={{
-            ...btnBase, display: "flex", alignItems: "center", gap: 6,
-            padding: "6px 12px", borderRadius: 20, fontSize: 11,
-            backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
-            opacity: filter !== "" && filter !== "all" ? 0.35 : 1,
-            transform: filter === "all" || filter === "" ? "scale(1)" : "scale(1)",
-            transition: "opacity 0.2s, transform 0.2s",
-          }}
+          style={{ ...btnBase, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: filter !== "" && filter !== "all" ? 0.35 : 1, transition: "opacity 0.2s, transform 0.2s" }}
         >
           <img src="/icons/book.png" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
           toutes
@@ -330,19 +336,8 @@ export default function Discover() {
           const isActive = filter === tag.value
           const anyActive = filter !== "" && filter !== "all"
           return (
-            <button key={tag.value}
-              onClick={() => setFilter(isActive ? "all" : tag.value)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 12px", borderRadius: 20, fontSize: 11,
-                fontWeight: 700, fontFamily: "Poppins, sans-serif",
-                border: "none", cursor: "pointer", flexShrink: 0,
-                backgroundColor: tag.pillBg,
-                opacity: anyActive && !isActive ? 0.35 : 1,
-                transform: isActive ? "scale(1.08)" : "scale(1)",
-                boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.25)" : "none",
-                transition: "opacity 0.2s, transform 0.2s, box-shadow 0.2s",
-              }}
+            <button key={tag.value} onClick={() => setFilter(isActive ? "all" : tag.value)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer", flexShrink: 0, backgroundColor: tag.pillBg, opacity: anyActive && !isActive ? 0.35 : 1, transform: isActive ? "scale(1.08)" : "scale(1)", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.25)" : "none", transition: "opacity 0.2s, transform 0.2s, box-shadow 0.2s" }}
             >
               <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
               <span style={{ color: tag.pillText }}>{tag.label}</span>
@@ -351,16 +346,9 @@ export default function Discover() {
         })}
       </div>
 
-      {/* Mobile : scroll horizontal avec voir plus */}
       <div className="filters-mobile">
         <button onClick={() => setFilter(filter === "all" ? "" : "all")}
-          style={{
-            ...btnBase, display: "flex", alignItems: "center", gap: 6,
-            padding: "6px 12px", borderRadius: 20, fontSize: 11,
-            backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0,
-            opacity: filter !== "" && filter !== "all" ? 0.35 : 1,
-            transition: "opacity 0.2s",
-          }}
+          style={{ ...btnBase, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: filter !== "" && filter !== "all" ? 0.35 : 1, transition: "opacity 0.2s" }}
         >
           <img src="/icons/book.png" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
           toutes
@@ -369,18 +357,8 @@ export default function Discover() {
           const isActive = filter === tag.value
           const anyActive = filter !== "" && filter !== "all"
           return (
-            <button key={tag.value}
-              onClick={() => setFilter(isActive ? "all" : tag.value)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "6px 12px", borderRadius: 20, fontSize: 11,
-                fontWeight: 700, fontFamily: "Poppins, sans-serif",
-                border: "none", cursor: "pointer", flexShrink: 0,
-                backgroundColor: tag.pillBg,
-                opacity: anyActive && !isActive ? 0.35 : 1,
-                transform: isActive ? "scale(1.08)" : "scale(1)",
-                transition: "opacity 0.2s, transform 0.2s",
-              }}
+            <button key={tag.value} onClick={() => setFilter(isActive ? "all" : tag.value)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer", flexShrink: 0, backgroundColor: tag.pillBg, opacity: anyActive && !isActive ? 0.35 : 1, transform: isActive ? "scale(1.08)" : "scale(1)", transition: "opacity 0.2s, transform 0.2s" }}
             >
               <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
               <span style={{ color: tag.pillText }}>{tag.label}</span>
@@ -422,7 +400,6 @@ export default function Discover() {
             const actionBg = primaryTag?.actionBg || (textColor === "#ffffff" ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.15)")
             const actionText = getTextColor(actionBg) === "#111111" ? "#111111" : "#ffffff"
 
-            // Tags : primary tag en premier, puis les autres sans doublon
             const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
             const validTags = allTagValues.map(tv => TAGS.find(t => t.value === tv)).filter(Boolean)
 
@@ -453,14 +430,26 @@ export default function Discover() {
                     {recipe.name}
                   </h3>
 
-                  {/* Meta : temps + portions sans pill, budget en pill */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap", fontSize: 11, color: textColor, opacity: 1 }}>
-                    {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
-                    {recipe.servings && <span>🍽 {recipe.servings}p</span>}
-                    {recipe.estimatedTotal !== null && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, opacity: 1 }}><img src="/icons/money.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} /> {recipe.estimatedTotal.toFixed(2)}€</span>}
+                  {/* Meta : temps + portions + budget + note */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap", fontSize: 11, color: textColor }}>
+                    {recipe.prep_time && <span style={{ opacity: 0.8 }}>⏱ {recipe.prep_time}min</span>}
+                    {recipe.servings && <span style={{ opacity: 0.8 }}>🍽 {recipe.servings}p</span>}
+                    {/* Budget pill */}
+                    {recipe.estimatedTotal !== null && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
+                        <img src="/icons/money.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                        {recipe.estimatedTotal.toFixed(2)}€
+                      </span>
+                    )}
+                    {/* Note étoile — uniquement si notée */}
+                    {recipe.rating > 0 && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
+                        ★ {recipe.rating},0
+                      </span>
+                    )}
                   </div>
 
-                  {/* Tags : primary en premier */}
+                  {/* Tags */}
                   {validTags.length > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8, flexWrap: "nowrap" }}>
                       {validTags.slice(0, 2).map(ti => (
@@ -474,15 +463,8 @@ export default function Discover() {
                           onMouseEnter={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "flex"}
                           onMouseLeave={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "none"}
                         >
-                          <span style={{ fontSize: 10, fontWeight: 700, color: textColor, opacity: 0.6, cursor: "default" }}>
-                            +{validTags.length - 2}
-                          </span>
-                          <div className="tag-tooltip" style={{
-                            display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0,
-                            backgroundColor: "var(--bg-card)", border: "1px solid var(--border)",
-                            borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column",
-                            zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120,
-                          }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: textColor, opacity: 0.6, cursor: "default" }}>+{validTags.length - 2}</span>
+                          <div className="tag-tooltip" style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column", zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120 }}>
                             {validTags.slice(2).map(ti => (
                               <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
                                 <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
@@ -495,7 +477,7 @@ export default function Discover() {
                     </div>
                   )}
 
-                  {/* Boutons avec actionBg */}
+                  {/* Boutons */}
                   <div style={{ display: "flex", gap: 6, marginTop: "auto", paddingTop: 4 }}>
                     <button onClick={() => openPreview(recipe)}
                       style={{ ...btnBase, flex: 1, padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11 }}

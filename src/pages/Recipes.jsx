@@ -184,6 +184,7 @@ export default function Recipes() {
 
   const togglePublic = async (e, recipe) => {
     e.stopPropagation()
+    if (recipe.imported_from) return
     await supabase.from("recipes").update({is_public:!recipe.is_public}).eq("id",recipe.id)
     fetchRecipes()
   }
@@ -376,7 +377,7 @@ export default function Recipes() {
                     </div>
                     <div style={{ width: 80 }}>
                       <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *" type="number" min="0" value={ing.quantity}
-                      onChange={e => { const v = e.target.value; if (v === "" || parseFloat(v) >= 0) updateIngredient(i,"quantity",v) }} />
+                        onChange={e => { const v = e.target.value; if (v === "" || parseFloat(v) >= 0) updateIngredient(i,"quantity",v) }} />
                     </div>
                     <div style={{ width: 110 }}>
                       <select style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none" }} value={ing.unit}
@@ -490,7 +491,6 @@ export default function Recipes() {
                 @media (max-width: 767px) { .filters-recipes { display: none; } }
               `}</style>
 
-              {/* Desktop : tous les tags visibles */}
               <div className="filters-recipes">
                 <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
@@ -505,7 +505,6 @@ export default function Recipes() {
                 ))}
               </div>
 
-              {/* Mobile : scroll horizontal simple */}
               <div className="filters-recipes-mobile">
                 <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transition: "all 0.2s ease" }}>
@@ -573,10 +572,16 @@ export default function Recipes() {
                         )
                       })()}
                       <div style={{ display: "flex", gap: 6 }}>
-                        <button onClick={e => togglePublic(e, recipe)}
-                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
-                          {recipe.is_public ? "🌍" : "🔒"}
-                        </button>
+                        {recipe.imported_from ? (
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: primaryTagInfo?.pillBg || "rgba(0,0,0,0.55)", color: primaryTagInfo?.pillText || "#ffffff", fontFamily: "Poppins, sans-serif" }}>
+                            🌐 importée
+                          </span>
+                        ) : (
+                          <button onClick={e => togglePublic(e, recipe)}
+                            style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
+                            {recipe.is_public ? "🌍" : "🔒"}
+                          </button>
+                        )}
                         <button onClick={e => handleDuplicate(e, recipe)} disabled={duplicating===recipe.id}
                           style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1 }}>
                           {duplicating===recipe.id ? "⏳" : "📝"}

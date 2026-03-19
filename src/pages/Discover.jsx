@@ -150,6 +150,7 @@ export default function Discover() {
       prep_time: recipe.prep_time, servings: recipe.servings, tags: recipe.tags,
       primary_tag: recipe.primary_tag || null,
       is_public: false, photo_url: recipe.photo_url || null,
+      imported_from: recipe.id,
     }).select().single()
     if (error) { console.error(error); return }
     if (newRecipe) {
@@ -331,7 +332,7 @@ export default function Discover() {
                       style={{ ...S.btn, padding: "0 16px", fontSize: 12, backgroundColor: "#f3501e", color: "#ffffff", borderRadius: 10, whiteSpace: "nowrap", flexShrink: 0, alignSelf: "stretch" }}
                       onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                    >+ ajouter à mes recettes</button>
+                    >+ ajouter</button>
                   </div>
                 </div>
               </div>

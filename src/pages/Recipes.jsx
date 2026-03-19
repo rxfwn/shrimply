@@ -375,8 +375,8 @@ export default function Recipes() {
                         onKeyDown={e => { if(e.key==="Enter"){e.preventDefault();if(i===ingredients.length-1)addIngredient();else ingredientRefs.current[i+1]?.focus()} }} />
                     </div>
                     <div style={{ width: 80 }}>
-                      <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *" type="number" value={ing.quantity}
-                        onChange={e => updateIngredient(i,"quantity",e.target.value)} />
+                      <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *" type="number" min="0" value={ing.quantity}
+                      onChange={e => { const v = e.target.value; if (v === "" || parseFloat(v) >= 0) updateIngredient(i,"quantity",v) }} />
                     </div>
                     <div style={{ width: 110 }}>
                       <select style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none" }} value={ing.unit}

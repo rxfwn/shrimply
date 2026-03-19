@@ -404,7 +404,7 @@ export default function Recipes() {
             <div>
               <label style={labelStyle}>
                 étapes <span style={{ color: "#f87171" }}>*</span>{" "}
-                <span className="text-light" style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— glisse ⠿ pour réordonner</span>
+                <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— glisse ⠿ pour réordonner</span>
               </label>
               {errors.noSteps && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>au moins une étape requise</p>}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

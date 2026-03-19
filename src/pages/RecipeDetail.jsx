@@ -2,27 +2,34 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { TAGS } from "../tags"
-import { findBestMatch, computeCostDetails, getCategoryUnit, getIngredientBaseUnit } from "../utils/priceEngine"
+import { computeCostDetails } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
-
-function getTextColor(hex) {
-  if (!hex) return "#ffffff"
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
-}
 
 const S = {
   btn: { fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "-0.05em", border: "none", cursor: "pointer", borderRadius: 10, transition: "transform 0.15s, opacity 0.15s" },
-  pill: { display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" },
+  // Pill de base — toutes les pills utilisent ça
+  pill: {
+    display: "inline-flex", alignItems: "center", gap: 5,
+    padding: "4px 10px", borderRadius: 40,
+    fontSize: 11, fontWeight: 700,
+    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em",
+    border: "1.5px solid transparent",
+    lineHeight: 1.2,
+  },
 }
 
 const MIN_SERVINGS = 1
 const MAX_SERVINGS = 35
+const COOLDOWN_SECONDS = 120
+
+function hasValidQuantity(ingredient) {
+  const qty = parseFloat(ingredient.quantity)
+  return ingredient.quantity && !isNaN(qty) && qty > 0
+}
 
 function scaleQuantity(qty, baseServings, currentServings) {
   if (!qty || !baseServings || baseServings === 0) return qty
   const scaled = (parseFloat(qty) * currentServings) / baseServings
-  // Smart rounding: keep 1 decimal for small values, integer for bigger
   if (scaled < 10) return Math.round(scaled * 10) / 10
   return Math.round(scaled)
 }
@@ -35,83 +42,143 @@ function formatQuantity(value) {
   return Math.round(num).toString()
 }
 
-// Serving stepper component
 function ServingStepper({ servings, onChange, baseServings }) {
   const atMin = servings <= MIN_SERVINGS
   const atMax = servings >= MAX_SERVINGS
   const changed = servings !== baseServings
+  const PURPLE = "#CE80FF"
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{
-        display: "inline-flex", alignItems: "center",
-        border: "1.5px solid var(--border)",
-        borderRadius: 40, overflow: "hidden",
-        backgroundColor: "var(--bg-card-2)",
-        height: 38,
-      }}>
-        <button
-          onClick={() => !atMin && onChange(servings - 1)}
-          disabled={atMin}
-          style={{
-            ...S.btn,
-            width: 38, height: "100%", borderRadius: 0,
-            background: "none", fontSize: 18, fontWeight: 300,
-            color: atMin ? "var(--text-ghost)" : "#f3501e",
-            cursor: atMin ? "not-allowed" : "pointer",
-            flexShrink: 0,
-          }}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+      <div style={{ display: "inline-flex", alignItems: "center", border: "1.5px solid #D5CEC3", borderRadius: 40, backgroundColor: "var(--bg-card-2)", height: 30, overflow: "hidden" }}>
+        <button onClick={() => !atMin && onChange(servings - 1)} disabled={atMin}
+          style={{ ...S.btn, width: 30, height: "100%", borderRadius: 0, background: "none", fontSize: 20, fontWeight: 300, color: atMin ? "var(--text-ghost)" : PURPLE, cursor: atMin ? "not-allowed" : "pointer", flexShrink: 0, lineHeight: 1 }}
         >−</button>
-
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "0 14px", minWidth: 110, justifyContent: "center",
-          borderLeft: "1.5px solid var(--border)",
-          borderRight: "1.5px solid var(--border)",
-        }}>
-          <span style={{
-            fontSize: 14, fontWeight: 800,
-            color: "#f3501e",
-            fontFamily: "Poppins, sans-serif",
-            letterSpacing: "-0.05em",
-            minWidth: 20, textAlign: "center",
-          }}>{servings}</span>
-          <span style={{
-            fontSize: 12, fontWeight: 600,
-            color: "var(--text-muted)",
-            fontFamily: "Poppins, sans-serif",
-          }}>personne{servings > 1 ? "s" : ""}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 10px", borderLeft: "1px solid #D5CEC3", borderRight: "1px solid #D5CEC3" }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: PURPLE, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{servings}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: PURPLE, fontFamily: "Poppins, sans-serif" }}>personne{servings > 1 ? "s" : ""}</span>
         </div>
-
-        <button
-          onClick={() => !atMax && onChange(servings + 1)}
-          disabled={atMax}
-          style={{
-            ...S.btn,
-            width: 38, height: "100%", borderRadius: 0,
-            background: "none", fontSize: 18, fontWeight: 300,
-            color: atMax ? "var(--text-ghost)" : "#f3501e",
-            cursor: atMax ? "not-allowed" : "pointer",
-            flexShrink: 0,
-          }}
+        <button onClick={() => !atMax && onChange(servings + 1)} disabled={atMax}
+          style={{ ...S.btn, width: 30, height: "100%", borderRadius: 0, background: "none", fontSize: 20, fontWeight: 300, color: atMax ? "var(--text-ghost)" : PURPLE, cursor: atMax ? "not-allowed" : "pointer", flexShrink: 0, lineHeight: 1 }}
         >+</button>
       </div>
-
       {changed && (
-        <button
-          onClick={() => onChange(baseServings)}
-          style={{
-            ...S.btn,
-            background: "none", border: "none",
-            fontSize: 10, color: "var(--text-faint)",
-            padding: 0, textAlign: "center",
-            cursor: "pointer", textDecoration: "underline",
-            fontFamily: "Poppins, sans-serif",
-          }}
-        >
-          réinitialiser ({baseServings} pers.)
-        </button>
+        <button onClick={() => onChange(baseServings)}
+          style={{ ...S.btn, background: "none", border: "none", fontSize: 10, color: "var(--text-faint)", padding: 0, cursor: "pointer", textDecoration: "underline", fontFamily: "Poppins, sans-serif" }}
+        >réinitialiser ({baseServings})</button>
       )}
+    </div>
+  )
+}
+
+// Pill étoiles — même taille et style que les autres pills
+function StarRating({ recipeId, initialRating }) {
+  const [rating, setRating] = useState(initialRating || 0)
+  const [hovered, setHovered] = useState(0)
+  const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState(initialRating === 0)
+
+  const handleRate = async (star) => {
+    if (saving) return
+    setSaving(true)
+    const newRating = rating === star ? 0 : star
+    setRating(newRating)
+    setEditing(newRating === 0)
+    try { await supabase.from("recipes").update({ rating: newRating }).eq("id", recipeId) }
+    catch (e) { console.error("Erreur notation:", e) }
+    finally { setSaving(false) }
+  }
+
+  // Après notation : pill compacte "★ 4,0" — même hauteur que les autres
+  if (!editing && rating > 0) {
+    return (
+      <button onClick={() => setEditing(true)} title="Modifier la note"
+        style={{
+          ...S.pill,
+          backgroundColor: "var(--bg-card-2)",
+          border: "1.5px solid var(--border)",
+          color: "var(--text-main)",
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center" }}>★</span>
+        <span style={{ fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center" }}>{rating},0</span>
+      </button>
+    )
+  }
+
+  // Mode sélection : 5 étoiles — même pill
+  const displayed = hovered || rating
+  return (
+    <div style={{
+      ...S.pill,
+      backgroundColor: "var(--bg-card-2)",
+      border: "1.5px solid var(--border)",
+      gap: 2, paddingLeft: 8, paddingRight: 8,
+    }}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <button key={star} onClick={() => handleRate(star)}
+          onMouseEnter={() => setHovered(star)}
+          onMouseLeave={() => setHovered(0)}
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            padding: "0 1px", fontSize: 14, lineHeight: 1,
+            color: star <= displayed ? "var(--text-main)" : "var(--border)",
+            transition: "transform 0.1s",
+            transform: star <= displayed ? "scale(1.1)" : "scale(1)",
+          }}
+        >★</button>
+      ))}
+    </div>
+  )
+}
+
+// Popup confirmation suppression
+function DeleteConfirmModal({ onConfirm, onCancel }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "28px 32px", maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", fontFamily: "Poppins, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <img src="/icons/trash.png" alt="" style={{ width: 24, height: 24, opacity: 0.7 }} onError={e => e.target.style.display = "none"} />
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>Supprimer la recette ?</h2>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
+          Cette action est irréversible. La recette et toutes ses données seront définitivement supprimées.
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button onClick={onCancel}
+            style={{ ...S.btn, padding: "8px 18px", fontSize: 12, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 8 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+          >Annuler</button>
+          <button onClick={onConfirm}
+            style={{ ...S.btn, padding: "8px 18px", fontSize: 12, backgroundColor: "#ef4444", color: "#fff", borderRadius: 8 }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >Supprimer</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Toast "lien copié"
+function CopyToast({ visible }) {
+  return (
+    <div style={{
+      position: "fixed", bottom: 28, left: "50%",
+      transform: `translateX(-50%) translateY(${visible ? 0 : 12}px)`,
+      opacity: visible ? 1 : 0,
+      transition: "opacity 0.25s ease, transform 0.25s ease",
+      zIndex: 2000, pointerEvents: "none",
+      backgroundColor: "var(--text-main)", color: "var(--bg-main)",
+      fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12,
+      letterSpacing: "-0.04em", padding: "10px 20px",
+      borderRadius: 40, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+      display: "flex", alignItems: "center", gap: 8,
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{ fontSize: 14 }}>🔗</span> lien copié !
     </div>
   )
 }
@@ -126,6 +193,7 @@ export default function RecipeDetail() {
   const [steps, setSteps] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [checkedSteps, setCheckedSteps] = useState({})
   const [estimating, setEstimating] = useState(false)
   const [costDetails, setCostDetails] = useState(null)
@@ -133,9 +201,7 @@ export default function RecipeDetail() {
   const [cooldown, setCooldown] = useState(0)
   const estimatingRef = useRef(false)
   const [copied, setCopied] = useState(false)
-
-  // Serving calculator state
-  const [currentServings, setCurrentServings] = useState(null) // null until recipe loaded
+  const [currentServings, setCurrentServings] = useState(null)
 
   const handleShare = async () => {
     const url = window.location.href
@@ -144,20 +210,21 @@ export default function RecipeDetail() {
       input.value = url; document.body.appendChild(input); input.select()
       document.execCommand("copy"); document.body.removeChild(input)
     }
-    setCopied(true); setTimeout(() => setCopied(false), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2200)
   }
 
   useEffect(() => { fetchRecipe() }, [id])
   useEffect(() => {
-    if (cooldown > 0) { const t = setTimeout(() => setCooldown(cooldown - 1), 1000); return () => clearTimeout(t) }
+    if (cooldown > 0) { const t = setTimeout(() => setCooldown(c => c - 1), 1000); return () => clearTimeout(t) }
   }, [cooldown])
 
   const fetchRecipe = async () => {
     const { data: recipeData } = await supabase.from("recipes").select("*").eq("id", id).maybeSingle()
     const { data: ingredientsData } = await supabase.from("ingredients").select("*").eq("recipe_id", id)
     const { data: stepsData } = await supabase.from("steps").select("*").eq("recipe_id", id).order("step_number")
-    setRecipe(recipeData); setIngredients(ingredientsData || []); setSteps(stepsData || []); setLoading(false)
-    // Init serving calculator with recipe's base servings
+    setRecipe(recipeData); setIngredients(ingredientsData || []); setSteps(stepsData || [])
+    setLoading(false)
     if (recipeData?.servings) setCurrentServings(parseInt(recipeData.servings))
     if (!recipeData || !ingredientsData?.length) return
     await loadCostDetails(recipeData, ingredientsData)
@@ -170,40 +237,41 @@ export default function RecipeDetail() {
     } catch (e) { console.error("Erreur calcul budget:", e) }
   }
 
-  const reestimate = async () => {
+  const getEstimableIngredients = (list) => list.filter(i => hasValidQuantity(i))
+
+  const getMissingIngredients = (list, prices) => {
+    const details = computeCostDetails(list, prices || [], 1).details
+    return getEstimableIngredients(list).filter(i => {
+      const d = details.find(d => d.name === i.name)
+      return !d || !d.found
+    })
+  }
+
+  const handleEstimate = async () => {
     if (estimatingRef.current || cooldown > 0) return
     estimatingRef.current = true; setEstimating(true); setApiError("")
     try {
       const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
-      const missing = ingredients.filter(i => !findBestMatch(i.name, prices || []))
-      if (missing.length > 0) {
-        const ingredientsWithHints = missing.map(m => {
-          const cu = getCategoryUnit(m.name)
-          if (cu === "piece") return `${m.name} [vendu à la pièce]`
-          if (cu === "kg") return `${m.name} [vendu au poids]`
-          if (cu === "l") return `${m.name} [vendu au volume]`
-          const rb = getIngredientBaseUnit((m.unit || "").toLowerCase().trim())
-          if (rb === "piece") return `${m.name} [vendu à la pièce]`
-          if (rb === "kg") return `${m.name} [vendu au poids]`
-          if (rb === "l") return `${m.name} [vendu au volume]`
-          return m.name
-        })
-        const { data: gemini_prices, error: funcError } = await supabase.functions.invoke("estimate-costs", { body: { ingredients: ingredientsWithHints } })
-        if (funcError) throw new Error("Erreur serveur IA.")
-        if (gemini_prices?.length > 0) {
-          const nameMap = Object.fromEntries(ingredientsWithHints.map((h, idx) => [h, missing[idx].name]))
-          await supabase.from("ingredient_prices").upsert(gemini_prices.map(p => ({ name: nameMap[p.name] || p.name, price: p.price, unit: p.unit })), { onConflict: "name" })
-        }
-        await loadCostDetails(recipe, ingredients)
+      const missing = getMissingIngredients(ingredients, prices)
+      if (missing.length === 0) { await loadCostDetails(recipe, ingredients); setCooldown(COOLDOWN_SECONDS); return }
+      const { data: gemini_prices, error: funcError } = await supabase.functions.invoke("estimate-costs", {
+        body: { ingredients: missing.map(m => ({ name: m.name, quantity: m.quantity, unit: m.unit })) }
+      })
+      if (funcError) throw new Error("Erreur serveur IA.")
+      if (gemini_prices?.prices?.length > 0) {
+        await supabase.from("ingredient_prices").upsert(
+          gemini_prices.prices.map(p => ({ name: p.name, price: p.price, unit: p.unit })),
+          { onConflict: "name" }
+        )
       }
-      setCooldown(60)
-    } catch (error) { setApiError(error.message); setCooldown(60) }
+      await loadCostDetails(recipe, ingredients)
+      setCooldown(COOLDOWN_SECONDS)
+    } catch (error) { setApiError(error.message); setCooldown(COOLDOWN_SECONDS) }
     finally { estimatingRef.current = false; setEstimating(false) }
   }
 
   const handleDelete = async () => {
-    if (!confirm("Supprimer cette recette ?")) return
-    setDeleting(true)
+    setDeleting(true); setShowDeleteModal(false)
     if (recipe?.photo_url) {
       try { const path = recipe.photo_url.split("/recipe-images/")[1]; if (path) await supabase.storage.from("recipe-images").remove([path]) } catch {}
     }
@@ -214,10 +282,7 @@ export default function RecipeDetail() {
   const handlePrint = () => {
     const baseServings = recipe?.servings || 1
     const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
-    const scaledIngredients = displayIngredients.map(item => ({
-      ...item,
-      quantity: scaleQuantity(item.quantity, baseServings, currentServings || baseServings),
-    }))
+    const scaledIngredients = displayIngredients.map(item => ({ ...item, quantity: scaleQuantity(item.quantity, baseServings, currentServings || baseServings) }))
     const ingredientsHtml = scaledIngredients.map(item => `<li><span>${item.name}</span><span>${formatQuantity(item.quantity)} ${item.unit || ""}</span></li>`).join("")
     const stepsHtml = steps.map((step, i) => `<div class="step"><div class="step-num">${i + 1}</div><p>${step.description}</p></div>`).join("")
     const scaledCost = costDetails ? (costDetails.total * (currentServings || baseServings) / baseServings) : null
@@ -233,10 +298,8 @@ export default function RecipeDetail() {
 
   const baseServings = parseInt(recipe.servings) || 1
   const activeServings = currentServings ?? baseServings
-
   const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
 
-  // Scale ingredients and cost for current servings
   const scaledIngredients = displayIngredients.map(item => ({
     ...item,
     quantity: item.quantity != null ? scaleQuantity(item.quantity, baseServings, activeServings) : item.quantity,
@@ -244,130 +307,175 @@ export default function RecipeDetail() {
   }))
 
   const scaledTotal = costDetails ? costDetails.total * activeServings / baseServings : null
-  const scaledPerServing = costDetails ? costDetails.per_serving : null // per serving stays the same
+  const scaledPerServing = costDetails ? costDetails.per_serving : null
 
-  const allPricesFound = costDetails?.details?.length > 0 && costDetails.details.every(i => i.found)
+  const estimableIngredients = getEstimableIngredients(ingredients)
+  const allPricesFound =
+    estimableIngredients.length > 0 &&
+    costDetails?.details?.filter(d => estimableIngredients.some(e => e.name === d.name)).every(d => d.found)
+
+  const canEstimate = !estimating && cooldown === 0 && !allPricesFound
+
   const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
   const validTags = allTagValues.filter(tv => TAGS.some(t => t.value === tv))
 
-  const ActionBtn = ({ onClick, disabled, children, danger }) => (
+  const ActionBtn = ({ onClick, disabled, imgSrc, alt, danger }) => (
     <button onClick={onClick} disabled={disabled}
-      style={{ ...S.btn, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: danger ? "rgba(239,68,68,0.12)" : isDay ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.08)", color: danger ? "#f87171" : "var(--text-muted)", fontSize: 15, opacity: disabled ? 0.4 : 1, flexShrink: 0 }}
+      style={{ ...S.btn, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: danger ? "rgba(239,68,68,0.12)" : isDay ? "#EDE8DF" : "rgba(255,255,255,0.08)", opacity: disabled ? 0.4 : 1, flexShrink: 0, borderRadius: 6, padding: 0 }}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.transform = "scale(1.1)" }}
       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
       onMouseDown={e => e.currentTarget.style.transform = "scale(0.93)"}
       onMouseUp={e => e.currentTarget.style.transform = "scale(1.1)"}
-    >{children}</button>
+    >
+      <img src={imgSrc} alt={alt} style={{ width: 15, height: 15, objectFit: "contain" }} onError={e => e.target.style.display = "none"} />
+    </button>
   )
+
+  const btnLabel = estimating ? "analyse..." : allPricesFound ? "✅ complet" : cooldown > 0 ? `⏳ ${cooldown}s` : "calculer"
+  const btnBg = allPricesFound ? "var(--bg-card-2)" : cooldown > 0 ? "var(--bg-card-2)" : "#22C55E"
+  const btnColor = allPricesFound ? "var(--text-faint)" : cooldown > 0 ? "var(--text-faint)" : "#ffffff"
 
   return (
     <div style={{ padding: "16px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
+
+      {/* Toast copie */}
+      <CopyToast visible={copied} />
+
+      {/* Modal suppression */}
+      {showDeleteModal && <DeleteConfirmModal onConfirm={handleDelete} onCancel={() => setShowDeleteModal(false)} />}
+
       <style>{`
-        .hero-block { display: flex; align-items: stretch; }
-        .hero-img { width: 45%; flex-shrink: 0; object-fit: cover; display: block; }
-        .hero-img-placeholder { width: 45%; flex-shrink: 0; background: var(--bg-card-2); display: flex; align-items: center; justify-content: center; font-size: 40px; opacity: 0.15; }
-        .hero-right { flex: 1; padding: 16px 18px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-        @media (max-width: 600px) {
-          .hero-block { flex-direction: column; }
-          .hero-img { width: 100%; height: 200px; }
-          .hero-img-placeholder { width: 100%; height: 140px; }
-          .hero-right { padding: 12px 14px; }
+        .hero-card {
+          display: flex; align-items: stretch;
+          background: var(--bg-card); border: 1px solid var(--border);
+          border-radius: 14px; overflow: hidden; margin-bottom: 12px;
+          height: 260px;
         }
-        .qty-changed { 
-          color: #f3501e !important;
-          font-weight: 800 !important;
-          transition: color 0.2s;
+        .hero-photo { width: 50%; flex-shrink: 0; object-fit: cover; display: block; height: 100%; }
+        .hero-placeholder { width: 50%; flex-shrink: 0; height: 100%; background: var(--bg-card-2); display: flex; align-items: center; justify-content: center; font-size: 52px; opacity: 0.12; }
+        .hero-right { flex: 1; min-width: 0; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .budget-bar { display: flex; align-items: center; gap: 8px; background: var(--bg-card-2); border-radius: 40px; padding: 7px 12px; }
+        .budget-chip { display: flex; align-items: center; gap: 6px; background: ${isDay ? "#E8E1D5" : "rgba(255,255,255,0.1)"}; border-radius: 40px; padding: 5px 12px; }
+        @media (max-width: 640px) {
+          .hero-card { height: auto; flex-direction: column; }
+          .hero-photo { width: 100%; height: 220px; }
+          .hero-placeholder { width: 100%; height: 160px; }
+          .budget-bar { flex-wrap: wrap; border-radius: 12px; }
         }
       `}</style>
 
+      {/* Retour */}
       <button onClick={() => navigate("/recipes")}
         style={{ ...S.btn, background: "none", color: "var(--text-faint)", fontSize: 12, padding: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}
         onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
         onMouseLeave={e => e.currentTarget.style.color = "var(--text-faint)"}
-      >← retour</button>
+      >retour</button>
 
-      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 20, overflow: "hidden", marginBottom: 12 }} className="hero-block">
-        {recipe.photo_url ? <img src={recipe.photo_url} alt={recipe.name} className="hero-img" /> : <div className="hero-img-placeholder">🍽</div>}
+      {/* ── HERO CARD ── */}
+      <div className="hero-card">
+        {recipe.photo_url
+          ? <img src={recipe.photo_url} alt={recipe.name} className="hero-photo" />
+          : <div className="hero-placeholder">🍽</div>
+        }
+
         <div className="hero-right">
+          {/* Titre + actions */}
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                {recipe.duplicated_from && <span style={{ fontSize: 10, color: "var(--text-faint)", fontStyle: "italic", display: "block", marginBottom: 3 }}>📋 copie</span>}
-                <h1 style={{ margin: "0 0 6px", fontSize: 18, fontWeight: 800, color: "var(--text-main)", lineHeight: 1.25, letterSpacing: "-0.04em" }}>{recipe.name}</h1>
-                {recipe.description && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45, fontWeight: 500, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.description}</p>}
+                {recipe.duplicated_from && <span style={{ fontSize: 10, color: "var(--text-faint)", fontStyle: "italic", display: "block", marginBottom: 2 }}>📋 copie</span>}
+                <h1 style={{ margin: "0 0 5px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", lineHeight: 1.2, letterSpacing: "-0.05em" }}>{recipe.name}</h1>
+                {recipe.description && (
+                  <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45, fontWeight: 400, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.description}</p>
+                )}
               </div>
-              <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
-                <ActionBtn onClick={handleShare}>{copied ? <span style={{ fontSize: 9 }}>✓</span> : "🔗"}</ActionBtn>
-                <ActionBtn onClick={handlePrint}>🖨️</ActionBtn>
-                <ActionBtn onClick={() => navigate(`/recipes/${id}/edit`)}>✏️</ActionBtn>
-                <ActionBtn onClick={handleDelete} disabled={deleting} danger>🗑️</ActionBtn>
+              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                <ActionBtn onClick={handleShare} imgSrc="/icons/chain.png" alt="Partager" />
+                <ActionBtn onClick={handlePrint} imgSrc="/icons/printer.png" alt="Imprimer" />
+                <ActionBtn onClick={() => navigate(`/recipes/${id}/edit`)} imgSrc="/icons/pencil.png" alt="Modifier" />
+                <ActionBtn onClick={() => setShowDeleteModal(true)} disabled={deleting} imgSrc="/icons/trash.png" alt="Supprimer" danger />
               </div>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {recipe.prep_time && <span style={{ ...S.pill, padding: "4px 10px", fontSize: 11, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}>⏱ {recipe.prep_time} min</span>}
+
+            {/* Pills harmonisées : étoiles + temps + tags — même style, même taille */}
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+              <StarRating recipeId={id} initialRating={recipe.rating || 0} />
+
+              {recipe.prep_time && (
+                <span style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", color: "var(--text-muted)" }}>
+                  ⏱ {recipe.prep_time} min
+                </span>
+              )}
+
               {validTags.slice(0, 3).map(tv => {
                 const ti = TAGS.find(t => t.value === tv)
-                return <span key={tv} style={{ ...S.pill, padding: "4px 10px", fontSize: 11, backgroundColor: ti.pillBg, color: ti.pillText }}><img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display="none"} />{ti.label}</span>
+                return (
+                  <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
+                    <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                    {ti.label}
+                  </span>
+                )
               })}
             </div>
           </div>
-          <div style={{ marginTop: 12, backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)", borderRadius: 12, padding: "10px 12px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: costDetails ? 8 : 0 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>💰 budget</span>
-              <button onClick={reestimate} disabled={estimating || cooldown > 0 || allPricesFound}
-                style={{ ...S.btn, padding: "5px 14px", fontSize: 11, backgroundColor: allPricesFound ? "var(--bg-card-2)" : cooldown > 0 ? "var(--bg-card-2)" : "#34d399", color: allPricesFound ? "var(--text-faint)" : cooldown > 0 ? "var(--text-faint)" : "#064e3b", cursor: allPricesFound || cooldown > 0 ? "not-allowed" : "pointer", opacity: estimating ? 0.6 : 1 }}
-                onMouseEnter={e => { if (!allPricesFound && !cooldown && !estimating) e.currentTarget.style.transform = "scale(1.04)" }}
+
+          {/* Barre budget */}
+          <div>
+            <div className="budget-bar">
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <img src="/icons/money.png" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>budget</span>
+              </div>
+
+              {scaledTotal != null ? (
+                <>
+                  <div className="budget-chip">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{scaledTotal.toFixed(2)}€</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>total</span>
+                  </div>
+                  <div className="budget-chip">
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{scaledPerServing.toFixed(2)}€</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>/personne</span>
+                  </div>
+                </>
+              ) : (
+                <span style={{ fontSize: 11, color: "var(--text-faint)", fontFamily: "Poppins, sans-serif", fontStyle: "italic" }}>
+                  {estimableIngredients.length === 0 ? "aucun ingrédient estimable" : "clique sur calculer"}
+                </span>
+              )}
+
+              <div style={{ flex: 1 }} />
+
+              <button onClick={handleEstimate} disabled={!canEstimate}
+                style={{ ...S.btn, padding: "7px 16px", fontSize: 12, backgroundColor: btnBg, color: btnColor, cursor: canEstimate ? "pointer" : "not-allowed", opacity: estimating ? 0.6 : 1, borderRadius: 40, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
+                onMouseEnter={e => { if (canEstimate) e.currentTarget.style.transform = "scale(1.04)" }}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
-                {estimating ? "⌛ analyse..." : allPricesFound ? "✅ complet" : cooldown > 0 ? `⏳ ${cooldown}s` : "🔄 recalculer"}
+                <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
+                {btnLabel}
               </button>
             </div>
-            {apiError && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 6px", fontStyle: "italic" }}>⚠️ {apiError}</p>}
-            {scaledTotal != null ? (
-              <div style={{ display: "flex", gap: 8 }}>
-                {[
-                  { label: "total", value: `${scaledTotal.toFixed(2)}€` },
-                  { label: "/ pers.", value: `${scaledPerServing.toFixed(2)}€` }
-                ].map(({ label, value }) => (
-                  <div key={label} style={{ backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", borderRadius: 8, padding: "8px 12px", textAlign: "center", flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#34d399", letterSpacing: "-0.04em" }}>{value}</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p style={{ margin: 0, fontSize: 11, color: "var(--text-faint)", fontWeight: 500 }}>clique sur recalculer pour estimer</p>
-            )}
+
+            {apiError && <p style={{ fontSize: 10, color: "#f87171", margin: "5px 0 0", fontStyle: "italic", fontFamily: "Poppins, sans-serif" }}>⚠️ {apiError}</p>}
           </div>
         </div>
       </div>
 
+      {/* Grille ingrédients + étapes */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-        {/* INGREDIENTS PANEL */}
-        <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, border: "1px solid var(--border)", padding: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
-              🛒 ingrédients
-            </div>
 
-            {/* SERVING STEPPER */}
-            {baseServings > 0 && (
-              <ServingStepper
-                servings={activeServings}
-                onChange={setCurrentServings}
-                baseServings={baseServings}
-              />
-            )}
+        {/* Ingrédients */}
+        <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <img src="/icons/cart.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
+            </div>
+            {baseServings > 0 && <ServingStepper servings={activeServings} onChange={setCurrentServings} baseServings={baseServings} />}
           </div>
 
           {activeServings !== baseServings && (
-            <div style={{
-              marginBottom: 12, padding: "6px 12px", borderRadius: 8,
-              backgroundColor: "rgba(243,80,30,0.07)",
-              border: "1px solid rgba(243,80,30,0.15)",
-              fontSize: 11, color: "#f3501e", fontWeight: 600,
-              fontFamily: "Poppins, sans-serif",
-            }}>
+            <div style={{ marginBottom: 10, padding: "5px 10px", borderRadius: 7, backgroundColor: "rgba(206,128,255,0.08)", border: "1px solid rgba(206,128,255,0.2)", fontSize: 11, color: "#CE80FF", fontWeight: 600, fontFamily: "Poppins, sans-serif" }}>
               ✨ quantités adaptées pour {activeServings} personne{activeServings > 1 ? "s" : ""}
             </div>
           )}
@@ -375,35 +483,30 @@ export default function RecipeDetail() {
           {scaledIngredients.map((item, i) => {
             const isScaled = activeServings !== baseServings
             return (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 0", borderBottom: i < scaledIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "9px 0", borderBottom: i < scaledIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
                 <span style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{item.name}</span>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexShrink: 0, marginLeft: 12 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: isScaled ? 800 : 500,
-                    color: isScaled ? "#f3501e" : "var(--text-muted)",
-                    transition: "color 0.2s, font-weight 0.2s",
-                  }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0, marginLeft: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: isScaled ? 800 : 500, color: isScaled ? "#CE80FF" : "var(--text-muted)", transition: "color 0.2s, font-weight 0.2s" }}>
                     {formatQuantity(item.quantity)} {item.unit}
                   </span>
-                  {item.found && (
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#34d399" }}>
-                      {item.estimated_price.toFixed(2)}€
-                    </span>
-                  )}
+                  {item.found && <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E" }}>{item.estimated_price.toFixed(2)}€</span>}
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* STEPS PANEL */}
-        <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, border: "1px solid var(--border)", padding: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>👨‍🍳 préparation</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Étapes */}
+        <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
+            <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {steps.map((step, i) => (
               <div key={i} onClick={() => setCheckedSteps(prev => ({ ...prev, [i]: !prev[i] }))}
-                style={{ display: "flex", gap: 14, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}>
-                <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 2, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", transition: "all 0.2s" }}>
+                style={{ display: "flex", gap: 12, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}>
+                <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1, backgroundColor: checkedSteps[i] ? "#22C55E" : "var(--bg-card-2)", color: checkedSteps[i] ? "#fff" : "var(--text-muted)", transition: "all 0.2s" }}>
                   {checkedSteps[i] ? "✓" : i + 1}
                 </div>
                 <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>

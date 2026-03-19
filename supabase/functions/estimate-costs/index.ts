@@ -5,32 +5,126 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const VALID_UNITS = ["g", "kg", "ml", "l", "piece"];
+
+const SKIP_NAMES = ["sel", "poivre", "sel et poivre", "eau", "sel & poivre", "poivre noir", "fleur de sel"];
+
+function shouldSkip(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return SKIP_NAMES.some(skip => lower === skip || lower.startsWith(skip + " "));
+}
+
 function normalizePrice(product: any) {
   const price = Number(product.product_price);
   const qty = Number(product.package_quantity);
   const unit = (product.package_unit || "").toLowerCase().trim();
 
-  if (!price || !qty || !unit || qty === 0) return null;
+  if (!price || !qty || qty === 0) return null;
+  if (!VALID_UNITS.includes(unit)) {
+    console.warn(`[SKIP] Unité invalide "${unit}" pour "${product.name}"`);
+    return null;
+  }
 
-  const MAX_PRICE_PER_KG = 200;
-  const MAX_PRICE_PER_L = 100;
-  const MAX_PRICE_PER_PIECE = 25;
+  const MAX = { kg: 200, l: 100, piece: 50 };
+  let normalized: { name: string; price: number; unit: string } | null = null;
 
-  let normalized = null;
-
-  if (unit === "ml") normalized = { name: product.name, price: (price / qty) * 1000, unit: "l" };
-  else if (unit === "l") normalized = { name: product.name, price: price / qty, unit: "l" };
-  else if (unit === "g") normalized = { name: product.name, price: (price / qty) * 1000, unit: "kg" };
+  if (unit === "ml")    normalized = { name: product.name, price: (price / qty) * 1000, unit: "l" };
+  else if (unit === "l")  normalized = { name: product.name, price: price / qty, unit: "l" };
+  else if (unit === "g")  normalized = { name: product.name, price: (price / qty) * 1000, unit: "kg" };
   else if (unit === "kg") normalized = { name: product.name, price: price / qty, unit: "kg" };
-  else if (unit === "piece" || unit === "pièce") normalized = { name: product.name, price: price / qty, unit: "piece" };
+  else if (unit === "piece") normalized = { name: product.name, price: price / qty, unit: "piece" };
 
   if (!normalized) return null;
 
-  if (normalized.unit === "kg" && normalized.price > MAX_PRICE_PER_KG) return null;
-  if (normalized.unit === "l" && normalized.price > MAX_PRICE_PER_L) return null;
-  if (normalized.unit === "piece" && normalized.price > MAX_PRICE_PER_PIECE) return null;
+  const limit = MAX[normalized.unit as keyof typeof MAX];
+  if (limit && normalized.price > limit) {
+    console.warn(`[SKIP] Prix aberrant ${normalized.price}${normalized.unit} pour "${product.name}"`);
+    return null;
+  }
 
-  return normalized;
+  return { ...normalized, price: Number(normalized.price.toFixed(2)) };
+}
+
+async function fetchPricesFromGemini(
+  ingredients: { name: string; quantity: number; unit: string }[],
+  apiKey: string
+): Promise<any[]> {
+
+  const ingredientsList = ingredients
+    .map(i => `- ${i.name} (utilisé en recette : ${i.quantity ?? "?"} ${i.unit ?? "?"})`)
+    .join("\n");
+
+  const prompt = `Tu es un expert des supermarchés français (Leclerc, Carrefour, Lidl).
+
+Pour chaque ingrédient, donne son conditionnement STANDARD tel qu'il est VENDU en supermarché.
+Ignore complètement les quantités de recette — elles sont juste là pour t'aider à identifier le produit.
+
+RÈGLES STRICTES :
+1. "name" : Reprends EXACTEMENT le nom fourni.
+2. "product_price" : Prix en euros du conditionnement standard. Entre 0.20€ et 15€.
+3. "package_quantity" : Quantité numérique du paquet vendu.
+4. "package_unit" : OBLIGATOIREMENT l'un de ces 5 choix UNIQUEMENT : "g", "kg", "ml", "l", "piece"
+   → JAMAIS "c. à soupe", "cm", "tranche", "botte", "cl", "selon gout", ou toute autre valeur.
+   → En cas de doute : utilise "g" avec un grammage standard.
+
+CORRESPONDANCES PAR TYPE DE PRODUIT :
+- Viandes/volailles (poulet, bœuf, porc, dinde...) → "g", 500-600g, prix 3-10€
+- Poissons/fruits de mer → "g", 300-500g, prix 3-12€
+- Légumes entiers (tomate, courgette, poivron, aubergine...) → "piece", qty 1, prix 0.40-1.80€
+- Fruits entiers (citron, orange, pomme, banane...) → "piece", qty 1, prix 0.30-1.50€
+- Herbes fraîches (basilic, persil, coriandre, ciboulette...) → "piece", qty 1, prix 0.70-1.20€
+- Ail (tête, gousse) → "piece", qty 1, prix 0.60-1.20€
+- Gingembre frais → "piece", qty 1, prix 0.80€
+- Épices sèches (curcuma, paprika, cumin, cannelle...) → "g", 40-50g, prix 1-3€
+- Huiles (tournesol, olive, sésame, coco...) → "ml", 750ml, prix 2-7€
+- Condiments liquides (sauce soja, vinaigre, nuoc-mâm, worcestershire...) → "ml", 150ml, prix 1.50-3.50€
+- Condiments solides (moutarde, pesto, tahini, miso...) → "g", 200g, prix 1.50-4€
+- Miel, sirop d'érable, sirop d'agave → "g", 250g, prix 2.50-6€
+- Féculents (riz, pâtes, farine, semoule, lentilles...) → "g", 500g, prix 0.80-3€
+- Fromages (chèvre, feta, parmesan, gruyère...) → "g", 150-200g, prix 1.50-5€
+- Produits laitiers liquides (lait, crème, lait de coco...) → "ml", 500ml, prix 0.80-3€
+- Œufs → "piece", qty 1, prix 0.25-0.40€
+- Beurre → "g", 250g, prix 1.80-3.50€
+- Conserves (tomates pelées, pois chiches, maïs...) → "g", 400g, prix 0.70-2€
+- Bouillon cube → "piece", qty 1, prix 0.15-0.30€
+- Sucre, fécule, levure → "g", 500g, prix 0.80-2.50€
+- Pain, viennoiseries → "piece", qty 1, prix 0.15-1.50€
+
+Ingrédients :
+${ingredientsList}
+
+RETOURNE UNIQUEMENT UN TABLEAU JSON VALIDE, sans texte autour, sans markdown :
+[{"name":"Nom exact","product_price":1.50,"package_quantity":500,"package_unit":"g"}]`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Gemini API error: ${err}`);
+  }
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Réponse vide de Gemini.");
+
+  const parsed = JSON.parse(text);
+  return parsed.map((p: any) => ({
+    ...p,
+    name: (p.name || "").replace(/\[.*?\]/g, "").trim(),
+  }));
 }
 
 serve(async (req) => {
@@ -38,6 +132,7 @@ serve(async (req) => {
 
   try {
     const { ingredients } = await req.json();
+
     if (!ingredients || !Array.isArray(ingredients)) {
       throw new Error("Liste d'ingrédients invalide.");
     }
@@ -45,100 +140,48 @@ serve(async (req) => {
     const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_KEY) throw new Error("Clé API GEMINI_API_KEY manquante.");
 
-    const prompt = `
-En tant qu'expert des prix de détail en supermarché français (Leclerc, Carrefour, Lidl), donne le prix d'achat réaliste pour chaque ingrédient.
+    // Séparer les ingrédients à ignorer
+    const toFetch = ingredients.filter((i: any) => !shouldSkip(i.name));
+    const skipped = ingredients
+      .filter((i: any) => shouldSkip(i.name))
+      .map((i: any) => ({ name: i.name, skipped: true }));
 
-RÈGLES ABSOLUES :
-1. "name" : Reprends EXACTEMENT le nom fourni (sans les indications entre crochets).
-2. "product_price" : Prix d'UN seul article ou paquet standard, en euros. Maximum 15€.
-3. "package_quantity" : Quantité numérique du paquet.
-4. "package_unit" : UNIQUEMENT "g", "kg", "ml", "l", ou "piece".
-
-RÈGLES PAR CATÉGORIE (priorité aux indications [entre crochets] dans le nom) :
-
-Si le nom contient [vendu à la pièce] :
-→ package_unit: "piece", package_quantity: 1, product_price = prix d'UN exemplaire
-
-Si le nom contient [vendu au poids] :
-→ package_unit: "g", choisir un grammage standard (100g, 200g, 500g, 1000g)
-
-Si le nom contient [vendu au volume] :
-→ package_unit: "ml" ou "l", choisir un volume standard
-
-Légumes/fruits entiers (salade, tomate, poivron, courgette, aubergine, oignon, citron, orange, avocat, etc.) :
-→ package_unit: "piece", package_quantity: 1, product_price entre 0.30 et 2.50
-
-Ail (tête d'ail, ail entier) :
-→ package_unit: "piece", package_quantity: 1, product_price entre 0.50 et 1.50
-
-Herbes fraîches (persil, basilic, coriandre, menthe, ciboulette, thym, etc.) :
-→ package_unit: "piece", package_quantity: 1, product_price entre 0.50 et 1.20
-
-Condiments et sauces (pesto, moutarde, ketchup, etc.) :
-→ package_unit: "g", package_quantity: 190
-
-Fromages en portion (chèvre, feta, camembert, etc.) :
-→ package_unit: "g", package_quantity: 150
-
-Bouillon cube ou déshydraté :
-→ package_unit: "piece", package_quantity: 1, product_price entre 0.10 et 0.30
-
-Féculents (riz, pâtes, farine, etc.) :
-→ package_unit: "g", package_quantity: 500
-
-Épices, sel, poivre :
-→ package_unit: "g", package_quantity: 100
-
-Huiles :
-→ package_unit: "ml", package_quantity: 750
-
-Ingrédients : ${ingredients.join(", ")}
-
-RETOURNE UNIQUEMENT UN TABLEAU JSON VALIDE, sans texte autour :
-[{"name":"Nom exact","product_price":1.50,"package_quantity":500,"package_unit":"g"}]`;
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.1 },
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Erreur Gemini API: ${errorText}`);
+    if (toFetch.length === 0) {
+      return new Response(JSON.stringify({ prices: [], skipped, allFound: true }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const data = await response.json();
-    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!textResponse) throw new Error("Réponse vide de l'IA.");
+    // Premier appel Gemini
+    let raw = await fetchPricesFromGemini(toFetch, GEMINI_KEY);
+    let normalized = raw
+      .map(normalizePrice)
+      .filter((p): p is NonNullable<ReturnType<typeof normalizePrice>> => p !== null);
 
-    const parsed = JSON.parse(textResponse);
+    // Retry pour les ingrédients sans prix valide
+    const foundNames = new Set(normalized.map(p => p.name.toLowerCase()));
+    const missing = toFetch.filter((i: any) => !foundNames.has(i.name.toLowerCase()));
 
-    // Nettoyer les noms : retirer les crochets éventuels que Gemini aurait laissés
-    const cleaned = parsed.map((p: any) => ({
-      ...p,
-      name: (p.name || "").replace(/\[.*?\]/g, "").trim(),
-    }));
+    if (missing.length > 0) {
+      console.log(`[RETRY] ${missing.map((i: any) => i.name).join(", ")}`);
+      const retryRaw = await fetchPricesFromGemini(missing, GEMINI_KEY);
+      const retryNormalized = retryRaw
+        .map(normalizePrice)
+        .filter((p): p is NonNullable<ReturnType<typeof normalizePrice>> => p !== null);
+      normalized = [...normalized, ...retryNormalized];
+    }
 
-    const normalized = cleaned
-      .map((p: any) => normalizePrice(p))
-      .filter((p: any) => p !== null)
-      .map((p: any) => ({
-        name: p.name,
-        price: Number(p.price.toFixed(2)),
-        unit: p.unit,
-      }));
+    const allFound = missing.length === 0 ||
+      normalized.length >= toFetch.length;
 
-    return new Response(JSON.stringify(normalized), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ prices: normalized, skipped, allFound }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
 
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {

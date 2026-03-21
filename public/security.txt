@@ -1,4 +1,0 @@
-public/
-  .well-known/
-    security.txt   ← ici
-  robots.txt

@@ -5,8 +5,6 @@ import { TAGS } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 import { useProfile } from "../context/ProfileContext"
 
-// ── Composants hors du composant principal (évite le remount à chaque render) ──
-
 const btnBase = {
   fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13,
   letterSpacing: "-0.05em", border: "none", cursor: "pointer",
@@ -15,22 +13,10 @@ const btnBase = {
 
 function SectionComp({ title, icon, children }) {
   return (
-    <div style={{
-      backgroundColor: "var(--bg-card)",
-      borderRadius: 14,
-      border: "1px solid var(--border)",
-      overflow: "hidden",
-      marginBottom: 12,
-    }}>
-      <div style={{
-        padding: "14px 18px 10px",
-        borderBottom: "1px solid var(--border)",
-        display: "flex", alignItems: "center", gap: 8,
-      }}>
+    <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden", marginBottom: 12 }}>
+      <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
         {icon && <img src={`/icons/${icon}.png`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}
-        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          {title}
-        </span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{title}</span>
       </div>
       {children}
     </div>
@@ -39,30 +25,24 @@ function SectionComp({ title, icon, children }) {
 
 function RowComp({ label, sub, right, onClick, danger, noBorder }) {
   return (
-    <div
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "13px 18px",
-        borderBottom: noBorder ? "none" : "1px solid var(--border)",
-        cursor: onClick ? "pointer" : "default",
-        transition: "background 0.12s",
-      }}
+    <div onClick={onClick} style={{
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "13px 18px",
+      borderBottom: noBorder ? "none" : "1px solid var(--border)",
+      cursor: onClick ? "pointer" : "default",
+      transition: "background 0.12s",
+    }}
       onMouseEnter={e => { if (onClick) e.currentTarget.style.backgroundColor = "var(--bg-card-2)" }}
       onMouseLeave={e => { if (onClick) e.currentTarget.style.backgroundColor = "transparent" }}
     >
       <div>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: danger ? "#f87171" : "var(--text-main)", letterSpacing: "-0.03em" }}>
-          {label}
-        </p>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: danger ? "#f87171" : "var(--text-main)", letterSpacing: "-0.03em" }}>{label}</p>
         {sub && <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>{sub}</p>}
       </div>
       {right}
     </div>
   )
 }
-
-// ── Composant principal ────────────────────────────────────────────────────────
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -79,7 +59,6 @@ export default function Settings() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteInput, setDeleteInput] = useState("")
 
-  // Init local state depuis le contexte partagé
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || "")
@@ -88,14 +67,12 @@ export default function Settings() {
     }
   }, [profile])
 
-  // Fond du body thémé même au scroll
   useEffect(() => {
     document.body.style.backgroundColor = "var(--bg-main)"
     return () => { document.body.style.backgroundColor = "" }
   }, [isDay])
 
-  const togglePref = (pref) =>
-    setSelectedPrefs(prev => prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref])
+  const togglePref = (pref) => setSelectedPrefs(prev => prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref])
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files[0]
@@ -130,22 +107,24 @@ export default function Settings() {
     navigate("/login")
   }
 
+  // ── Relance le tutoriel directement sans popup ──
+  const handleRelaunchTour = async () => {
+    await supabase.from("profiles").update({ onboarded: false }).eq("id", user.id)
+    window.location.href = "/recipes"
+  }
+
   const inputStyle = {
     width: "100%", borderRadius: 10, padding: "10px 14px",
     fontSize: 13, outline: "none",
-    backgroundColor: "var(--bg-card-2)",
-    border: "1.5px solid var(--input-border)",
-    color: "var(--text-main)",
-    fontFamily: "Poppins, sans-serif", fontWeight: 500,
-    letterSpacing: "-0.05em", boxSizing: "border-box",
-    transition: "border-color 0.15s",
+    backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)",
+    color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500,
+    letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s",
   }
 
   return (
     <div style={{ backgroundColor: "var(--bg-main)", minHeight: "100vh", paddingBottom: 48 }}>
       <div style={{ padding: "24px", maxWidth: 560, margin: "0 auto", fontFamily: "Poppins, sans-serif" }}>
 
-        {/* Toast */}
         {success && (
           <div style={{
             position: "fixed", top: 16, right: 16, zIndex: 50,
@@ -155,12 +134,9 @@ export default function Settings() {
           }}>{success}</div>
         )}
 
-        {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
           <img src="/icons/settings.png" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
-          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>
-            paramètres
-          </h1>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>paramètres</h1>
         </div>
 
         {/* ── APPARENCE ── */}
@@ -170,15 +146,12 @@ export default function Settings() {
             sub="basculer entre le thème clair et sombre"
             noBorder
             right={
-              <button
-                onClick={toggle}
-                style={{
-                  ...btnBase, display: "flex", alignItems: "center", gap: 7,
-                  padding: "6px 14px", borderRadius: 20,
-                  backgroundColor: isDay ? "#111111" : "#F5F0E8",
-                  color: isDay ? "#F5F0E8" : "#111111",
-                  fontSize: 11,
-                }}
+              <button onClick={toggle} style={{
+                ...btnBase, display: "flex", alignItems: "center", gap: 7,
+                padding: "6px 14px", borderRadius: 20,
+                backgroundColor: isDay ? "#111111" : "#F5F0E8",
+                color: isDay ? "#F5F0E8" : "#111111", fontSize: 11,
+              }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
@@ -192,29 +165,20 @@ export default function Settings() {
         {/* ── PROFIL ── */}
         <SectionComp title="profil" icon="book">
           <div style={{ padding: "16px 18px" }}>
-
-            {/* Avatar */}
             <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-              <div
-                onClick={() => fileRef.current.click()}
-                style={{
-                  width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
-                  border: "2.5px solid rgba(243,80,30,0.5)",
-                  backgroundColor: "var(--bg-card-2)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", transition: "border-color 0.15s",
-                }}
+              <div onClick={() => fileRef.current.click()} style={{
+                width: 64, height: 64, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
+                border: "2.5px solid rgba(243,80,30,0.5)", backgroundColor: "var(--bg-card-2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", transition: "border-color 0.15s",
+              }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "#f3501e"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "rgba(243,80,30,0.5)"}
               >
-                {avatarUrl
-                  ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span style={{ fontSize: 26 }}>👤</span>
-                }
+                {avatarUrl ? <img src={avatarUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 26 }}>👤</span>}
               </div>
               <div>
-                <button onClick={() => fileRef.current.click()}
-                  style={{ ...btnBase, background: "none", border: "none", padding: 0, color: "#f3501e", fontSize: 13, display: "block", marginBottom: 4 }}>
+                <button onClick={() => fileRef.current.click()} style={{ ...btnBase, background: "none", border: "none", padding: 0, color: "#f3501e", fontSize: 13, display: "block", marginBottom: 4 }}>
                   {uploading ? "upload en cours..." : "changer la photo"}
                 </button>
                 <p style={{ margin: 0, fontSize: 11, color: "var(--text-faint)", fontWeight: 500 }}>JPG, PNG — max 2MB</p>
@@ -222,31 +186,17 @@ export default function Settings() {
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarUpload} />
             </div>
 
-            {/* Nom d'utilisateur */}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                nom d'utilisateur
-              </label>
-              <input
-                style={inputStyle}
-                placeholder="ton prénom ou pseudo"
-                value={username}
+              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>nom d'utilisateur</label>
+              <input style={inputStyle} placeholder="ton prénom ou pseudo" value={username}
                 onChange={e => setUsername(e.target.value)}
                 onFocus={e => e.target.style.borderColor = "#f3501e"}
-                onBlur={e => e.target.style.borderColor = "var(--input-border)"}
-              />
+                onBlur={e => e.target.style.borderColor = "var(--input-border)"} />
             </div>
 
-            {/* Email */}
             <div>
-              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                email
-              </label>
-              <input
-                style={{ ...inputStyle, backgroundColor: "var(--bg-main)", color: "var(--text-faint)", cursor: "not-allowed", border: "1.5px solid var(--border)" }}
-                value={user?.email || ""}
-                disabled
-              />
+              <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>email</label>
+              <input style={{ ...inputStyle, backgroundColor: "var(--bg-main)", color: "var(--text-faint)", cursor: "not-allowed", border: "1.5px solid var(--border)" }} value={user?.email || ""} disabled />
             </div>
           </div>
         </SectionComp>
@@ -254,29 +204,22 @@ export default function Settings() {
         {/* ── PRÉFÉRENCES ── */}
         <SectionComp title="préférences alimentaires" icon="salad">
           <div style={{ padding: "12px 18px 16px" }}>
-            <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", fontWeight: 500, lineHeight: 1.5 }}>
-              utilisées pour personnaliser tes suggestions de recettes.
-            </p>
+            <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--text-muted)", fontWeight: 500, lineHeight: 1.5 }}>utilisées pour personnaliser tes suggestions de recettes.</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {TAGS.map(tag => {
                 const active = selectedPrefs.includes(tag.value)
                 const anyActive = selectedPrefs.length > 0
                 return (
-                  <button
-                    key={tag.value}
-                    onClick={() => togglePref(tag.value)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 5,
-                      padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-                      fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em",
-                      cursor: "pointer", transition: "all 0.2s ease",
-                      backgroundColor: tag.pillBg, color: tag.pillText,
-                      border: "none",
-                      opacity: anyActive && !active ? 0.35 : 1,
-                      transform: active ? "scale(1.08)" : "scale(1)",
-                      boxShadow: active ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
-                    }}
-                  >
+                  <button key={tag.value} onClick={() => togglePref(tag.value)} style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                    fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em",
+                    cursor: "pointer", transition: "all 0.2s ease",
+                    backgroundColor: tag.pillBg, color: tag.pillText, border: "none",
+                    opacity: anyActive && !active ? 0.35 : 1,
+                    transform: active ? "scale(1.08)" : "scale(1)",
+                    boxShadow: active ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
+                  }}>
                     <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                     {tag.label}
                   </button>
@@ -286,14 +229,28 @@ export default function Settings() {
           </div>
         </SectionComp>
 
+        {/* ── AIDE ── */}
+        <SectionComp title="aide" icon="spark">
+          <RowComp
+            label="comment ça marche ?"
+            sub="relancer le tutoriel de démarrage"
+            onClick={handleRelaunchTour}
+            noBorder
+            right={<span style={{ fontSize: 20, color: "var(--text-faint)" }}>›</span>}
+          />
+        </SectionComp>
+
         {/* ── CONFIDENTIALITÉ ── */}
         <SectionComp title="confidentialité">
-          <RowComp
-            label="profil public"
-            sub="tes recettes publiques sont visibles par tous"
+          <RowComp label="profil public" sub="tes recettes publiques sont visibles par tous"
             right={<span style={{ fontSize: 11, color: "var(--text-faint)", fontWeight: 600 }}>toujours actif</span>}
           />
-          <RowComp label="voir mes recettes publiées" onClick={() => navigate("/profile")} noBorder />
+          <RowComp label="voir mes recettes publiées" onClick={() => navigate("/profile")} />
+          <RowComp label="mentions légales & CGU" sub="mentions légales, conditions d'utilisation, confidentialité"
+            onClick={() => navigate("/legal")}
+            right={<span style={{ fontSize: 20, color: "var(--text-faint)" }}>›</span>}
+            noBorder
+          />
         </SectionComp>
 
         {/* ── COMPTE ── */}
@@ -303,9 +260,7 @@ export default function Settings() {
         </SectionComp>
 
         {/* ── SAUVEGARDER ── */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
+        <button onClick={handleSave} disabled={saving}
           style={{ ...btnBase, width: "100%", padding: "13px", backgroundColor: "#f3501e", color: "#ffffff", fontSize: 13, opacity: saving ? 0.6 : 1, marginTop: 4 }}
           onMouseEnter={e => { if (!saving) e.currentTarget.style.transform = "scale(1.02)" }}
           onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
@@ -330,24 +285,19 @@ export default function Settings() {
                 <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                   tape « {username} » pour confirmer
                 </label>
-                <input
-                  style={{ ...inputStyle, border: "1.5px solid rgba(239,68,68,0.3)", marginBottom: 16 }}
-                  placeholder={username}
-                  value={deleteInput}
+                <input style={{ ...inputStyle, border: "1.5px solid rgba(239,68,68,0.3)", marginBottom: 16 }}
+                  placeholder={username} value={deleteInput}
                   onChange={e => setDeleteInput(e.target.value)}
                   onFocus={e => e.target.style.borderColor = "#f87171"}
                   onBlur={e => e.target.style.borderColor = "rgba(239,68,68,0.3)"}
                 />
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button
-                    onClick={() => { setConfirmDelete(false); setDeleteInput("") }}
+                  <button onClick={() => { setConfirmDelete(false); setDeleteInput("") }}
                     style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}
                     onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
                     onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                   >annuler</button>
-                  <button
-                    onClick={handleDeleteAccount}
-                    disabled={deleteInput !== username}
+                  <button onClick={handleDeleteAccount} disabled={deleteInput !== username}
                     style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#ef4444", color: "#ffffff", opacity: deleteInput !== username ? 0.35 : 1 }}
                     onMouseEnter={e => { if (deleteInput === username) e.currentTarget.style.transform = "scale(1.02)" }}
                     onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import ReactDOM from "react-dom/client"
@@ -20,17 +20,69 @@ import Friends from "./pages/Friends"
 import Discover from "./pages/Discover"
 import Nutrition from "./pages/Nutrition"
 import Suggestions from "./pages/Suggestions"
+import Legal from "./components/Legal"
 import Settings from "./pages/Settings"
 import Profile from "./pages/Profile"
 import ResetPassword from "./pages/ResetPassword"
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm"
+import OnboardingTour from "./components/OnboardingTour"
+import { supabase } from "./supabase"
 import "./index.css"
+
+// ── Onboarding isolé — ne bloque pas le rendu ──
+function OnboardingManager() {
+  const [state, setState] = useState({ userId: null, show: false })
+
+  useEffect(() => {
+    const checkOnboarding = async (userId) => {
+      if (!userId) return
+      const { data } = await supabase
+        .from("profiles")
+        .select("onboarded")
+        .eq("id", userId)
+        .single()
+      if (data && data.onboarded === false) {
+        setState({ userId, show: true })
+      }
+    }
+
+    // Check utilisateur déjà connecté
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) checkOnboarding(user.id)
+    })
+
+    // Écoute les nouveaux logins (signup)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        checkOnboarding(session.user.id)
+      }
+      if (event === "SIGNED_OUT") {
+        setState({ userId: null, show: false })
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (!state.show || !state.userId) return null
+
+  return (
+    <OnboardingTour
+      userId={state.userId}
+      onComplete={() => setState(s => ({ ...s, show: false }))}
+    />
+  )
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <ThemeProvider>
     <ProfileProvider>
       <BrowserRouter>
+        <Analytics />
+        <SpeedInsights />
+
         <Routes>
+          <Route path="/legal" element={<Legal />} />
           <Route path="/" element={<Navigate to="/calendar" />} />
           <Route path="/home" element={<Navigate to="/calendar" />} />
           <Route path="/login" element={<Login />} />
@@ -56,6 +108,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
             </Route>
           </Route>
         </Routes>
+
+        {/* Onboarding par dessus tout, sans bloquer le rendu */}
+        <OnboardingManager />
+
       </BrowserRouter>
     </ProfileProvider>
   </ThemeProvider>

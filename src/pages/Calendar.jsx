@@ -366,7 +366,7 @@ function MobileMonthDayCell({ date, meals, onRemove, isToday, handleMobileTap, i
   )
 }
 
-// ─── Modal recette mobile — FIXED: couleurs des tags ─────────────────────────
+// ─── Modal recette mobile ─────────────────────────────────────────────────────
 function MobileRecipeModal({ recipes, onSelect, onClose, isDay }) {
   const [search, setSearch] = useState("")
   const filtered = recipes.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
@@ -389,7 +389,6 @@ function MobileRecipeModal({ recipes, onSelect, onClose, isDay }) {
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {filtered.map(recipe => {
-            // Récupère les couleurs du tag principal
             const tagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
             const cardBg = tagInfo?.cardBg || (isDay ? "var(--bg-card-2)" : "#2d2d2d")
             const cardBorder = tagInfo?.cardBorder || "var(--border)"
@@ -637,7 +636,9 @@ export default function Calendar() {
                 <img src="/icons/salad.png" alt="" style={{ width: 16, height: 16 }} />
                 équilibrer
               </button>
-              <button onClick={() => navigate("/shopping")}
+              <button
+                id="btn-go-shopping"
+                onClick={() => navigate("/shopping")}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#1a3d1a", transition: "transform 0.2s ease" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
@@ -787,9 +788,12 @@ export default function Calendar() {
           )}
         </div>
 
-        {/* SIDEBAR RECETTES desktop */}
+        {/* SIDEBAR RECETTES desktop — id pour l'onboarding */}
         {!isMobile && (
-          <div style={{ width: 240, borderLeft: "1px solid var(--border)", backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", flexShrink: 0, transition: "background-color 0.25s ease" }}>
+          <div
+            id="calendar-recipe-list"
+            style={{ width: 240, borderLeft: "1px solid var(--border)", backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", flexShrink: 0, transition: "background-color 0.25s ease" }}
+          >
             <div style={{ padding: "16px 12px 12px", borderBottom: "1px solid var(--border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                 <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} />

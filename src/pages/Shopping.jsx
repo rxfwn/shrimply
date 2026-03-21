@@ -302,6 +302,7 @@ export default function Shopping() {
             onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
           >+ ajouter</button>
           <button onClick={handleGenerate} disabled={generating}
+            id="btn-generate-shopping"
             style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: generating ? "not-allowed" : "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12, color: "#1a3d1a", letterSpacing: "-0.05em", opacity: generating ? 0.5 : 1, transition: "transform 0.2s ease", display: "flex", alignItems: "center", gap: 6 }}
             onMouseEnter={e => { if (!generating) e.currentTarget.style.transform = "scale(1.03)" }}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}

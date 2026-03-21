@@ -29,17 +29,20 @@ export default function Layout() {
     navigate("/login")
   }
 
-  const navItem = (to, iconName, label) => (
-    <NavLink to={to} style={({ isActive }) => ({
-      display: "flex", alignItems: "center", gap: 8,
-      padding: "10px 14px", borderRadius: 10,
-      fontFamily: "'Poppins', sans-serif", fontWeight: 700,
-      fontSize: 13, letterSpacing: "-0.05em",
-      textDecoration: "none",
-      color: "white",
-      backgroundColor: isActive ? "#f3501e" : "transparent",
-      transition: "background-color 0.15s",
-    })}>
+  const navItem = (to, iconName, label, id) => (
+    <NavLink
+      to={to}
+      id={id || undefined}
+      style={({ isActive }) => ({
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "10px 14px", borderRadius: 10,
+        fontFamily: "'Poppins', sans-serif", fontWeight: 700,
+        fontSize: 13, letterSpacing: "-0.05em",
+        textDecoration: "none",
+        color: "white",
+        backgroundColor: isActive ? "#f3501e" : "transparent",
+        transition: "background-color 0.15s",
+      })}>
       <NavIcon name={iconName} />
       <span>{label}</span>
     </NavLink>
@@ -89,12 +92,12 @@ export default function Layout() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-2 flex flex-col gap-1 overflow-y-auto">
-        {navItem("/calendar",    "calendar", "calendrier")}
-        {navItem("/recipes",     "book",     "mes recettes")}
-        {navItem("/shopping",    "kart",     "courses")}
+        {navItem("/calendar",    "calendar", "calendrier",              "nav-calendar")}
+        {navItem("/recipes",     "book",     "mes recettes",            "nav-recipes")}
+        {navItem("/shopping",    "kart",     "courses",                 "nav-shopping")}
         {navItem("/fridge",      "ice",      "mon frigo")}
         {navItem("/friends",     "friends",  "amis")}
-        {navItem("/discover",    "spark",    "découvrir")}
+        {navItem("/discover",    "spark",    "découvrir",               "nav-discover")}
         {navItem("/nutrition",   "chart",    "bilan nutrition")}
         {navItem("/suggestions", "rainbow",  "améliorations à venir")}
       </nav>

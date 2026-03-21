@@ -34,6 +34,42 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
   )
 }
 
+// ── Toast brouillon animé avec slider ──
+function DraftToast({ type, visible }) {
+  const configs = {
+    saved:    { bg: "#5BC8F5", text: "#0a3d52", icon: "/icons/save.png",  msg: "brouillon sauvegardé" },
+    restored: { bg: "#A8E063", text: "#1a3a00", icon: "/icons/memo.png",  msg: "brouillon restauré"  },
+    cleared:  { bg: "#f3501e", text: "#ffffff",  icon: "/icons/trash.png", msg: "brouillon supprimé"  },
+  }
+  const c = configs[type] || configs.saved
+  return (
+    <>
+      <style>{`@keyframes slideBar { from { width: 100% } to { width: 0% } }`}</style>
+      <div style={{
+        position: "fixed", top: 20, right: 16,
+        transform: `translateX(${visible ? 0 : 120}%)`,
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.3s ease, transform 0.3s ease",
+        zIndex: 200, pointerEvents: "none",
+        backgroundColor: c.bg, borderRadius: 12,
+        padding: "14px 20px 12px",
+        minWidth: 240,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
+        fontFamily: "Poppins, sans-serif",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <img src={c.icon} alt="" style={{ width: 28, height: 28, objectFit: "contain" }} onError={e => e.target.style.display="none"} />
+          <span style={{ fontSize: 15, fontWeight: 800, color: c.text, letterSpacing: "-0.04em" }}>{c.msg}</span>
+        </div>
+        {/* slider qui se vide de droite à gauche */}
+        <div style={{ width: "100%", height: 5, backgroundColor: "rgba(0,0,0,0.15)", borderRadius: 4, overflow: "hidden", display: "flex", justifyContent: "flex-end" }}>
+          {visible && <div style={{ height: "100%", backgroundColor: c.text, borderRadius: 4, opacity: 0.5, animation: "slideBar 2.2s linear forwards", transformOrigin: "right" }} />}
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default function Recipes() {
   const navigate = useNavigate()
   const { isDay } = useTheme()
@@ -42,6 +78,7 @@ export default function Recipes() {
   const dragItem = useRef(null)
   const dragOverItem = useRef(null)
   const hasShownDraftPopup = useRef(false)
+  const autoSaveTimer = useRef(null)
 
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState("")
@@ -61,16 +98,28 @@ export default function Recipes() {
   const [bannedPopup, setBannedPopup] = useState(null)
   const [duplicating, setDuplicating] = useState(null)
   const [dupError, setDupError] = useState("")
-  const [draftRestored, setDraftRestored] = useState(false)
-  const [draftSaved, setDraftSaved] = useState(false)
   const [dragOverIndex, setDragOverIndex] = useState(null)
   const [search, setSearch] = useState("")
   const [activeFilter, setActiveFilter] = useState("")
-  const [tagsExpanded, setTagsExpanded] = useState(false)
+
+  // Toast unifié
+  const [toast, setToast] = useState({ type: "saved", visible: false })
+  const showToast = (type) => {
+    setToast({ type, visible: true })
+    setTimeout(() => setToast(t => ({ ...t, visible: false })), 2200)
+  }
 
   const DRAFT_KEY = "recipe_draft"
   const saveDraft = (data) => localStorage.setItem(DRAFT_KEY, JSON.stringify(data))
-  const clearDraft = () => localStorage.removeItem(DRAFT_KEY)
+
+  const clearDraftAndReset = () => {
+    localStorage.removeItem(DRAFT_KEY)
+    setName(""); setDescription(""); setPrepTime(""); setServings("")
+    setSelectedTags([]); setPrimaryTag(""); setRecipeColor("")
+    setIngredients([{name:"",quantity:"",unit:""}]); setSteps([{description:""}]); setPhotoUrl("")
+    hasShownDraftPopup.current = false
+    showToast("cleared")
+  }
 
   const loadDraft = () => {
     try {
@@ -82,7 +131,7 @@ export default function Recipes() {
       setSelectedTags(d.selectedTags||[]); setPrimaryTag(d.primaryTag||""); setRecipeColor(d.recipeColor||"")
       setIngredients(d.ingredients?.length ? d.ingredients : [{ name:"",quantity:"",unit:"" }])
       setSteps(d.steps?.length ? d.steps : [{ description:"" }])
-      setDraftRestored(true); setTimeout(() => setDraftRestored(false), 3000)
+      showToast("restored")
     } catch {}
   }
 
@@ -95,20 +144,22 @@ export default function Recipes() {
       const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
       if (error) { console.error("Fetch recipes error:", error); return }
       if (data) setRecipes(data)
-    } catch (e) {
-      console.error("fetchRecipes exception:", e)
-    }
+    } catch (e) { console.error("fetchRecipes exception:", e) }
   }
 
+  // ── Auto-save 2s après toute modification ──
   useEffect(() => {
     if (!showForm) return
-    const delay = hasShownDraftPopup.current ? 5000 : 2000
-    const t = setTimeout(() => {
-      if (!(name||description||ingredients[0]?.name)) return
+    if (!(name || description || ingredients[0]?.name)) return
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current)
+    autoSaveTimer.current = setTimeout(() => {
       saveDraft({ name, description, prepTime, servings, selectedTags, primaryTag, recipeColor, ingredients, steps })
-      if (!hasShownDraftPopup.current) { hasShownDraftPopup.current=true; setDraftSaved(true); setTimeout(()=>setDraftSaved(false),2000) }
-    }, delay)
-    return () => clearTimeout(t)
+      if (!hasShownDraftPopup.current) {
+        hasShownDraftPopup.current = true
+        showToast("saved")
+      }
+    }, 2000)
+    return () => clearTimeout(autoSaveTimer.current)
   }, [showForm, name, description, prepTime, servings, selectedTags, recipeColor, ingredients, steps])
 
   const checkBannedWords = async (texts) => {
@@ -176,8 +227,9 @@ export default function Recipes() {
       await supabase.from("ingredients").insert(ingredients.filter(i=>i.name.trim()).map(i=>({recipe_id:recipe.id,name:i.name,quantity:parseFloat(i.quantity),unit:i.unit})))
       await supabase.from("steps").insert(steps.filter(s=>s.description.trim()).map((s,idx)=>({recipe_id:recipe.id,step_number:idx+1,description:s.description})))
       setSuccess(true); setName(""); setDescription(""); setPrepTime(""); setServings(""); setSelectedTags([]); setPrimaryTag(""); setRecipeColor("")
-      setIngredients([{name:"",quantity:"",unit:""}]); setSteps([{description:""}]); setErrors({}); setPhotoUrl(""); clearDraft(); setShowForm(false)
-      fetchRecipes(); setTimeout(()=>setSuccess(false),3000)
+      setIngredients([{name:"",quantity:"",unit:""}]); setSteps([{description:""}]); setErrors({}); setPhotoUrl("")
+      localStorage.removeItem(DRAFT_KEY); hasShownDraftPopup.current = false
+      setShowForm(false); fetchRecipes(); setTimeout(()=>setSuccess(false),3000)
     }
     setLoading(false)
   }
@@ -189,7 +241,7 @@ export default function Recipes() {
     fetchRecipes()
   }
 
-  const resetForm = () => { setShowForm(false); setErrors({}); clearDraft(); hasShownDraftPopup.current=false; setPhotoUrl(""); setRecipeColor("") }
+  const resetForm = () => { setShowForm(false); setErrors({}); hasShownDraftPopup.current=false; setPhotoUrl(""); setRecipeColor("") }
 
   const filtered = recipes.filter(r => {
     const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
@@ -220,6 +272,9 @@ export default function Recipes() {
   return (
     <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
+      {/* ── Toast brouillon ── */}
+      <DraftToast type={toast.type} visible={toast.visible} />
+
       {/* POPUP MODÉRATION */}
       {bannedPopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -239,18 +294,7 @@ export default function Recipes() {
         </div>
       )}
 
-      {/* TOASTS */}
-      {draftRestored && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#3b82f6", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>📝 brouillon restauré !</div>
-      )}
-      {draftSaved && (name||description||ingredients[0]?.name) && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "var(--bg-card)", color: "var(--text-main)", padding: "12px 16px", borderRadius: 12, fontSize: 12, fontWeight: 500, width: 200, border: "1px solid var(--border)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}><span>💾</span><span>brouillon sauvegardé</span></div>
-          <div style={{ width: "100%", height: 3, backgroundColor: "var(--bg-card-2)", borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ height: "100%", backgroundColor: "#f3501e", borderRadius: 2, animation: "shrink 2s linear forwards", width: "100%" }} />
-          </div>
-        </div>
-      )}
+      {/* TOASTS success / erreur */}
       {success && (
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
           ✅ {typeof success==="string" ? success : "recette ajoutée !"}
@@ -269,8 +313,8 @@ export default function Recipes() {
               nouvelle recette
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              {localStorage.getItem("recipe_draft") && (
-                <button onClick={()=>{clearDraft();setName("");setDescription("");setPrepTime("");setServings("");setSelectedTags([]);setPrimaryTag("");setRecipeColor("");setIngredients([{name:"",quantity:"",unit:""}]);setSteps([{description:""}]);setPhotoUrl("")}}
+              {localStorage.getItem(DRAFT_KEY) && (
+                <button onClick={clearDraftAndReset}
                   style={{ fontSize: 12, color: "var(--text-faint)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                   vider le brouillon
                 </button>
@@ -288,6 +332,7 @@ export default function Recipes() {
             <div>
               <label style={labelStyle}>nom <span style={{ color: "#f87171" }}>*</span></label>
               <input style={inputStyle(errors.name)} placeholder="ex : pâtes carbonara" value={name}
+                spellCheck="true"
                 onChange={e => { setName(e.target.value); setErrors(p=>({...p,name:false})) }}
                 onFocus={e => e.target.style.borderColor = "#f3501e"}
                 onBlur={e => e.target.style.borderColor = errors.name ? "rgba(239,68,68,0.5)" : "var(--input-border)"} />
@@ -296,7 +341,9 @@ export default function Recipes() {
 
             <div>
               <label style={labelStyle}>description</label>
-              <textarea style={{ ...inputStyle(false), resize: "none", minHeight: 70 }} placeholder="décris ta recette..." rows={2} value={description} onChange={e => setDescription(e.target.value)} />
+              <textarea style={{ ...inputStyle(false), resize: "none", minHeight: 70 }} placeholder="décris ta recette..." rows={2} value={description}
+                spellCheck="true"
+                onChange={e => setDescription(e.target.value)} />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -372,6 +419,7 @@ export default function Recipes() {
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ flex: 2 }}>
                       <input ref={el => ingredientRefs.current[i]=el} style={inputStyle(false)} placeholder="ingrédient *" value={ing.name}
+                        spellCheck="true"
                         onChange={e => updateIngredient(i,"name",e.target.value)}
                         onKeyDown={e => { if(e.key==="Enter"){e.preventDefault();if(i===ingredients.length-1)addIngredient();else ingredientRefs.current[i+1]?.focus()} }} />
                     </div>
@@ -380,10 +428,13 @@ export default function Recipes() {
                         onChange={e => { const v = e.target.value; if (v === "" || parseFloat(v) >= 0) updateIngredient(i,"quantity",v) }} />
                     </div>
                     <div style={{ width: 110 }}>
-                      <select style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none" }} value={ing.unit}
+                      {/* color forcé sur var(--text-main) pour que "unité *" soit lisible */}
+                      <select
+                        style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none", color: ing.unit ? "var(--text-main)" : "var(--text-muted)" }}
+                        value={ing.unit}
                         onChange={e => updateIngredient(i,"unit",e.target.value)}>
                         <option value="" disabled>unité *</option>
-                        {UNITS.map(u => <option key={u} value={u} style={{ backgroundColor: "var(--bg-card-2)" }}>{u}</option>)}
+                        {UNITS.map(u => <option key={u} value={u} style={{ backgroundColor: "var(--bg-card-2)", color: "var(--text-main)" }}>{u}</option>)}
                       </select>
                     </div>
                     {ingredients.length > 1 && (
@@ -418,6 +469,7 @@ export default function Recipes() {
                       <textarea ref={el => stepRefs.current[i]=el}
                         style={{ ...inputStyle(errors[`step_${i}`]), resize: "none", overflow: "hidden", minHeight: 42 }}
                         placeholder={`étape ${i+1}...`} rows={1} value={step.description}
+                        spellCheck="true"
                         onChange={e => { updateStep(i,e.target.value); e.target.style.height="auto"; e.target.style.height=e.target.scrollHeight+"px" }}
                         onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(i===steps.length-1)addStep();else stepRefs.current[i+1]?.focus()} }} />
                     </div>
@@ -476,6 +528,7 @@ export default function Recipes() {
                 />
               </div>
               <button onClick={() => { setShowForm(true); loadDraft() }}
+                id="btn-new-recipe"
                 style={{ ...btnBase, padding: "9px 16px", backgroundColor: "#d57bff", color: "#130b2d", whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}

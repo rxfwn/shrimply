@@ -10,10 +10,16 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase': ['@supabase/supabase-js'],
-          'dnd': ['@dnd-kit/core', '@dnd-kit/sortable'],
+        manualChunks(id) {
+          if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('node_modules/react/')) {
+            return 'react-vendor'
+          }
+          if (id.includes('@supabase')) {
+            return 'supabase'
+          }
+          if (id.includes('@dnd-kit')) {
+            return 'dnd'
+          }
         }
       }
     },

@@ -42,7 +42,9 @@ function SpotlightOverlay({ targetId, children, onSkip, PAD = 8 }) {
           <div style={{ pointerEvents: "auto", display: "inline-block" }}>{children}</div>
         </div>
         {onSkip && (
-          <button onClick={onSkip} style={{
+          <button onClick={onSkip} 
+            className="text-light"
+            style={{
             position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
             background: "none", border: "none", cursor: "pointer",
             fontSize: 12, color: "rgba(255,255,255,0.4)",
@@ -70,14 +72,16 @@ function SpotlightOverlay({ targetId, children, onSkip, PAD = 8 }) {
         top: rect.top - PAD, left: rect.left - PAD,
         width: rect.width + PAD * 2, height: rect.height + PAD * 2,
         borderRadius: 12, pointerEvents: "none",
-        border: "2.5px solid #f3501e",
+        border: "2.5px solid #cfff79",
         animation: "pulseRing 1.5s ease-in-out infinite",
       }} />
       <div style={{ pointerEvents: "none", position: "absolute", inset: 0, zIndex: 10002 }}>
         <div style={{ pointerEvents: "auto", display: "inline-block" }}>{children}</div>
       </div>
       {onSkip && (
-        <button onClick={onSkip} style={{
+        <button onClick={onSkip} 
+          className="text-light"
+          style={{
           position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
           background: "none", border: "none", cursor: "pointer",
           fontSize: 12, color: "rgba(255,255,255,0.4)",
@@ -111,7 +115,7 @@ function Bubble({ targetId, text, action, actionLabel, position = "bottom", fall
   return (
     <div style={{
       position: "fixed", top, left, width: BUBBLE_W,
-      backgroundColor: "#1a2e1a",
+      backgroundColor: "#091718",
       borderRadius: 16, padding: "16px 18px",
       boxShadow: "0 8px 40px rgba(0,0,0,0.5)",
       fontFamily: "Poppins, sans-serif",
@@ -151,7 +155,7 @@ function FloatingBubble({ text, onDismiss }) {
         top: "40%",
         left: left,
         transform: "translateX(-50%)",
-        backgroundColor: "#1a2e1a",
+        backgroundColor: "#091718",
         borderRadius: 16, padding: "20px 24px",
         boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
         fontFamily: "Poppins, sans-serif",
@@ -214,7 +218,7 @@ function ModalCard({ img, emoji, title, text, actionLabel, onAction, onSkip, ste
     }}>
       <style>{`@keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}`}</style>
       <div style={{
-        backgroundColor: "#1a2e1a", borderRadius: 20,
+        backgroundColor: "#091718", borderRadius: 20,
         maxWidth: 340, width: "100%",
         padding: "32px 28px 28px",
         boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
@@ -252,7 +256,9 @@ function ModalCard({ img, emoji, title, text, actionLabel, onAction, onSkip, ste
         >{actionLabel}</button>
 
         {onSkip && (
-          <button onClick={onSkip} style={{
+          <button onClick={onSkip} 
+            className="text-light" 
+            style={{
             width: "100%", background: "none", border: "none", cursor: "pointer",
             fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "Poppins, sans-serif",
             fontWeight: 600, letterSpacing: "-0.03em", padding: "6px 0",

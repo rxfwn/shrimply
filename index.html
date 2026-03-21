@@ -6,21 +6,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <link rel="icon" type="image/png" href="/shrimp_1f990.png" />
-    <title>shrimply</title>
+    <title>Shrimply — Planifie tes repas, génère ta liste de courses</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;&display=swap" rel="stylesheet">
+    <!-- SEO -->
+    <meta name="description" content="Shrimply est une app de gestion de recettes qui te permet de planifier tes repas, estimer leur coût et générer ta liste de courses automatiquement." />
+    <meta name="robots" content="index, follow" />
 
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#111111" />
-    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Shrimply" />
+    <meta property="og:description" content="Planifie tes repas, génère ta liste de courses." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.shrimply.app" />
+
+    <!-- Préconnexion Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Une seule requête Poppins — chargement non bloquant -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    </noscript>
+
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#111111" />
+
     <style>
-      /* Comme tu as désactivé le preflight, on s'assure que le body prend bien les styles */
-      body {
-        margin: 0;
-        padding: 0;
-      }
+      body { margin: 0; padding: 0; }
     </style>
   </head>
   <body>
@@ -28,4 +41,3 @@
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
-

@@ -71,7 +71,6 @@ export function convertUnit(quantity, fromUnit, toUnit) {
 
 export function normalizeStr(str) {
   return (str || "")
-    // Caractères spéciaux français non gérés par NFD
     .replace(/[Œœ]/g, "oe")
     .replace(/[Ææ]/g, "ae")
     .toLowerCase()
@@ -83,9 +82,9 @@ export function normalizeStr(str) {
 }
 
 export const STOP_WORDS = new Set([
-  // couleurs / qualificatifs génériques
-  "blanc", "blanche", "blancs", "blanches",
-  "frais", "fraiche", "fraiches",
+  // couleurs — retirés "blanc/fraiche" car gérés via SYNONYMS
+  "blanche", "blancs", "blanches",
+  "frais", "fraiches",
   "vert", "verts", "verte", "vertes",
   "jaune", "jaunes",
   "rouge", "rouges",
@@ -126,14 +125,18 @@ export const CATEGORY_UNIT_RULES = [
   { keywords: ["persil", "basilic", "coriandre", "menthe", "ciboulette", "thym", "romarin", "aneth", "estragon", "laurier"], unit: "piece" },
   { keywords: ["cube", "bouillon"], unit: "piece" },
   { keywords: ["oeuf"], unit: "piece" },
+  { keywords: ["yaourt", "yogourt"], unit: "piece" },
   { keywords: ["huile"], unit: "l" },
+  { keywords: ["creme"], unit: "kg" },
   { keywords: ["chevre", "feta", "camembert", "brie", "roquefort", "comte", "parmesan", "gruyere", "fromage"], unit: "kg" },
   { keywords: ["pesto", "moutarde", "ketchup", "mayonnaise", "sauce"], unit: "kg" },
   { keywords: ["riz", "pate", "farine", "semoule", "boulgour", "quinoa", "lentille", "pois"], unit: "kg" },
-  { keywords: ["sel", "poivre", "sucre", "cannelle", "curcuma", "paprika", "cumin", "curry", "epice", "miel"], unit: "kg" },
+  { keywords: ["sel", "poivre", "sucre", "cannelle", "curcuma", "paprika", "cumin", "curry", "epice", "miel", "garam", "masala"], unit: "kg" },
+  { keywords: ["cajou", "noix", "amande", "noisette", "pistache", "cacahuete"], unit: "kg" },
   { keywords: ["lieu", "saumon", "cabillaud", "colin", "merlan", "dorade", "truite", "poisson"], unit: "kg" },
-  { keywords: ["poulet", "porc", "boeuf", "veau", "agneau", "dinde", "viande"], unit: "kg" },
+  { keywords: ["poulet", "escalope", "porc", "boeuf", "veau", "agneau", "dinde", "viande"], unit: "kg" },
   { keywords: ["crevette", "moule", "fruit", "mer"], unit: "kg" },
+  { keywords: ["beurre"], unit: "kg" },
 ]
 
 export const DENSITY_KG_PER_L = {
@@ -154,19 +157,21 @@ export const PIECE_WEIGHTS = {
   // légumes
   oignon: 0.100, echalote: 0.050, ail: 0.050, gousse: 0.008,
   courgette: 0.250, carotte: 0.100, poivron: 0.200,
+  // produits laitiers
+  yaourt: 0.125,
   // autres
   gingembre: 0.050,
   // viandes
-  poulet: 0.180, porc: 0.200,
+  poulet: 0.180, escalope: 0.150, porc: 0.200,
   // poissons — poids moyen d'un filet
   poisson: 0.150, lieu: 0.150, saumon: 0.150,
   cabillaud: 0.150, colin: 0.130, merlan: 0.130,
   dorade: 0.200, truite: 0.180,
 }
 
-// Volume en litres par pièce (ex: 1 cube bouillon = 0.5l de bouillon reconstitué)
+// Volume en litres par pièce
 export const VOLUME_PER_PIECE = {
-  bouillon: 0.500, // 1 cube = 500ml
+  bouillon: 0.500,
   cube: 0.500,
 }
 
@@ -182,13 +187,30 @@ const SYNONYMS = {
   epinard: "salade", endive: "salade", cresson: "salade",
   // ail
   gousse: "ail", tete: "ail",
-  // oeufs (Œuf → normalizeStr → oeuf)
+  // oeufs
   oeuf: "oeuf",
   // poissons
   lieu: "poisson", cabillaud: "poisson", saumon: "poisson",
   colin: "poisson", merlan: "poisson", dorade: "poisson", truite: "poisson",
-  // viandes
-  poulet: "poulet", blanc: "poulet",
+  // viandes — toutes les coupes → poulet
+  escalope: "poulet", escalopes: "poulet",
+  cuisse: "poulet", cuisses: "poulet",
+  blanc: "poulet",
+  poulet: "poulet",
+  // produits laitiers
+  yaourt: "yaourt", yogourt: "yaourt", yaoult: "yaourt",
+  // crème fraîche — "fraiche" n'est plus dans STOP_WORDS
+  fraiche: "creme",
+  // épices composées
+  garam: "epice", masala: "epice", massala: "epice",
+  // noix de cajou — variantes et fautes
+  cajou: "cajou", cajoux: "cajou",
+  // herbes — fautes de frappe courantes
+  coriande: "coriandre", corriandre: "coriandre",
+  // purée / concentré de tomate
+  puree: "tomate", concentre: "tomate",
+  // beurre
+  beurre: "beurre",
 }
 
 function stem(word) {
@@ -300,7 +322,7 @@ export function calcIngredientPrice(ing, match) {
     }
   }
 
-  // Liquide → pièce via volume par pièce (ex: 175ml de bouillon → X cubes)
+  // Liquide → pièce via volume par pièce
   if (recipeBase === "l" && priceBase === "piece") {
     const normalized = normalizeStr(ing.name)
     const volPerPiece = Object.entries(VOLUME_PER_PIECE).find(([k]) => normalized.includes(k))?.[1]
@@ -310,22 +332,19 @@ export function calcIngredientPrice(ing, match) {
     }
   }
 
-  // Pièce → pièce
+  // Pièce → pièce ou pièce → kg
   if (recipeBase === "piece" || !recipeUnit || recipeBase === null) {
     if (priceBase === "piece") {
       return { estimatedPrice: quantity * match.price, found: true }
     }
-    // Pièce → kg via poids moyen (ex: 2 filets de lieu → kg)
     if (priceBase === "kg") {
       const normalized = normalizeStr(ing.name)
       const pieceWeightKg = Object.entries(PIECE_WEIGHTS).find(([k]) => normalized.includes(k))?.[1]
       if (pieceWeightKg) {
         return { estimatedPrice: quantity * pieceWeightKg * match.price, found: true }
       }
-      // Fallback : utiliser le poids de la catégorie si défini
       const categoryUnit = getCategoryUnit(ing.name)
       if (categoryUnit === "kg") {
-        // On ne peut pas calculer sans poids de référence → found: false
         return { estimatedPrice: 0, found: false }
       }
     }

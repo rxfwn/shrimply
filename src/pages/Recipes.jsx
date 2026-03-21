@@ -7,6 +7,21 @@ import { useTheme } from "../context/ThemeContext"
 
 const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce"]
 
+// ── Bloque tout sauf chiffres pour entiers (temps, portions) ──
+function handleIntegerKeyDown(e) {
+  const allowed = ["Backspace","Delete","Tab","Enter","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"]
+  if (allowed.includes(e.key)) return
+  if (!/^\d$/.test(e.key)) e.preventDefault()
+}
+
+// ── Bloque tout sauf chiffres + virgule/point pour décimaux (quantités) ──
+function handleNumericKeyDown(e) {
+  const allowed = ["Backspace","Delete","Tab","Enter","ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Home","End"]
+  if (allowed.includes(e.key)) return
+  if ((e.key === "." || e.key === ",") && !e.currentTarget.value.includes(".") && !e.currentTarget.value.includes(",")) return
+  if (!/^\d$/.test(e.key)) e.preventDefault()
+}
+
 function getTextColor(hex) {
   if (!hex) return "#111111"
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
@@ -34,7 +49,6 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
   )
 }
 
-// ── Toast brouillon animé avec slider ──
 function DraftToast({ type, visible }) {
   const configs = {
     saved:    { bg: "#5BC8F5", text: "#0a3d52", icon: "/icons/save.png",  msg: "brouillon sauvegardé" },
@@ -52,8 +66,7 @@ function DraftToast({ type, visible }) {
         transition: "opacity 0.3s ease, transform 0.3s ease",
         zIndex: 200, pointerEvents: "none",
         backgroundColor: c.bg, borderRadius: 12,
-        padding: "14px 20px 12px",
-        minWidth: 240,
+        padding: "14px 20px 12px", minWidth: 240,
         boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
         fontFamily: "Poppins, sans-serif",
       }}>
@@ -61,7 +74,6 @@ function DraftToast({ type, visible }) {
           <img src={c.icon} alt="" style={{ width: 28, height: 28, objectFit: "contain" }} onError={e => e.target.style.display="none"} />
           <span style={{ fontSize: 15, fontWeight: 800, color: c.text, letterSpacing: "-0.04em" }}>{c.msg}</span>
         </div>
-        {/* slider qui se vide de droite à gauche */}
         <div style={{ width: "100%", height: 5, backgroundColor: "rgba(0,0,0,0.15)", borderRadius: 4, overflow: "hidden", display: "flex", justifyContent: "flex-end" }}>
           {visible && <div style={{ height: "100%", backgroundColor: c.text, borderRadius: 4, opacity: 0.5, animation: "slideBar 2.2s linear forwards", transformOrigin: "right" }} />}
         </div>
@@ -101,9 +113,8 @@ export default function Recipes() {
   const [dragOverIndex, setDragOverIndex] = useState(null)
   const [search, setSearch] = useState("")
   const [activeFilter, setActiveFilter] = useState("")
-
-  // Toast unifié
   const [toast, setToast] = useState({ type: "saved", visible: false })
+
   const showToast = (type) => {
     setToast({ type, visible: true })
     setTimeout(() => setToast(t => ({ ...t, visible: false })), 2200)
@@ -140,14 +151,13 @@ export default function Recipes() {
   const fetchRecipes = async () => {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) { console.error("Auth error:", authError); return }
+      if (authError || !user) return
       const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
-      if (error) { console.error("Fetch recipes error:", error); return }
+      if (error) return
       if (data) setRecipes(data)
-    } catch (e) { console.error("fetchRecipes exception:", e) }
+    } catch {}
   }
 
-  // ── Auto-save 2s après toute modification ──
   useEffect(() => {
     if (!showForm) return
     if (!(name || description || ingredients[0]?.name)) return
@@ -210,6 +220,7 @@ export default function Recipes() {
     if (!name.trim()) e.name=true
     if (!prepTime) e.prepTime=true
     if (!servings) e.servings=true
+    if (!primaryTag) e.primaryTag=true
     if (ingredients.filter(i=>i.name.trim()).length===0) e.noIngredients=true
     ingredients.forEach((ing,i)=>{ if(ing.name.trim()){if(!ing.quantity)e[`ing_${i}_quantity`]=true;if(!ing.unit.trim())e[`ing_${i}_unit`]=true} })
     if (steps.filter(s=>s.description.trim()).length===0) e.noSteps=true
@@ -272,10 +283,8 @@ export default function Recipes() {
   return (
     <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
-      {/* ── Toast brouillon ── */}
       <DraftToast type={toast.type} visible={toast.visible} />
 
-      {/* POPUP MODÉRATION */}
       {bannedPopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, maxWidth: 360, width: "100%", overflow: "hidden", border: "1px solid rgba(239,68,68,0.2)" }}>
@@ -294,7 +303,6 @@ export default function Recipes() {
         </div>
       )}
 
-      {/* TOASTS success / erreur */}
       {success && (
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
           ✅ {typeof success==="string" ? success : "recette ajoutée !"}
@@ -304,7 +312,6 @@ export default function Recipes() {
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#f87171", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>⚠️ {dupError}</div>
       )}
 
-      {/* FORMULAIRE */}
       {showForm ? (
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -314,13 +321,11 @@ export default function Recipes() {
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {localStorage.getItem(DRAFT_KEY) && (
-                <button onClick={clearDraftAndReset}
-                  style={{ fontSize: 12, color: "var(--text-faint)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
+                <button onClick={clearDraftAndReset} style={{ fontSize: 12, color: "var(--text-faint)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                   vider le brouillon
                 </button>
               )}
-              <button onClick={() => { setShowForm(false); setErrors({}) }}
-                style={{ fontSize: 13, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
+              <button onClick={() => { setShowForm(false); setErrors({}) }} style={{ fontSize: 13, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                 retour
               </button>
             </div>
@@ -331,8 +336,7 @@ export default function Recipes() {
 
             <div>
               <label style={labelStyle}>nom <span style={{ color: "#f87171" }}>*</span></label>
-              <input style={inputStyle(errors.name)} placeholder="ex : pâtes carbonara" value={name}
-                spellCheck="true"
+              <input style={inputStyle(errors.name)} placeholder="ex : pâtes carbonara" value={name} spellCheck="true"
                 onChange={e => { setName(e.target.value); setErrors(p=>({...p,name:false})) }}
                 onFocus={e => e.target.style.borderColor = "#f3501e"}
                 onBlur={e => e.target.style.borderColor = errors.name ? "rgba(239,68,68,0.5)" : "var(--input-border)"} />
@@ -341,36 +345,48 @@ export default function Recipes() {
 
             <div>
               <label style={labelStyle}>description</label>
-              <textarea style={{ ...inputStyle(false), resize: "none", minHeight: 70 }} placeholder="décris ta recette..." rows={2} value={description}
-                spellCheck="true"
+              <textarea style={{ ...inputStyle(false), resize: "none", minHeight: 70 }} placeholder="décris ta recette..." rows={2} value={description} spellCheck="true"
                 onChange={e => setDescription(e.target.value)} />
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
                 <label style={labelStyle}>temps (min) <span style={{ color: "#f87171" }}>*</span></label>
-                <input style={inputStyle(errors.prepTime)} placeholder="ex : 30" type="number" value={prepTime}
-                  onChange={e => { setPrepTime(e.target.value); setErrors(p=>({...p,prepTime:false})) }} />
+                <input style={inputStyle(errors.prepTime)} placeholder="ex : 30" type="text" inputMode="numeric" value={prepTime}
+                  onKeyDown={handleIntegerKeyDown}
+                  onChange={e => { setPrepTime(e.target.value.replace(/[^0-9]/g, "")); setErrors(p=>({...p,prepTime:false})) }} />
                 {errors.prepTime && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
               </div>
               <div>
                 <label style={labelStyle}>portions <span style={{ color: "#f87171" }}>*</span></label>
-                <input style={inputStyle(errors.servings)} placeholder="ex : 4" type="number" value={servings}
-                  onChange={e => { setServings(e.target.value); setErrors(p=>({...p,servings:false})) }} />
+                <input style={inputStyle(errors.servings)} placeholder="ex : 4" type="text" inputMode="numeric" value={servings}
+                  onKeyDown={handleIntegerKeyDown}
+                  onChange={e => { setServings(e.target.value.replace(/[^0-9]/g, "")); setErrors(p=>({...p,servings:false})) }} />
                 {errors.servings && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
               </div>
             </div>
 
-            {/* Tag principal */}
+            {/* Tag principal — OBLIGATOIRE */}
             <div>
               <label style={labelStyle}>
-                🎨 tag principal <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
+                🎨 tag principal <span style={{ color: "#f87171" }}>*</span>{" "}
+                <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
               </label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {errors.primaryTag && (
+                <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>obligatoire — choisis un tag principal</p>
+              )}
+              <div style={{
+                display: "flex", flexWrap: "wrap", gap: 8,
+                padding: errors.primaryTag ? "10px" : "2px",
+                borderRadius: 10,
+                border: errors.primaryTag ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid transparent",
+                transition: "border-color 0.15s",
+              }}>
                 {TAGS.map(tag => {
                   const isMain = primaryTag === tag.value
                   return (
-                    <button key={tag.value} onClick={() => setPrimaryTag(isMain ? "" : tag.value)}
+                    <button key={tag.value}
+                      onClick={() => { setPrimaryTag(isMain ? "" : tag.value); setErrors(p=>({...p,primaryTag:false})) }}
                       style={{
                         display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
                         borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
@@ -418,21 +434,22 @@ export default function Recipes() {
                 {ingredients.map((ing, i) => (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <div style={{ flex: 2 }}>
-                      <input ref={el => ingredientRefs.current[i]=el} style={inputStyle(false)} placeholder="ingrédient *" value={ing.name}
-                        spellCheck="true"
+                      <input ref={el => ingredientRefs.current[i]=el} style={inputStyle(false)} placeholder="ingrédient *" value={ing.name} spellCheck="true"
                         onChange={e => updateIngredient(i,"name",e.target.value)}
                         onKeyDown={e => { if(e.key==="Enter"){e.preventDefault();if(i===ingredients.length-1)addIngredient();else ingredientRefs.current[i+1]?.focus()} }} />
                     </div>
                     <div style={{ width: 80 }}>
-                      <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *" type="number" min="0" value={ing.quantity}
-                        onChange={e => { const v = e.target.value; if (v === "" || parseFloat(v) >= 0) updateIngredient(i,"quantity",v) }} />
+                      <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *"
+                        type="text" inputMode="decimal" value={ing.quantity}
+                        onKeyDown={handleNumericKeyDown}
+                        onChange={e => {
+                          const v = e.target.value.replace(/[^0-9.,]/g, "")
+                          if (v === "" || parseFloat(v.replace(",", ".")) >= 0) updateIngredient(i,"quantity",v)
+                        }} />
                     </div>
                     <div style={{ width: 110 }}>
-                      {/* color forcé sur var(--text-main) pour que "unité *" soit lisible */}
-                      <select
-                        style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none", color: ing.unit ? "var(--text-main)" : "var(--text-muted)" }}
-                        value={ing.unit}
-                        onChange={e => updateIngredient(i,"unit",e.target.value)}>
+                      <select style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none", color: ing.unit ? "var(--text-main)" : "var(--text-muted)" }}
+                        value={ing.unit} onChange={e => updateIngredient(i,"unit",e.target.value)}>
                         <option value="" disabled>unité *</option>
                         {UNITS.map(u => <option key={u} value={u} style={{ backgroundColor: "var(--bg-card-2)", color: "var(--text-main)" }}>{u}</option>)}
                       </select>
@@ -468,8 +485,7 @@ export default function Recipes() {
                     <div style={{ flex: 1 }}>
                       <textarea ref={el => stepRefs.current[i]=el}
                         style={{ ...inputStyle(errors[`step_${i}`]), resize: "none", overflow: "hidden", minHeight: 42 }}
-                        placeholder={`étape ${i+1}...`} rows={1} value={step.description}
-                        spellCheck="true"
+                        placeholder={`étape ${i+1}...`} rows={1} value={step.description} spellCheck="true"
                         onChange={e => { updateStep(i,e.target.value); e.target.style.height="auto"; e.target.style.height=e.target.scrollHeight+"px" }}
                         onKeyDown={e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(i===steps.length-1)addStep();else stepRefs.current[i+1]?.focus()} }} />
                     </div>
@@ -535,7 +551,6 @@ export default function Recipes() {
               >+ nouvelle recette</button>
             </div>
 
-            {/* Filtres */}
             <div style={{ paddingBottom: 8 }}>
               <style>{`
                 .filters-recipes { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -543,38 +558,24 @@ export default function Recipes() {
                 @media (min-width: 768px) { .filters-recipes-mobile { display: none; } }
                 @media (max-width: 767px) { .filters-recipes { display: none; } }
               `}</style>
-
-              <div className="filters-recipes">
-                <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
-                  <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
-                  toutes
-                </button>
-                {TAGS.map(tag => (
-                  <div key={tag.value} style={{ flexShrink: 0 }}>
-                    <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
-                      onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
-                  </div>
-                ))}
-              </div>
-
-              <div className="filters-recipes-mobile">
-                <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transition: "all 0.2s ease" }}>
-                  <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
-                  toutes
-                </button>
-                {TAGS.map(tag => (
-                  <div key={tag.value} style={{ flexShrink: 0 }}>
-                    <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
-                      onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
-                  </div>
-                ))}
-              </div>
+              {["filters-recipes", "filters-recipes-mobile"].map(cls => (
+                <div key={cls} className={cls}>
+                  <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
+                    <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                    toutes
+                  </button>
+                  {TAGS.map(tag => (
+                    <div key={tag.value} style={{ flexShrink: 0 }}>
+                      <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
+                        onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Grille */}
           {recipes.length === 0 ? (
             <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette — ajoutes-en une !</div>
           ) : filtered.length === 0 ? (

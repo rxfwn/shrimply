@@ -184,7 +184,7 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
       ref={setNodeRef}
       style={{
         height: slotHeight,
-        backgroundColor: meal ? mealCardBg : isOver ? (isDay ? "rgba(243,80,30,0.06)" : "#3d2d1a") : emptyBg,
+        backgroundColor: meal ? mealCardBg : isOver ? (isDay ? "rgba(213, 123, 255, 1)" : "#26162e") : emptyBg,
         borderRadius: 10, overflow: "hidden",
         border: isToday && meal ? "1.5px solid #d57bff"
           : isOver ? "1.5px solid #d57bff"

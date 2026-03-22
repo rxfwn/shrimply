@@ -383,10 +383,10 @@ export default function Recipes() {
                 transition: "border-color 0.15s",
               }}>
                 {TAGS.map(tag => {
-                  const isMain = primaryTag === tag.value
+                  const isMain = primaryTag === tag.key
                   return (
-                    <button key={tag.value}
-                      onClick={() => { setPrimaryTag(isMain ? "" : tag.value); setErrors(p=>({...p,primaryTag:false})) }}
+                    <button key={tag.key}
+                      onClick={() => { setPrimaryTag(isMain ? "" : tag.key); setErrors(p=>({...p,primaryTag:false})) }}
                       style={{
                         display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
                         borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
@@ -419,9 +419,9 @@ export default function Recipes() {
                 tags secondaires <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— optionnels</span>
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {TAGS.filter(tag => tag.value !== primaryTag).map(tag => (
-                  <TagPill key={tag.value} tag={tag} active={selectedTags.includes(tag.value)}
-                    anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.value)} />
+                {TAGS.filter(tag => tag.key !== primaryTag).map(tag => (
+                  <TagPill key={tag.key} tag={tag} active={selectedTags.includes(tag.key)}
+                    anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.key)} />
                 ))}
               </div>
             </div>
@@ -566,9 +566,9 @@ export default function Recipes() {
                     toutes
                   </button>
                   {TAGS.map(tag => (
-                    <div key={tag.value} style={{ flexShrink: 0 }}>
-                      <TagPill tag={tag} active={activeFilter === tag.value} anyActive={activeFilter !== ""}
-                        onClick={() => setActiveFilter(activeFilter === tag.value ? "" : tag.value)} />
+                    <div key={tag.key} style={{ flexShrink: 0 }}>
+                      <TagPill tag={tag} active={activeFilter === tag.key} anyActive={activeFilter !== ""}
+                        onClick={() => setActiveFilter(activeFilter === tag.key ? "" : tag.key)} />
                     </div>
                   ))}
                 </div>
@@ -605,6 +605,15 @@ export default function Recipes() {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 8 }}>
                         {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
                         {recipe.servings && <span>🍽 {recipe.servings}p</span>}
+                        {recipe.rating > 0 && (
+                        <span style={{
+                        display: "flex", alignItems: "center", gap: 3,
+                        backgroundColor: actionBg,
+                        color: primaryTagInfo?.pillText || textColor,
+                        padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10,
+                        }}>★ {Number(recipe.rating).toFixed(1)}
+                        </span>
+                        )}
                       </div>
                       {(() => {
                         const allT = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)

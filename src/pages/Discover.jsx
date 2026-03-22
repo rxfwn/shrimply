@@ -332,7 +332,7 @@ export default function Discover() {
                       style={{ ...S.btn, padding: "0 16px", fontSize: 12, backgroundColor: "#f3501e", color: "#ffffff", borderRadius: 10, whiteSpace: "nowrap", flexShrink: 0, alignSelf: "stretch" }}
                       onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                    >+ ajouter</button>
+                    >+ ajouter à mes recettes</button>
                   </div>
                 </div>
               </div>
@@ -438,10 +438,10 @@ export default function Discover() {
           toutes
         </button>
         {TAGS.map(tag => {
-          const isActive = filter === tag.value
+          const isActive = filter === tag.key
           const anyActive = filter !== "" && filter !== "all"
           return (
-            <button key={tag.value} onClick={() => setFilter(isActive ? "all" : tag.value)}
+            <button key={tag.key} onClick={() => setFilter(isActive ? "all" : tag.key)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer", flexShrink: 0, backgroundColor: tag.pillBg, opacity: anyActive && !isActive ? 0.35 : 1, transform: isActive ? "scale(1.08)" : "scale(1)", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.25)" : "none", transition: "opacity 0.2s, transform 0.2s, box-shadow 0.2s" }}
             >
               <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
@@ -459,10 +459,10 @@ export default function Discover() {
           toutes
         </button>
         {TAGS.map(tag => {
-          const isActive = filter === tag.value
+          const isActive = filter === tag.key
           const anyActive = filter !== "" && filter !== "all"
           return (
-            <button key={tag.value} onClick={() => setFilter(isActive ? "all" : tag.value)}
+            <button key={tag.key} onClick={() => setFilter(isActive ? "all" : tag.key)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer", flexShrink: 0, backgroundColor: tag.pillBg, opacity: anyActive && !isActive ? 0.35 : 1, transform: isActive ? "scale(1.08)" : "scale(1)", transition: "opacity 0.2s, transform 0.2s" }}
             >
               <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />

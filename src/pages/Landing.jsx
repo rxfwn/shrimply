@@ -20,7 +20,7 @@ const TAGS = [
 ]
 
 const RECIPE_CARDS = [
-  { title: "Bowl Buddha végé",   time: "20", servings: "2", rating: "4,8", primaryTag: { value: "végé",      cardBg: "#cfff79",  cardText: "#091718", cardBorder: "#b8e860" }, tagDefs: [{ label: "végé", pillBg: "#cfff79", pillText: "#091718", icon: "herb" }, { label: "léger", pillBg: "#03225c", pillText: "#9be7ff", icon: "feather" }],    img: "/recipes/bowl-buddha.jpg"   },
+  { title: "butter chicken",   time: "30", servings: "4", rating: "4,8", primaryTag: { value: "oriental",    cardBg: "#cfff79",  cardText: "#091718", cardBorder: "#b8e860" }, tagDefs: [{ label: "oriental", pillBg: "#cfff79", pillText: "#091718", icon: "falafel" }, { label: "viande", pillBg: "#03225c", pillText: "#9be7ff", icon: "meat" }],    img: "/recipes/bowl-buddha.jpg"   },
   { title: "Saumon teriyaki",    time: "15", servings: "2", rating: "4,6", primaryTag: { value: "poisson",   cardBg: "#9be7ff",  cardText: "#03225c", cardBorder: "#7dd4f0" }, tagDefs: [{ label: "poisson", pillBg: "#9be7ff", pillText: "#03225c", icon: "fih" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }],   img: "/recipes/saumon.jpg"        },
   { title: "Poulet rôti citron", time: "45", servings: "4", rating: "4,9", primaryTag: { value: "viande",    cardBg: "#ffb9e1",  cardText: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "viande", pillBg: "#ffb9e1", pillText: "#510312", icon: "meat" }],                                                                              img: "/recipes/poulet.jpg"        },
   { title: "Tarte tatin",        time: "55", servings: "6", rating: "4,7", primaryTag: { value: "dessert",   cardBg: "#ffb9e1",  cardText: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "dessert", pillBg: "#ffb9e1", pillText: "#510312", icon: "shortcake" }, { label: "français", pillBg: "#03225c", pillText: "#ffffff", icon: "cheese" }], img: "/recipes/tarte.jpg" },
@@ -47,11 +47,8 @@ export default function Landing() {
   const [openFaq, setOpenFaq] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) navigate("/calendar")
-    })
+  const style = document.createElement("style")
 
-    const style = document.createElement("style")
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap');
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

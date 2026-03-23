@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import Landing from "./pages/Landing"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import ReactDOM from "react-dom/client"
@@ -53,13 +54,14 @@ function OnboardingManager() {
 
     // Écoute les nouveaux logins (signup)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        checkOnboarding(session.user.id)
-      }
-      if (event === "SIGNED_OUT") {
-        setState({ userId: null, show: false })
-      }
-    })
+    if (event === "PASSWORD_RECOVERY") return  // ← ajoute cette ligne
+    if (event === "SIGNED_IN" && session?.user) {
+    checkOnboarding(session.user.id)
+    }
+    if (event === "SIGNED_OUT") {
+    setState({ userId: null, show: false })
+    }
+    })  
 
     return () => subscription.unsubscribe()
   }, [])
@@ -83,7 +85,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
         <Routes>
           <Route path="/legal" element={<Legal />} />
-          <Route path="/" element={<Navigate to="/calendar" />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/home" element={<Navigate to="/calendar" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

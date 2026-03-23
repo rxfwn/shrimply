@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import ImageUploadCropper from "./ImageUploadCropper"
 import { useTheme } from "../context/ThemeContext"
+import { usePremium } from "../hooks/usePremium"
+import UpgradePopup from "../components/Upgradepopup"
 
 const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce"]
 
@@ -85,6 +87,7 @@ function DraftToast({ type, visible }) {
 export default function Recipes() {
   const navigate = useNavigate()
   const { isDay } = useTheme()
+  const { isPremium } = usePremium()
   const ingredientRefs = useRef([])
   const stepRefs = useRef([])
   const dragItem = useRef(null)
@@ -114,6 +117,7 @@ export default function Recipes() {
   const [search, setSearch] = useState("")
   const [activeFilter, setActiveFilter] = useState("")
   const [toast, setToast] = useState({ type: "saved", visible: false })
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false)
 
   const showToast = (type) => {
     setToast({ type, visible: true })
@@ -248,16 +252,31 @@ export default function Recipes() {
   const togglePublic = async (e, recipe) => {
     e.stopPropagation()
     if (recipe.imported_from) return
+    if (!isPremium) {
+      setShowUpgradePopup(true)
+      return
+    }
     await supabase.from("recipes").update({is_public:!recipe.is_public}).eq("id",recipe.id)
     fetchRecipes()
+  }
+
+  const handleNewRecipe = () => {
+    if (!isPremium && recipes.length >= 5) {
+      setShowUpgradePopup(true)
+      return
+    }
+    setShowForm(true)
+    loadDraft()
   }
 
   const resetForm = () => { setShowForm(false); setErrors({}); hasShownDraftPopup.current=false; setPhotoUrl(""); setRecipeColor("") }
 
   const filtered = recipes.filter(r => {
-    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
-    const matchFilter = activeFilter === "all" || activeFilter === "" || (r.tags && r.tags.includes(activeFilter))
-    return matchSearch && matchFilter
+  const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
+  const matchFilter = activeFilter === "all" || activeFilter === "" || 
+    r.primary_tag === activeFilter || 
+    (r.tags && r.tags.includes(activeFilter))
+  return matchSearch && matchFilter
   })
 
   const btnBase = {
@@ -285,6 +304,17 @@ export default function Recipes() {
 
       <DraftToast type={toast.type} visible={toast.visible} />
 
+      {showUpgradePopup && (
+        <UpgradePopup
+          onClose={() => setShowUpgradePopup(false)}
+          message={
+            !isPremium && recipes.length >= 5
+              ? "Tu as atteint la limite de 5 recettes. Passe premium pour en créer sans limite."
+              : "Le partage public est réservé aux membres premium."
+          }
+        />
+      )}
+
       {bannedPopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, maxWidth: 360, width: "100%", overflow: "hidden", border: "1px solid rgba(239,68,68,0.2)" }}>
@@ -297,7 +327,8 @@ export default function Recipes() {
               <div style={{ display: "inline-block", backgroundColor: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5", padding: "8px 20px", borderRadius: 10, fontWeight: 700, marginBottom: 20 }}>« {bannedPopup} »</div>
               <button onClick={() => setBannedPopup(null)} style={{ ...btnBase, width: "100%", padding: "12px", backgroundColor: "#f87171", color: "#ffffff" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
-                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>j'ai compris</button>
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >j'ai compris</button>
             </div>
           </div>
         </div>
@@ -530,6 +561,11 @@ export default function Recipes() {
             <h1 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8 }}>
               <img src="/icons/book.png" alt="" style={{ width: 24, height: 24 }} />
               mes recettes
+              {!isPremium && (
+                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-faint)", marginLeft: 4 }}>
+                  ({recipes.length}/5)
+                </span>
+              )}
             </h1>
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
@@ -543,12 +579,15 @@ export default function Recipes() {
                   onBlur={e => e.target.style.borderColor = "var(--border)"}
                 />
               </div>
-              <button onClick={() => { setShowForm(true); loadDraft() }}
+              <button
+                onClick={handleNewRecipe}
                 id="btn-new-recipe"
-                style={{ ...btnBase, padding: "9px 16px", backgroundColor: "#d57bff", color: "#130b2d", whiteSpace: "nowrap" }}
+                style={{ ...btnBase, padding: "9px 16px", backgroundColor: !isPremium && recipes.length >= 5 ? "var(--bg-card-2)" : "#d57bff", color: !isPremium && recipes.length >= 5 ? "var(--text-muted)" : "#130b2d", whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-              >+ nouvelle recette</button>
+              >
+                {!isPremium && recipes.length >= 5 ? "🔒 nouvelle recette" : "+ nouvelle recette"}
+              </button>
             </div>
 
             <div style={{ paddingBottom: 8 }}>
@@ -606,13 +645,9 @@ export default function Recipes() {
                         {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
                         {recipe.servings && <span>🍽 {recipe.servings}p</span>}
                         {recipe.rating > 0 && (
-                        <span style={{
-                        display: "flex", alignItems: "center", gap: 3,
-                        backgroundColor: actionBg,
-                        color: primaryTagInfo?.pillText || textColor,
-                        padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10,
-                        }}>★ {Number(recipe.rating).toFixed(1)}
-                        </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3, backgroundColor: actionBg, color: primaryTagInfo?.pillText || textColor, padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10 }}>
+                            ★ {Number(recipe.rating).toFixed(1)}
+                          </span>
                         )}
                       </div>
                       {(() => {
@@ -636,18 +671,19 @@ export default function Recipes() {
                       })()}
                       <div style={{ display: "flex", gap: 6 }}>
                         {recipe.imported_from ? (
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: primaryTagInfo?.pillBg || "rgba(0,0,0,0.55)", color: primaryTagInfo?.pillText || "#ffffff", fontFamily: "Poppins, sans-serif" }}>
-                            🌐 importée
+                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: primaryTagInfo?.pillBg || "rgba(0,0,0,0.55)", color: primaryTagInfo?.pillText || "#ffffff", fontFamily: "Poppins, sans-serif", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <img src="/icons/globe.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                          importée
                           </span>
                         ) : (
                           <button onClick={e => togglePublic(e, recipe)}
-                            style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif" }}>
-                            {recipe.is_public ? "🌍" : "🔒"}
+                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center" }}>
+                          <img src={recipe.is_public ? "/icons/planet.png" : "/icons/lock.png"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                           </button>
                         )}
                         <button onClick={e => handleDuplicate(e, recipe)} disabled={duplicating===recipe.id}
-                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1 }}>
-                          {duplicating===recipe.id ? "⏳" : "📝"}
+                        style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1, display: "flex", alignItems: "center" }}>
+                        <img src={duplicating===recipe.id ? "/icons/hourglass.png" : "/icons/memo.png"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                         </button>
                       </div>
                     </div>

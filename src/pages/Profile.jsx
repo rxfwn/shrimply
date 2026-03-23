@@ -1,8 +1,12 @@
+
 import { useState, useEffect } from "react"
+import UpgradePopup from "../components/Upgradepopup"
 import { useNavigate, useParams } from "react-router-dom"
 import { supabase } from "../supabase"
 import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
+import { usePremium } from "../hooks/usePremium"
+
 
 function getTextColor(hex) {
   if (!hex) return "#111111"
@@ -14,6 +18,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const { userId } = useParams()
   const { isDay } = useTheme()
+  const { isPremium } = usePremium()
 
   const [profile, setProfile] = useState(null)
   const [recipes, setRecipes] = useState([])
@@ -24,6 +29,7 @@ export default function Profile() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [followLoading, setFollowLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false)
 
   useEffect(() => { fetchProfile() }, [userId])
 
@@ -82,6 +88,12 @@ export default function Profile() {
     ? recipes.filter(r => r.is_public)
     : recipes
 
+  const btnBase = {
+    fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13,
+    letterSpacing: "-0.05em", border: "none", cursor: "pointer",
+    borderRadius: 10, transition: "transform 0.15s",
+  }
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", backgroundColor: "var(--bg-main)" }}>
@@ -101,6 +113,14 @@ export default function Profile() {
 
   return (
     <div style={{ backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
+
+      {showUpgradePopup && (
+        <UpgradePopup
+          onClose={() => setShowUpgradePopup(false)}
+          message="Le partage public et le profil public sont réservés aux membres premium. Partage tes créations avec la communauté."
+        />
+      )}
+
       <div style={{ padding: "28px 24px 0" }}>
 
         {/* Retour */}
@@ -114,19 +134,36 @@ export default function Profile() {
 
         {/* Avatar + action */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-card-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {profile?.avatar_url
-              ? <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <span style={{ fontSize: 32 }}>👤</span>
-            }
+          <div style={{ position: "relative" }}>
+            <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-card-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {profile?.avatar_url
+                ? <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: 32 }}>👤</span>
+              }
+            </div>
+            {/* Badge Premium sur l'avatar */}
+            {isOwnProfile && isPremium && (
+              <div style={{ position: "absolute", bottom: 0, right: 0, backgroundColor: "#f3501e", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, border: "2px solid var(--bg-main)" }}>
+                ⭐
+              </div>
+            )}
           </div>
 
           {isOwnProfile ? (
-            <button onClick={() => navigate("/settings")}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", cursor: "pointer", transition: "all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "#f3501e"; e.currentTarget.style.color = "#f3501e" }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)" }}
-            >✏️ modifier le profil</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+              <button onClick={() => navigate("/settings")}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 12, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#f3501e"; e.currentTarget.style.color = "#f3501e" }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)" }}
+              >✏️ modifier le profil</button>
+              {!isPremium && (
+                <button onClick={() => setShowUpgradePopup(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, backgroundColor: "rgba(243,80,30,0.1)", border: "1px solid rgba(243,80,30,0.3)", color: "#f3501e", fontSize: 12, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", cursor: "pointer", transition: "all 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(243,80,30,0.18)"}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(243,80,30,0.1)"}
+                >⭐ passer Premium</button>
+              )}
+            </div>
           ) : (
             <button onClick={handleFollow} disabled={followLoading}
               style={{ padding: "8px 18px", borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", cursor: "pointer", transition: "all 0.15s", border: "none", backgroundColor: isFollowing ? "var(--bg-card-2)" : "#f3501e", color: isFollowing ? "var(--text-muted)" : "#ffffff", opacity: followLoading ? 0.6 : 1 }}
@@ -138,13 +175,25 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Nom + email */}
+        {/* Nom + email + badge premium */}
         <div style={{ marginBottom: 16 }}>
-          <h1 style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>
-            {profile?.username || "utilisateur"}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>
+              {profile?.username || "utilisateur"}
+            </h1>
+            {isOwnProfile && isPremium && (
+              <span style={{ fontSize: 10, fontWeight: 700, backgroundColor: "rgba(243,80,30,0.12)", color: "#f3501e", padding: "2px 8px", borderRadius: 20, border: "1px solid rgba(243,80,30,0.25)" }}>
+                Premium ⭐
+              </span>
+            )}
+          </div>
           {isOwnProfile && profile?.email && (
             <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>{profile.email}</p>
+          )}
+          {isOwnProfile && !isPremium && (
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "rgba(243,80,30,0.7)", fontWeight: 500 }}>
+              🔒 profil public et partage désactivés · <button onClick={() => setShowUpgradePopup(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontWeight: 700, fontSize: 11, fontFamily: "Poppins, sans-serif", padding: 0, textDecoration: "underline" }}>passer Premium</button>
+            </p>
           )}
         </div>
 
@@ -167,12 +216,14 @@ export default function Profile() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 24 }}>
           {[
             { value: stats.total, label: "recettes" },
-            { value: stats.public, label: "publiques" },
+            { value: isPremium ? stats.public : "🔒", label: "publiques" },
             { value: stats.followers, label: "abonnés" },
             { value: stats.following, label: "abonnements" },
           ].map(({ value, label }) => (
-            <div key={label} style={{ backgroundColor: "var(--bg-card)", borderRadius: 12, padding: "12px 8px", textAlign: "center", border: "1px solid var(--border)" }}>
-              <p style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>{value}</p>
+            <div key={label}
+              onClick={() => !isPremium && label === "publiques" && isOwnProfile ? setShowUpgradePopup(true) : null}
+              style={{ backgroundColor: "var(--bg-card)", borderRadius: 12, padding: "12px 8px", textAlign: "center", border: "1px solid var(--border)", cursor: !isPremium && label === "publiques" && isOwnProfile ? "pointer" : "default" }}>
+              <p style={{ margin: "0 0 2px", fontSize: 20, fontWeight: 700, color: !isPremium && label === "publiques" && isOwnProfile ? "#f3501e" : "var(--text-main)", letterSpacing: "-0.05em" }}>{value}</p>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
             </div>
           ))}
@@ -182,8 +233,14 @@ export default function Profile() {
       {/* Tabs */}
       {isOwnProfile && (
         <div style={{ display: "flex", borderBottom: "1px solid var(--border)", marginBottom: 2, paddingLeft: 24, paddingRight: 24 }}>
-          <button onClick={() => setActiveTab("public")} style={tabStyle(activeTab === "public")}>
-            🌍 publiques ({stats.public})
+          <button
+            onClick={() => {
+              if (!isPremium) { setShowUpgradePopup(true); return }
+              setActiveTab("public")
+            }}
+            style={{ ...tabStyle(activeTab === "public"), opacity: !isPremium ? 0.5 : 1 }}
+          >
+            🌍 publiques ({isPremium ? stats.public : "🔒"})
           </button>
           <button onClick={() => setActiveTab("all")} style={tabStyle(activeTab === "all")}>
             📋 toutes ({stats.total})
@@ -198,7 +255,11 @@ export default function Profile() {
             <p style={{ fontSize: 40, marginBottom: 12 }}>🍽</p>
             <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-faint)", margin: 0 }}>
               {isOwnProfile
-                ? activeTab === "public" ? "aucune recette publique — partage tes créations !" : "aucune recette pour l'instant"
+                ? activeTab === "public"
+                  ? isPremium
+                    ? "aucune recette publique — partage tes créations !"
+                    : "passe Premium pour partager tes recettes 🔒"
+                  : "aucune recette pour l'instant"
                 : "cet utilisateur n'a pas encore partagé de recettes"}
             </p>
           </div>

@@ -3,6 +3,8 @@ import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { computeCostDetails } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
+import { usePremium } from "../hooks/usePremium"
+import UpgradePopup from "../components/Upgradepopup"
 
 function getTextColor(hex) {
   if (!hex) return "#111111"
@@ -53,6 +55,7 @@ function formatQuantity(value) {
 
 export default function Discover() {
   const { isDay } = useTheme()
+  const { isPremium } = usePremium()
 
   const [recipes, setRecipes] = useState([])
   const [currentUser, setCurrentUser] = useState(null)
@@ -66,6 +69,7 @@ export default function Discover() {
   const [previewSteps, setPreviewSteps] = useState([])
   const [previewLoading, setPreviewLoading] = useState(false)
   const [checkedSteps, setCheckedSteps] = useState({})
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false)
 
   useEffect(() => { fetchRecipes() }, [])
 
@@ -140,6 +144,10 @@ export default function Discover() {
   }
 
   const handleAddToMyRecipes = async (recipe) => {
+    if (!isPremium) {
+      setShowUpgradePopup(true)
+      return
+    }
     const { data: { user } } = await supabase.auth.getUser()
     const { data: ingredients } = await supabase.from("ingredients").select("*").eq("recipe_id", recipe.id)
     const { data: steps } = await supabase.from("steps").select("*").eq("recipe_id", recipe.id).order("step_number")
@@ -176,6 +184,13 @@ export default function Discover() {
   return (
     <div style={{ padding: "20px 24px", backgroundColor: "var(--bg-main)", minHeight: "100%", fontFamily: "Poppins, sans-serif", transition: "background-color 0.25s ease" }}>
 
+      {showUpgradePopup && (
+        <UpgradePopup
+          onClose={() => setShowUpgradePopup(false)}
+          message="L'import de recettes de la communauté est réservé aux membres premium. Passe premium pour importer sans limite."
+        />
+      )}
+
       {/* Popup mot banni */}
       {bannedPopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -204,7 +219,7 @@ export default function Discover() {
         </div>
       )}
 
-      {/* ── MODAL PREVIEW style RecipeDetails ── */}
+      {/* ── MODAL PREVIEW ── */}
       {previewRecipe && (
         <div
           style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.65)", display: "flex", alignItems: "flex-end" }}
@@ -214,14 +229,11 @@ export default function Discover() {
             style={{ backgroundColor: "var(--bg-main)", borderRadius: "20px 20px 0 0", width: "100%", maxHeight: "94vh", overflowY: "auto" }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Drag handle */}
             <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px" }}>
               <div style={{ width: 36, height: 4, backgroundColor: "var(--border-2)", borderRadius: 2 }} />
             </div>
 
             <div style={{ padding: "0 16px 32px" }}>
-
-              {/* ── HERO CARD ── */}
               <style>{`
                 .discover-hero {
                   display: flex; align-items: stretch;
@@ -250,7 +262,6 @@ export default function Discover() {
 
                 <div className="discover-hero-right">
                   <div>
-                    {/* Titre + close */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
                       <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--text-main)", lineHeight: 1.2, letterSpacing: "-0.05em", flex: 1, minWidth: 0 }}>
                         {previewRecipe.name}
@@ -259,14 +270,12 @@ export default function Discover() {
                         style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 20, lineHeight: 1, padding: 2, flexShrink: 0 }}>✕</button>
                     </div>
 
-                    {/* Description */}
                     {previewRecipe.description && (
                       <p style={{ margin: "0 0 10px", fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45, fontWeight: 400, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                         {previewRecipe.description}
                       </p>
                     )}
 
-                    {/* Auteur */}
                     <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
                       <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: "rgba(243,80,30,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {previewRecipe.profiles?.avatar_url
@@ -279,7 +288,6 @@ export default function Discover() {
                       {previewRecipe.profiles?.is_official && <OfficialBadge small />}
                     </div>
 
-                    {/* Pills : note, temps, tags */}
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 5 }}>
                       {previewRecipe.rating > 0 && (
                         <span style={{ ...S.pill, backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--border)", color: "var(--text-main)" }}>
@@ -303,7 +311,6 @@ export default function Discover() {
                     </div>
                   </div>
 
-                  {/* Budget bar + bouton ajouter inline */}
                   <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
                     <div className="discover-budget-bar" style={{ flex: 1, borderRadius: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
@@ -328,22 +335,21 @@ export default function Discover() {
                       )}
                     </div>
                     <button
-                      onClick={() => { handleAddToMyRecipes(previewRecipe); closePreview() }}
-                      style={{ ...S.btn, padding: "0 16px", fontSize: 12, backgroundColor: "#f3501e", color: "#ffffff", borderRadius: 10, whiteSpace: "nowrap", flexShrink: 0, alignSelf: "stretch" }}
+                      onClick={() => { handleAddToMyRecipes(previewRecipe); if (isPremium) closePreview() }}
+                      style={{ ...S.btn, padding: "0 16px", fontSize: 12, backgroundColor: isPremium ? "#f3501e" : "var(--bg-card-2)", color: isPremium ? "#ffffff" : "var(--text-muted)", borderRadius: 10, whiteSpace: "nowrap", flexShrink: 0, alignSelf: "stretch" }}
                       onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                    >+ ajouter à mes recettes</button>
+                    >
+                      {isPremium ? "+ ajouter à mes recettes" : "🔒 premium"}
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* ── GRILLE ingrédients / préparation ── */}
               {previewLoading ? (
                 <div style={{ textAlign: "center", padding: "32px 0", fontSize: 13, color: "var(--text-faint)", fontFamily: "Poppins, sans-serif" }}>chargement...</div>
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 16 }}>
-
-                  {/* Ingrédients */}
                   {previewIngredients.length > 0 && (
                     <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -368,7 +374,6 @@ export default function Discover() {
                     </div>
                   )}
 
-                  {/* Préparation */}
                   {previewSteps.length > 0 && (
                     <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
@@ -394,7 +399,6 @@ export default function Discover() {
                   )}
                 </div>
               )}
-
             </div>
           </div>
         </div>
@@ -406,7 +410,10 @@ export default function Discover() {
           <img src="/icons/spark.png" alt="" style={{ width: 22, height: 22 }} />
           découvrir
         </h1>
-        <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>recettes partagées par la communauté</p>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
+          recettes partagées par la communauté
+          {!isPremium && <span style={{ marginLeft: 8, color: "#f3501e", fontWeight: 700 }}>· 🔒 import réservé aux membres Premium</span>}
+        </p>
       </div>
 
       {/* Recherche */}
@@ -519,8 +526,6 @@ export default function Discover() {
                 )}
 
                 <div style={{ padding: "8px 12px 12px", color: textColor, flex: 1, display: "flex", flexDirection: "column" }}>
-
-                  {/* Auteur + badge officiel */}
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5, flexWrap: "nowrap", overflow: "hidden" }}>
                     <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: actionBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {recipe.profiles?.avatar_url
@@ -537,7 +542,6 @@ export default function Discover() {
                     {recipe.name}
                   </h3>
 
-                  {/* Meta */}
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 7, flexWrap: "wrap", fontSize: 11, color: textColor }}>
                     {recipe.prep_time && <span style={{ opacity: 0.75 }}>⏱ {recipe.prep_time}min</span>}
                     {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
@@ -554,7 +558,6 @@ export default function Discover() {
                     )}
                   </div>
 
-                  {/* Tags */}
                   {validTags.length > 0 && (
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8, flexWrap: "nowrap" }}>
                       {validTags.slice(0, 2).map(ti => (
@@ -582,16 +585,16 @@ export default function Discover() {
                     </div>
                   )}
 
-                  {/* Bouton ajouter uniquement */}
                   <div style={{ marginTop: "auto", paddingTop: 4 }}>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleAddToMyRecipes(recipe) }}
-                      style={{ ...btnBase, width: "100%", padding: "7px", backgroundColor: actionBg, color: actionText, fontSize: 11, fontWeight: 800 }}
+                      style={{ ...btnBase, width: "100%", padding: "7px", backgroundColor: isPremium ? actionBg : "rgba(243,80,30,0.12)", color: isPremium ? actionText : "#f3501e", fontSize: 11, fontWeight: 800 }}
                       onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
                       onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-                    >+ ajouter</button>
+                    >
+                      {isPremium ? "+ ajouter" : "🔒 premium"}
+                    </button>
                   </div>
-
                 </div>
               </div>
             )

@@ -59,6 +59,23 @@ export default function Settings() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteInput, setDeleteInput] = useState("")
 
+  // ── Changement d'email ──
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [newEmail, setNewEmail] = useState("")
+  const [emailConfirm, setEmailConfirm] = useState("")
+  const [emailLoading, setEmailLoading] = useState(false)
+
+  // ── Changement de mot de passe ──
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPwd, setShowPwd] = useState({ current: false, new: false, confirm: false })
+  const [pwdLoading, setPwdLoading] = useState(false)
+
+  const passwordMatch = confirmPassword && newPassword === confirmPassword
+  const passwordMismatch = confirmPassword && newPassword !== confirmPassword
+
   useEffect(() => {
     if (profile) {
       setUsername(profile.username || "")
@@ -72,12 +89,14 @@ export default function Settings() {
     return () => { document.body.style.backgroundColor = "" }
   }, [isDay])
 
+  const showToast = (msg) => { setSuccess(msg); setTimeout(() => setSuccess(""), 3500) }
+
   const togglePref = (pref) => setSelectedPrefs(prev => prev.includes(pref) ? prev.filter(p => p !== pref) : [...prev, pref])
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) { setSuccess("❌ image trop lourde (max 2MB)"); setTimeout(() => setSuccess(""), 3000); return }
+    if (file.size > 2 * 1024 * 1024) { showToast("❌ image trop lourde (max 2MB)"); return }
     setUploading(true)
     await supabase.storage.from("avatars").upload(`${user.id}`, file, { upsert: true, contentType: file.type })
     const { data } = supabase.storage.from("avatars").getPublicUrl(`${user.id}`)
@@ -90,8 +109,7 @@ export default function Settings() {
     await supabase.from("profiles").upsert({ id: user.id, username, avatar_url: avatarUrl, preferences: selectedPrefs })
     await refreshProfile()
     setSaving(false)
-    setSuccess("✅ profil sauvegardé !")
-    setTimeout(() => setSuccess(""), 3000)
+    showToast("✅ profil sauvegardé !")
   }
 
   const handleLogout = async () => {
@@ -107,10 +125,54 @@ export default function Settings() {
     navigate("/login")
   }
 
-  // ── Relance le tutoriel directement sans popup ──
   const handleRelaunchTour = async () => {
     await supabase.from("profiles").update({ onboarded: false }).eq("id", user.id)
     window.location.href = "/recipes"
+  }
+
+  // ── Changer l'email ──
+  const handleEmailChange = async () => {
+    if (!newEmail || newEmail !== emailConfirm) { showToast("❌ les emails ne correspondent pas"); return }
+    if (!/\S+@\S+\.\S+/.test(newEmail)) { showToast("❌ email invalide"); return }
+    setEmailLoading(true)
+    const { error } = await supabase.auth.updateUser({ email: newEmail })
+    setEmailLoading(false)
+    if (error) {
+      showToast("❌ " + (error.message || "erreur lors du changement"))
+    } else {
+      setShowEmailModal(false)
+      setNewEmail("")
+      setEmailConfirm("")
+      showToast("✅ lien de confirmation envoyé à " + newEmail)
+    }
+  }
+
+  // ── Changer le mot de passe ──
+  const handlePasswordChange = async () => {
+    if (newPassword !== confirmPassword) { showToast("❌ les mots de passe ne correspondent pas"); return }
+    if (newPassword.length < 6) { showToast("❌ minimum 6 caractères"); return }
+    setPwdLoading(true)
+    // Vérifie l'ancien mot de passe en re-signant
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    })
+    if (signInError) {
+      showToast("❌ mot de passe actuel incorrect")
+      setPwdLoading(false)
+      return
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setPwdLoading(false)
+    if (error) {
+      showToast("❌ " + (error.message || "erreur lors du changement"))
+    } else {
+      setShowPasswordModal(false)
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+      showToast("✅ mot de passe mis à jour !")
+    }
   }
 
   const inputStyle = {
@@ -121,13 +183,25 @@ export default function Settings() {
     letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s",
   }
 
+  const modalOverlay = {
+    position: "fixed", inset: 0, zIndex: 50,
+    backgroundColor: "rgba(0,0,0,0.75)",
+    display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+  }
+
+  const modalBox = {
+    backgroundColor: "var(--bg-card)", borderRadius: 16,
+    maxWidth: 400, width: "100%", overflow: "hidden",
+    border: "1px solid var(--border)",
+  }
+
   return (
     <div style={{ backgroundColor: "var(--bg-main)", minHeight: "100vh", paddingBottom: 48 }}>
       <div style={{ padding: "24px", maxWidth: 560, margin: "0 auto", fontFamily: "Poppins, sans-serif" }}>
 
         {success && (
           <div style={{
-            position: "fixed", top: 16, right: 16, zIndex: 50,
+            position: "fixed", top: 16, right: 16, zIndex: 100,
             backgroundColor: success.startsWith("❌") ? "#f87171" : "#34d399",
             color: success.startsWith("❌") ? "#ffffff" : "#064e3b",
             padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700,
@@ -201,6 +275,23 @@ export default function Settings() {
           </div>
         </SectionComp>
 
+        {/* ── SÉCURITÉ ── */}
+        <SectionComp title="sécurité" icon="lock">
+          <RowComp
+            label="changer l'email"
+            sub={user?.email || ""}
+            onClick={() => setShowEmailModal(true)}
+            right={<span style={{ fontSize: 20, color: "var(--text-faint)" }}>›</span>}
+          />
+          <RowComp
+            label="changer le mot de passe"
+            sub="utilise un mot de passe fort"
+            onClick={() => setShowPasswordModal(true)}
+            right={<span style={{ fontSize: 20, color: "var(--text-faint)" }}>›</span>}
+            noBorder
+          />
+        </SectionComp>
+
         {/* ── PRÉFÉRENCES ── */}
         <SectionComp title="préférences alimentaires" icon="salad">
           <div style={{ padding: "12px 18px 16px" }}>
@@ -269,6 +360,136 @@ export default function Settings() {
         >
           {saving ? "sauvegarde..." : "💾 sauvegarder"}
         </button>
+
+        {/* ── MODAL CHANGER EMAIL ── */}
+        {showEmailModal && (
+          <div style={modalOverlay}>
+            <div style={modalBox}>
+              <div style={{ padding: "24px 24px 16px", borderBottom: "1px solid var(--border)" }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>changer l'email</h2>
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>un lien de confirmation sera envoyé à la nouvelle adresse.</p>
+              </div>
+              <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>nouvel email</label>
+                  <input style={inputStyle} type="email" placeholder="nouvelle@adresse.com" value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    onFocus={e => e.target.style.borderColor = "#f3501e"}
+                    onBlur={e => e.target.style.borderColor = "var(--input-border)"} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>confirmer l'email</label>
+                  <input style={{
+                    ...inputStyle,
+                    borderColor: emailConfirm && newEmail !== emailConfirm ? "rgba(239,68,68,0.5)" : emailConfirm && newEmail === emailConfirm ? "rgba(52,211,153,0.5)" : "var(--input-border)"
+                  }} type="email" placeholder="confirme ton email" value={emailConfirm}
+                    onChange={e => setEmailConfirm(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleEmailChange()} />
+                </div>
+                {emailConfirm && newEmail === emailConfirm && <p style={{ fontSize: 11, color: "#34d399", margin: "-4px 0 0 2px", fontWeight: 500 }}>✅ les emails correspondent</p>}
+                {emailConfirm && newEmail !== emailConfirm && <p style={{ fontSize: 11, color: "#fca5a5", margin: "-4px 0 0 2px", fontWeight: 500 }}>❌ les emails ne correspondent pas</p>}
+                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                  <button onClick={() => { setShowEmailModal(false); setNewEmail(""); setEmailConfirm("") }}
+                    style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                  >annuler</button>
+                  <button onClick={handleEmailChange} disabled={emailLoading || !newEmail || newEmail !== emailConfirm}
+                    style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#f3501e", color: "#ffffff", opacity: emailLoading || !newEmail || newEmail !== emailConfirm ? 0.4 : 1 }}
+                    onMouseEnter={e => { if (newEmail && newEmail === emailConfirm) e.currentTarget.style.transform = "scale(1.02)" }}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                  >{emailLoading ? "envoi..." : "confirmer"}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL CHANGER MOT DE PASSE ── */}
+        {showPasswordModal && (
+          <div style={modalOverlay}>
+            <div style={modalBox}>
+              <div style={{ padding: "24px 24px 16px", borderBottom: "1px solid var(--border)" }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>changer le mot de passe</h2>
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>entre ton mot de passe actuel pour confirmer.</p>
+              </div>
+              <div style={{ padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+
+                {/* Mot de passe actuel */}
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>mot de passe actuel</label>
+                  <div style={{ position: "relative" }}>
+                    <input style={{ ...inputStyle, paddingRight: 44 }}
+                      type={showPwd.current ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                      onFocus={e => e.target.style.borderColor = "#f3501e"}
+                      onBlur={e => e.target.style.borderColor = "var(--input-border)"} />
+                    <button onClick={() => setShowPwd(p => ({ ...p, current: !p.current }))}
+                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <img src={showPwd.current ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Nouveau mot de passe */}
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>nouveau mot de passe</label>
+                  <div style={{ position: "relative" }}>
+                    <input style={{ ...inputStyle, paddingRight: 44 }}
+                      type={showPwd.new ? "text" : "password"}
+                      placeholder="min. 6 caractères"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      onFocus={e => e.target.style.borderColor = "#f3501e"}
+                      onBlur={e => e.target.style.borderColor = "var(--input-border)"} />
+                    <button onClick={() => setShowPwd(p => ({ ...p, new: !p.new }))}
+                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <img src={showPwd.new ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirmer nouveau mot de passe */}
+                <div>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>confirmer le nouveau mot de passe</label>
+                  <div style={{ position: "relative" }}>
+                    <input style={{
+                      ...inputStyle, paddingRight: 44,
+                      borderColor: passwordMismatch ? "rgba(239,68,68,0.5)" : passwordMatch ? "rgba(52,211,153,0.5)" : "var(--input-border)"
+                    }}
+                      type={showPwd.confirm ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && handlePasswordChange()} />
+                    <button onClick={() => setShowPwd(p => ({ ...p, confirm: !p.confirm }))}
+                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <img src={showPwd.confirm ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
+                    </button>
+                  </div>
+                  {passwordMatch && <p style={{ fontSize: 11, color: "#34d399", margin: "4px 0 0 2px", fontWeight: 500 }}>✅ les mots de passe correspondent</p>}
+                  {passwordMismatch && <p style={{ fontSize: 11, color: "#fca5a5", margin: "4px 0 0 2px", fontWeight: 500 }}>❌ les mots de passe ne correspondent pas</p>}
+                </div>
+
+                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                  <button onClick={() => { setShowPasswordModal(false); setCurrentPassword(""); setNewPassword(""); setConfirmPassword("") }}
+                    style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}
+                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                  >annuler</button>
+                  <button onClick={handlePasswordChange}
+                    disabled={pwdLoading || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                    style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "#f3501e", color: "#ffffff", opacity: pwdLoading || !currentPassword || !newPassword || newPassword !== confirmPassword ? 0.4 : 1 }}
+                    onMouseEnter={e => { if (currentPassword && newPassword && newPassword === confirmPassword) e.currentTarget.style.transform = "scale(1.02)" }}
+                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                  >{pwdLoading ? "mise à jour..." : "mettre à jour"}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── POPUP SUPPRESSION ── */}
         {confirmDelete && (

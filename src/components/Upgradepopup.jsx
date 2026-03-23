@@ -1,6 +1,6 @@
 import { supabase } from "../supabase"
 
-export default function UpgradePopup({ onClose, message }) {
+export default function Upgradepopup({ onClose, message }) {
   const handleUpgrade = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     const res = await fetch(
@@ -27,34 +27,33 @@ export default function UpgradePopup({ onClose, message }) {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          position: "relative",
-          width: 160,
-          height: 165,
+          width: 320,
           backgroundColor: "#091718",
-          borderRadius: 10,
+          borderRadius: 20,
+          padding: "28px 24px 24px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          gap: 0,
         }}
       >
         {/* Icône shrimp */}
         <img
           src="/icons/shrim.png"
           alt=""
-          style={{ width: 16, height: 16, marginTop: 11, objectFit: "contain" }}
+          style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 16 }}
           onError={e => e.target.style.display = "none"}
         />
 
         {/* Titre */}
         <p style={{
-          margin: "8px 0 0",
-          width: 126,
+          margin: "0 0 16px",
           fontFamily: "Poppins, sans-serif",
           fontWeight: 700,
-          fontSize: 9,
-          lineHeight: "9px",
+          fontSize: 16,
+          lineHeight: 1.2,
           textAlign: "center",
-          letterSpacing: "-0.07em",
+          letterSpacing: "-0.05em",
           color: "#ffffff",
         }}>
           fonctionnalité premium
@@ -62,15 +61,14 @@ export default function UpgradePopup({ onClose, message }) {
 
         {/* Message */}
         <p style={{
-          margin: "16px 0 0",
-          width: 126,
+          margin: "0 0 28px",
           fontFamily: "Poppins, sans-serif",
           fontWeight: 400,
-          fontSize: 7,
-          lineHeight: "9px",
+          fontSize: 12,
+          lineHeight: 1.6,
           textAlign: "center",
-          letterSpacing: "-0.07em",
-          color: "#ffffff",
+          letterSpacing: "-0.03em",
+          color: "rgba(255,255,255,0.7)",
         }}>
           {message}
         </p>
@@ -79,22 +77,18 @@ export default function UpgradePopup({ onClose, message }) {
         <button
           onClick={handleUpgrade}
           style={{
-            position: "absolute",
-            left: 12,
-            top: 110,
-            width: 136,
-            height: 21,
+            width: "100%",
+            height: 42,
             backgroundColor: "#CFFF79",
-            borderRadius: 5,
+            borderRadius: 10,
             border: "none",
             cursor: "pointer",
             fontFamily: "Poppins, sans-serif",
             fontWeight: 700,
-            fontSize: 7,
-            lineHeight: "9px",
-            textAlign: "center",
-            letterSpacing: "-0.07em",
+            fontSize: 13,
+            letterSpacing: "-0.05em",
             color: "#091718",
+            marginBottom: 12,
             transition: "opacity 0.15s",
           }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
@@ -107,24 +101,18 @@ export default function UpgradePopup({ onClose, message }) {
         <button
           onClick={onClose}
           style={{
-            position: "absolute",
-            top: 137,
-            width: 126,
-            left: "calc(50% - 63px)",
-            fontFamily: "Poppins, sans-serif",
-            fontWeight: 400,
-            fontSize: 6,
-            lineHeight: "9px",
-            textAlign: "center",
-            letterSpacing: "-0.07em",
-            color: "#ffffff",
             background: "none",
             border: "none",
             cursor: "pointer",
-            opacity: 0.6,
+            fontFamily: "Poppins, sans-serif",
+            fontWeight: 400,
+            fontSize: 11,
+            letterSpacing: "-0.05em",
+            color: "rgba(255,255,255,0.45)",
+            transition: "color 0.15s",
           }}
-          onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-          onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}
+          onMouseEnter={e => e.currentTarget.style.color = "#ffffff"}
+          onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.45)"}
         >
           pas maintenant
         </button>

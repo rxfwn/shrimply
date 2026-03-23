@@ -3,9 +3,9 @@ import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
 
 const TYPES = [
-  { value: "bug", label: "Bug", icon: "🐛", bg: "#2d0a0a", color: "#fca5a5", border: "rgba(239,68,68,0.3)" },
-  { value: "feature", label: "Amélioration", icon: "✨", bg: "#0a1a2d", color: "#93c5fd", border: "rgba(59,130,246,0.3)" },
-  { value: "idea", label: "Idée", icon: "💡", bg: "#2d2a0a", color: "#fde68a", border: "rgba(234,179,8,0.3)" },
+  { value: "bug", label: "Bug", icon: "bug.png", bg: "#2d0a0a", color: "#fca5a5", border: "rgba(239,68,68,0.3)" },
+  { value: "feature", label: "Amélioration", icon: "spark.png", bg: "#0a1a2d", color: "#93c5fd", border: "rgba(59,130,246,0.3)" },
+  { value: "idea", label: "Idée", icon: "bulb.png", bg: "#2d2a0a", color: "#fde68a", border: "rgba(234,179,8,0.3)" },
 ]
 
 const STATUS = {
@@ -16,9 +16,9 @@ const STATUS = {
 }
 
 const ROADMAP = [
-  { icon: "🔄", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
-  { icon: "🥦", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
-  { icon: "🗺️", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
+  { icon: "replace.png", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
+  { icon: "broccoli.png", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
+  { icon: "map.png", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
 ]
 
 const btnBase = {
@@ -37,7 +37,6 @@ export default function Suggestions() {
   const [success, setSuccess] = useState(false)
   const { isDay } = useTheme()
 
-  // Derived theme tokens
   const bg = isDay ? "#F5F0E8" : "#111111"
   const surface = isDay ? "#FFFFFF" : "#091718"
   const surfaceBorder = isDay ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.06)"
@@ -100,7 +99,7 @@ export default function Suggestions() {
       {/* HEADER */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/icons/rainbow.png" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/ticket.png" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display = "none"} />
           suggestions & bugs
         </h1>
         <p style={{ margin: 0, fontSize: 12, color: textMuted }}>
@@ -112,13 +111,14 @@ export default function Suggestions() {
 
         {/* COLONNE GAUCHE — Roadmap */}
         <div style={{ flex: 1, minWidth: 280 }}>
-          <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            🗺️ roadmap
+          <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}>
+            <img src="/icons/map.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+            roadmap
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {ROADMAP.map((item, i) => (
               <div key={i} style={{ backgroundColor: surface, borderRadius: 12, padding: "14px 16px", border: surfaceBorder, display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{item.icon}</span>
+                <img src={`/icons/${item.icon}`} alt="" style={{ width: 24, height: 24, flexShrink: 0, marginTop: 2 }} onError={e => e.target.style.display = "none"} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: textPrimary }}>{item.title}</h3>
                   <p style={{ margin: 0, fontSize: 12, color: textMuted }}>{item.desc}</p>
@@ -132,8 +132,9 @@ export default function Suggestions() {
         {/* COLONNE DROITE — Soumettre */}
         <div style={{ width: 340, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              🎫 soumettre
+            <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}>
+              <img src="/icons/ticket.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+              soumettre
             </h2>
             <button onClick={() => setShowForm(!showForm)}
               style={{ ...btnBase, padding: "7px 14px", backgroundColor: "#f3501e", color: "#ffffff", fontSize: 12 }}
@@ -162,7 +163,8 @@ export default function Suggestions() {
                       color: type === t.value ? t.color : textMuted,
                       cursor: "pointer", transition: "all 0.15s",
                     }}>
-                    {t.icon} {t.label}
+                    <img src={`/icons/${t.icon}`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+                    {t.label}
                   </button>
                 ))}
               </div>
@@ -214,8 +216,9 @@ export default function Suggestions() {
                   return (
                     <div key={ticket.id} style={{ backgroundColor: surface, borderRadius: 12, padding: "12px 14px", border: surfaceBorder }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 20, backgroundColor: typeInfo?.bg, color: typeInfo?.color, border: `1px solid ${typeInfo?.border}` }}>
-                          {typeInfo?.icon} {typeInfo?.label}
+                        <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 20, backgroundColor: typeInfo?.bg, color: typeInfo?.color, border: `1px solid ${typeInfo?.border}` }}>
+                          <img src={`/icons/${typeInfo?.icon}`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                          {typeInfo?.label}
                         </span>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 20, backgroundColor: statusInfo.bg, color: statusInfo.color }}>
                           {statusInfo.label}

@@ -6,7 +6,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
-import UpgradePopup from "../components/UpgradePopup"
+import UpgradePopup from "../components/Upgradepopup"
 
 const MEAL_TYPES = ["Matin", "Midi", "Soir"]
 const DAY_NAMES = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]

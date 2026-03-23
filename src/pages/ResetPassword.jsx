@@ -14,8 +14,8 @@ export default function ResetPassword() {
     setLoading(true)
     setError("")
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + "/reset-password/confirm",
-    })
+  redirectTo: "https://shrimply.app/reset-password/confirm",
+})
     if (error) { setError("Erreur, vérifie ton email"); setLoading(false) }
     else { setSent(true); setLoading(false) }
   }

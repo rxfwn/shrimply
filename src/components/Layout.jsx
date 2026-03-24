@@ -7,7 +7,7 @@ import { useProfile } from "../context/ProfileContext"
 function NavIcon({ name, size = 18 }) {
   return (
     <img
-      src={`/icons/${name}.png`}
+      src={`/icons/${name}.webp`}
       alt=""
       style={{ width: size, height: size, flexShrink: 0, filter: "none", imageRendering: "auto" }}
       onError={e => { e.target.style.display = "none" }}
@@ -53,7 +53,7 @@ export default function Layout() {
       {/* Logo */}
       <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 700, color: "white", display: "flex", alignItems: "center", gap: 6, letterSpacing: "-0.03em" }}>
-          <img src="/icons/shrim.png" alt="shrimp" style={{ width: 22, height: 22, filter: "none" }} />
+          <img src="/icons/shrim.webp" alt="shrimp" style={{ width: 22, height: 22, filter: "none" }} />
           <span>Shrim<span style={{ color: "#f3501e" }}>ply</span></span>
         </span>
         <button
@@ -73,7 +73,7 @@ export default function Layout() {
             {profile?.avatar_url ? (
               <img src={`${profile.avatar_url}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
-              <img src="/icons/profile.png" alt="profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display="none" }} />
+              <img src="/icons/profile.webp" alt="profil" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display="none" }} />
             )}
           </div>
           <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -149,11 +149,11 @@ export default function Layout() {
         <div className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{ backgroundColor: "#091718" }}>
           <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-            <img src="/icons/burger.png" alt="menu" className="no-select" style={{ width: 24, height: 28, display: "block" }} />
+            <img src="/icons/burger.webp" alt="menu" className="no-select" style={{ width: 24, height: 28, display: "block" }} />
           </button>
 
           <span className="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-            <img src="/icons/shrim.png" alt="shrimp" className="no-select" style={{ width: 22, height: 22 }} />
+            <img src="/icons/shrim.webp" alt="shrimp" className="no-select" style={{ width: 22, height: 22 }} />
             <span>Shrim<span className="text-[#f3501e]">ply</span></span>
           </span>
 

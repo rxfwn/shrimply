@@ -362,7 +362,7 @@ export default function Landing() {
               <div style={{ borderRadius: 46, position: "relative" }}>
                 <div style={{ position: "absolute", bottom: -30, left: "10%", right: "10%", height: 60, background: "rgba(0,0,0,.18)", filter: "blur(28px)", borderRadius: "50%", zIndex: 0 }} />
                 <div style={{ borderRadius: 38, overflow: "hidden", position: "relative", zIndex: 1 }}>
-                  <img src="/IMG_6506-left.png" alt="Calendrier Shrimply mobile" style={{ width: "100%", display: "block" }} />
+                  <img src="/IMG_6506-left.png" alt="Calendrier Shrimply mobile" fetchPriority="high" style={{ width: "100%", display: "block" }} />
                 </div>
               </div>
             </div>

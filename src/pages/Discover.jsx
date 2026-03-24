@@ -15,7 +15,7 @@ function getTextColor(hex) {
 function OfficialBadge({ small = false }) {
   return (
     <img
-      src="/icons/badge.webp"
+      src="/icons/badge.png"
       alt="Compte officiel Shrimply"
       title="Compte officiel Shrimply"
       style={{

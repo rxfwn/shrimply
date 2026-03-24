@@ -3,29 +3,29 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 
 const TAGS = [
-  { label: "végé",        bg: "#cfff79",  text: "#091718", icon: "herb.png"       },
-  { label: "poisson",     bg: "#9be7ff",  text: "#03225c", icon: "fih.png"        },
-  { label: "viande",      bg: "#ffb9e1",  text: "#510312", icon: "meat.png"       },
-  { label: "dessert",     bg: "#ffb9e1",  text: "#510312", icon: "shortcake.png"  },
-  { label: "italien",     bg: "#cfff79",  text: "#1a3d1a", icon: "pasta.png"      },
-  { label: "asiatique",   bg: "#510312",  text: "#ffffff", icon: "chopsticks.png" },
-  { label: "français",    bg: "#03225c",  text: "#ffffff", icon: "cheese.png"     },
-  { label: "oriental",    bg: "#510312",  text: "#fe7c3e", icon: "falafel.png"    },
-  { label: "économique",  bg: "#00261e",  text: "#3dff8e", icon: "money.png"      },
-  { label: "léger",       bg: "#03225c",  text: "#9be7ff", icon: "feather.png"    },
-  { label: "rapide",      bg: "#E49300",  text: "#FFF4C7", icon: "eclair.png"     },
-  { label: "protéiné",    bg: "#d57bff",  text: "#130b2d", icon: "biceps.png"     },
-  { label: "sans-four",   bg: "#130b2d",  text: "#d57bff", icon: "fire.png"       },
-  { label: "sans gluten", bg: "#FFF4C7",  text: "#E49300", icon: "ble.png"        },
+  { label: "végé",        bg: "#cfff79",  text: "#091718", icon: "herb.webp"       },
+  { label: "poisson",     bg: "#9be7ff",  text: "#03225c", icon: "fih.webp"        },
+  { label: "viande",      bg: "#ffb9e1",  text: "#510312", icon: "meat.webp"       },
+  { label: "dessert",     bg: "#ffb9e1",  text: "#510312", icon: "shortcake.webp"  },
+  { label: "italien",     bg: "#cfff79",  text: "#1a3d1a", icon: "pasta.webp"      },
+  { label: "asiatique",   bg: "#510312",  text: "#ffffff", icon: "chopsticks.webp" },
+  { label: "français",    bg: "#03225c",  text: "#ffffff", icon: "cheese.webp"     },
+  { label: "oriental",    bg: "#510312",  text: "#fe7c3e", icon: "falafel.webp"    },
+  { label: "économique",  bg: "#00261e",  text: "#3dff8e", icon: "money.webp"      },
+  { label: "léger",       bg: "#03225c",  text: "#9be7ff", icon: "feather.webp"    },
+  { label: "rapide",      bg: "#E49300",  text: "#FFF4C7", icon: "eclair.webp"     },
+  { label: "protéiné",    bg: "#d57bff",  text: "#130b2d", icon: "biceps.webp"     },
+  { label: "sans-four",   bg: "#130b2d",  text: "#d57bff", icon: "fire.webp"       },
+  { label: "sans gluten", bg: "#FFF4C7",  text: "#E49300", icon: "ble.webp"        },
 ]
 
 const RECIPE_CARDS = [
-  { title: "Bowl Buddha végé",   time: "20", servings: "2", rating: "4,8", primaryTag: { cardText: "#cfff79", cardBg: "#091718", cardBorder: "#b8e860" }, tagDefs: [{ label: "végé", pillBg: "#cfff79", pillText: "#091718", icon: "herb" }, { label: "léger", pillBg: "#03225c", pillText: "#9be7ff", icon: "feather" }], img: "/recipes/bowl-buddha.png" },
-  { title: "Saumon teriyaki",    time: "15", servings: "2", rating: "4,6", primaryTag: { cardText: "#9be7ff", cardBg: "#03225c", cardBorder: "#7dd4f0" }, tagDefs: [{ label: "poisson", pillBg: "#9be7ff", pillText: "#03225c", icon: "fih" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/saumon.png" },
-  { title: "Poulet rôti citron", time: "45", servings: "4", rating: "4,9", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "viande", pillBg: "#ffb9e1", pillText: "#510312", icon: "meat" }], img: "/recipes/poulet.png" },
-  { title: "Tarte tatin",        time: "55", servings: "6", rating: "4,7", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "dessert", pillBg: "#ffb9e1", pillText: "#510312", icon: "shortcake" }, { label: "français", pillBg: "#03225c", pillText: "#ffffff", icon: "cheese" }], img: "/recipes/tarte.png" },
-  { title: "Risotto parmesan",   time: "30", servings: "2", rating: "4,5", primaryTag: { cardText: "#cfff79", cardBg: "#1a3d1a", cardBorder: "#b8e860" }, tagDefs: [{ label: "italien", pillBg: "#cfff79", pillText: "#1a3d1a", icon: "pasta" }], img: "/recipes/risotto.png" },
-  { title: "Ramen maison",       time: "25", servings: "2", rating: "4,8", primaryTag: { cardText: "#510312", cardBg: "#ffffff", cardBorder: "#6b0000" }, tagDefs: [{ label: "asiatique", pillBg: "#510312", pillText: "#ffffff", icon: "chopsticks" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/ramen.png" },
+  { title: "Bowl Buddha végé",   time: "20", servings: "2", rating: "4,8", primaryTag: { cardText: "#cfff79", cardBg: "#091718", cardBorder: "#b8e860" }, tagDefs: [{ label: "végé", pillBg: "#cfff79", pillText: "#091718", icon: "herb" }, { label: "léger", pillBg: "#03225c", pillText: "#9be7ff", icon: "feather" }], img: "/recipes/bowl-buddha.webp" },
+  { title: "Saumon teriyaki",    time: "15", servings: "2", rating: "4,6", primaryTag: { cardText: "#9be7ff", cardBg: "#03225c", cardBorder: "#7dd4f0" }, tagDefs: [{ label: "poisson", pillBg: "#9be7ff", pillText: "#03225c", icon: "fih" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/saumon.webp" },
+  { title: "Poulet rôti citron", time: "45", servings: "4", rating: "4,9", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "viande", pillBg: "#ffb9e1", pillText: "#510312", icon: "meat" }], img: "/recipes/poulet.webp" },
+  { title: "Tarte tatin",        time: "55", servings: "6", rating: "4,7", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "dessert", pillBg: "#ffb9e1", pillText: "#510312", icon: "shortcake" }, { label: "français", pillBg: "#03225c", pillText: "#ffffff", icon: "cheese" }], img: "/recipes/tarte.webp" },
+  { title: "Risotto parmesan",   time: "30", servings: "2", rating: "4,5", primaryTag: { cardText: "#cfff79", cardBg: "#1a3d1a", cardBorder: "#b8e860" }, tagDefs: [{ label: "italien", pillBg: "#cfff79", pillText: "#1a3d1a", icon: "pasta" }], img: "/recipes/risotto.webp" },
+  { title: "Ramen maison",       time: "25", servings: "2", rating: "4,8", primaryTag: { cardText: "#510312", cardBg: "#ffffff", cardBorder: "#6b0000" }, tagDefs: [{ label: "asiatique", pillBg: "#510312", pillText: "#ffffff", icon: "chopsticks" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/ramen.webp" },
 ]
 
 const FAQ_ITEMS = [
@@ -38,7 +38,7 @@ const FAQ_ITEMS = [
 ]
 
 const Icon = ({ src, size = 28, style = {} }) => (
-  <img src={`/icons/${src}`} alt="" style={{ width: size, height: size, objectFit: "contain", flexShrink: 0, ...style }}
+  <img src={`/icons/${src}`} alt="" width={size} height={size} style={{ width: size, height: size, objectFit: "contain", flexShrink: 0, ...style }}
     onError={e => e.target.style.opacity = "0"} />
 )
 
@@ -67,11 +67,12 @@ export default function Landing() {
       .tags-run { animation: scrollLeft 38s linear infinite; }
       .float { animation: float 3.8s ease-in-out infinite; display: inline-block; }
 
-      .btn { transition: transform .15s, box-shadow .15s; cursor: pointer; border: none; outline: none; font-family: 'Instrument Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+      /* FIX CLS #3 — box-shadow → filter:drop-shadow (GPU, pas de reflow) */
+      .btn { transition: transform .15s, filter .15s; cursor: pointer; border: none; outline: none; font-family: 'Instrument Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
       .btn:hover { transform: translateY(-2px); }
       .btn:active { transform: scale(0.97) !important; }
-      .btn-orange { background: var(--orange); color: #fff; box-shadow: 0 6px 28px rgba(243,80,30,.3); }
-      .btn-orange:hover { box-shadow: 0 14px 42px rgba(243,80,30,.48); }
+      .btn-orange { background: var(--orange); color: #fff; filter: drop-shadow(0 6px 18px rgba(243,80,30,.3)); }
+      .btn-orange:hover { filter: drop-shadow(0 12px 28px rgba(243,80,30,.48)); }
       .btn-dark { background: var(--dark); color: #fff; }
       .btn-ghost-light { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.35); }
       .btn-ghost-light:hover { background: rgba(255,255,255,.1); }
@@ -89,7 +90,10 @@ export default function Landing() {
       .l-nav { padding: 10px 18px !important; }
       .nav-cta-label { display: none; }
       .hero-mobile { display: block !important; }
-      .hero-desktop { display: none !important; }
+
+      /* FIX CLS #2 — réserve la hauteur du hero-desktop avant que le contenu charge */
+      .hero-desktop { display: none !important; min-height: 680px; }
+
       .sec { padding: 60px 20px !important; }
       .features-pills { flex-direction: column !important; gap: 10px !important; }
       .feature-pill { min-width: unset !important; width: 100% !important; }
@@ -124,7 +128,7 @@ export default function Landing() {
       @media (min-width: 900px) {
         .l-nav { padding: 10px 48px !important; }
         .hero-mobile { display: none !important; }
-        .hero-desktop { display: block !important; }
+        .hero-desktop { display: block !important; min-height: 680px; }
         .sec { padding: 80px 60px !important; }
         .recipes-row { grid-template-columns: repeat(6, 1fr) !important; }
         .how-cols { flex-direction: row !important; gap: 60px !important; }
@@ -161,12 +165,12 @@ export default function Landing() {
   )
 
   const floatingPills = [
-    { label: "végé",      icon: "herb.png",      bg: "#cfff79", color: "#091718", top: -18,    left: -72,  rot: -6, delay: "0s",    size: 13 },
-    { label: "poisson",   icon: "fih.png",        bg: "#9be7ff", color: "#03225c", bottom: 140, right: -62, rot: 5,  delay: "-.8s",  size: 13 },
-    { label: "viande",    icon: "meat.png",       bg: "#ffb9e1", color: "#510312", top: 200,    left: -80,  rot: -4, delay: "-1.6s", size: 13 },
-    { label: "rapide",    icon: "eclair.png",     bg: "#E49300", color: "#FFF4C7", top: 80,     right: -70, rot: 7,  delay: "-2.2s", size: 12 },
-    { label: "protéiné",  icon: "biceps.png",     bg: "#d57bff", color: "#130b2d", bottom: 260, left: -90,  rot: -3, delay: "-3s",   size: 12 },
-    { label: "asiatique", icon: "chopsticks.png", bg: "#510312", color: "#ffffff", bottom: 60,  right: -80, rot: 4,  delay: "-1s",   size: 12 },
+    { label: "végé",      icon: "herb.webp",      bg: "#cfff79", color: "#091718", top: -18,    left: -72,  rot: -6, delay: "0s",    size: 13 },
+    { label: "poisson",   icon: "fih.webp",        bg: "#9be7ff", color: "#03225c", bottom: 140, right: -62, rot: 5,  delay: "-.8s",  size: 13 },
+    { label: "viande",    icon: "meat.webp",       bg: "#ffb9e1", color: "#510312", top: 200,    left: -80,  rot: -4, delay: "-1.6s", size: 13 },
+    { label: "rapide",    icon: "eclair.webp",     bg: "#E49300", color: "#FFF4C7", top: 80,     right: -70, rot: 7,  delay: "-2.2s", size: 12 },
+    { label: "protéiné",  icon: "biceps.webp",     bg: "#d57bff", color: "#130b2d", bottom: 260, left: -90,  rot: -3, delay: "-3s",   size: 12 },
+    { label: "asiatique", icon: "chopsticks.webp", bg: "#510312", color: "#ffffff", bottom: 60,  right: -80, rot: 4,  delay: "-1s",   size: 12 },
   ]
 
   const statBlocks = [
@@ -176,20 +180,20 @@ export default function Landing() {
   ]
 
   const featurePills = [
-    { icon: "book.png",     label: "Recettes",     desc: "14 catégories, ton carnet rangé",  bg: "#f3501e", text: "#fff"    },
-    { icon: "calendar.png", label: "Planning",     desc: "Glisse, bouclé en 5 min",          bg: "#cfff79", text: "#1a3d1a" },
-    { icon: "cart.png",     label: "Courses auto", desc: "Générée, sync mobile",             bg: "#111111", text: "#fff"    },
-    { icon: "spark.png",    label: "Découvrir",    desc: "Explore la communauté",            bg: "#d57bff", text: "#130b2d" },
-    { icon: "friends.png",  label: "Partage",      desc: "Importe & partage en un clic",     bg: "#FFF4C7", text: "#7a5200" },
+    { icon: "book.webp",     label: "Recettes",     desc: "14 catégories, ton carnet rangé",  bg: "#f3501e", text: "#fff"    },
+    { icon: "calendar.webp", label: "Planning",     desc: "Glisse, bouclé en 5 min",          bg: "#cfff79", text: "#1a3d1a" },
+    { icon: "cart.webp",     label: "Courses auto", desc: "Générée, sync mobile",             bg: "#111111", text: "#fff"    },
+    { icon: "spark.webp",    label: "Découvrir",    desc: "Explore la communauté",            bg: "#d57bff", text: "#130b2d" },
+    { icon: "friends.webp",  label: "Partage",      desc: "Importe & partage en un clic",     bg: "#FFF4C7", text: "#7a5200" },
   ]
 
   const painPoints = [
-    { icon: "exhausted.png", text: "\"on mange quoi ce soir ?\" encore. tous les jours.",               bg: "#cfff79", border: "#b8e860", textC: "#091718" },
-    { icon: "cart.png",      text: "tu fais les courses sans liste. tu oublies toujours quelque chose.", bg: "#9be7ff", border: "#7dd4f0", textC: "#03225c" },
-    { icon: "trash.png",     text: "tu jettes de la nourriture. parce que t'avais rien prévu.",          bg: "#ffb9e1", border: "#f0a0cc", textC: "#510312" },
-    { icon: "pizza.png",     text: "tu commandes en livraison. par flemme de réfléchir.",                bg: "#FFF4C7", border: "#f0e0a0", textC: "#7a5200" },
-    { icon: "brain.png",     text: "la charge mentale des repas t'épuise sans t'en rendre compte.",      bg: "#d57bff", border: "#c060f0", textC: "#130b2d" },
-    { icon: "bills.png",     text: "tu dépenses trop en courses. sans jamais savoir pourquoi.",          bg: "#E49300", border: "#cc8000", textC: "#FFF4C7" },
+    { icon: "exhausted.webp", text: "\"on mange quoi ce soir ?\" encore. tous les jours.",               bg: "#cfff79", border: "#b8e860", textC: "#091718" },
+    { icon: "cart.webp",      text: "tu fais les courses sans liste. tu oublies toujours quelque chose.", bg: "#9be7ff", border: "#7dd4f0", textC: "#03225c" },
+    { icon: "trash.webp",     text: "tu jettes de la nourriture. parce que t'avais rien prévu.",          bg: "#ffb9e1", border: "#f0a0cc", textC: "#510312" },
+    { icon: "pizza.webp",     text: "tu commandes en livraison. par flemme de réfléchir.",                bg: "#FFF4C7", border: "#f0e0a0", textC: "#7a5200" },
+    { icon: "brain.webp",     text: "la charge mentale des repas t'épuise sans t'en rendre compte.",      bg: "#d57bff", border: "#c060f0", textC: "#130b2d" },
+    { icon: "bills.webp",     text: "tu dépenses trop en courses. sans jamais savoir pourquoi.",          bg: "#E49300", border: "#cc8000", textC: "#FFF4C7" },
   ]
 
   return (
@@ -204,7 +208,7 @@ export default function Landing() {
       }}>
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon src="shrim.png" size={22} />
+          <Icon src="shrim.webp" size={22} />
           <span style={{ ...syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>
             Shrim<span style={{ color: R }}>ply</span>
           </span>
@@ -322,7 +326,7 @@ export default function Landing() {
                 <strong style={{ color: D, fontWeight: 600 }}>en 5 minutes par semaine.</strong>
               </p>
               <div className="fade3" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 6 }}>
-                <button className="btn btn-orange" onClick={() => navigate("/register")} style={btnO({ fontSize: 15, padding: "16px 40px" })}>
+                <button className="btn btn-orange cta-btn-main" onClick={() => navigate("/register")} style={btnO({ fontSize: 15, padding: "16px 40px" })}>
                   commencer maintenant — c'est gratuit
                 </button>
                 <button className="btn btn-dark" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })} style={btnG({ fontSize: 14, padding: "16px 28px", borderRadius: 100 })}>
@@ -345,14 +349,14 @@ export default function Landing() {
               {floatingPills.map(p => (
                 <div key={p.label} className="float" style={{ position: "absolute", top: p.top, bottom: p.bottom, left: p.left, right: p.right, zIndex: 2, animationDelay: p.delay }}>
                   <div style={{ background: p.bg, color: p.color, borderRadius: 100, padding: "7px 14px", fontSize: p.size, fontWeight: 600, ...inst, whiteSpace: "nowrap", transform: `rotate(${p.rot}deg)`, boxShadow: "0 6px 24px rgba(0,0,0,.12)", display: "flex", alignItems: "center", gap: 6 }}>
-                    <img src={`/icons/${p.icon}`} alt="" style={{ width: 14, height: 14, objectFit: "contain" }} onError={e => e.target.style.display = "none"} />
+                    <img src={`/icons/${p.icon}`} alt="" width={14} height={14} style={{ width: 14, height: 14, objectFit: "contain" }} onError={e => e.target.style.display = "none"} />
                     {p.label}
                   </div>
                 </div>
               ))}
               <div style={{ position: "absolute", bottom: 70, left: -58, zIndex: 3, background: "var(--white)", borderRadius: 18, padding: "10px 14px", boxShadow: "0 14px 40px rgba(0,0,0,.16)", display: "flex", alignItems: "center", gap: 10, border: "1px solid rgba(45,45,45,.06)" }}>
                 <div style={{ width: 36, height: 36, background: "rgba(61,255,142,.22)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <img src="/icons/cart.png" alt="" style={{ width: 20, height: 20, objectFit: "contain" }} />
+                  <img src="/icons/cart.webp" alt="" width={20} height={20} style={{ width: 20, height: 20, objectFit: "contain" }} />
                 </div>
                 <div>
                   <div style={{ ...inst, fontSize: 11, fontWeight: 700, color: D }}>Liste générée ✓</div>
@@ -361,8 +365,21 @@ export default function Landing() {
               </div>
               <div style={{ borderRadius: 46, position: "relative" }}>
                 <div style={{ position: "absolute", bottom: -30, left: "10%", right: "10%", height: 60, background: "rgba(0,0,0,.18)", filter: "blur(28px)", borderRadius: "50%", zIndex: 0 }} />
+                {/*
+                  FIX CLS #1a — width + height explicites sur l'image LCP principale.
+                  Remplace 828/1792 par les vraies dimensions de ton fichier IMG_6506-left.webp
+                  (clic droit → Informations sur Mac, ou propriétés sur Windows).
+                  height:"auto" + width="100%" = ratio préservé sans layout shift.
+                */}
                 <div style={{ borderRadius: 38, overflow: "hidden", position: "relative", zIndex: 1 }}>
-                  <img src="/IMG_6506-left.png" alt="Calendrier Shrimply mobile" fetchPriority="high" style={{ width: "100%", display: "block" }} />
+                  <img
+                    src="/IMG_6506-left.webp"
+                    alt="Calendrier Shrimply mobile"
+                    fetchPriority="high"
+                    width={828}
+                    height={1792}
+                    style={{ width: "100%", height: "auto", display: "block" }}
+                  />
                 </div>
               </div>
             </div>
@@ -375,7 +392,7 @@ export default function Landing() {
         <div className="tags-run" style={{ display: "flex", gap: 10, width: "max-content", alignItems: "center" }}>
           {[...TAGS, ...TAGS].map((t, i) => (
             <span key={i} style={{ padding: "7px 16px 7px 10px", borderRadius: 100, fontSize: 13, whiteSpace: "nowrap", background: t.bg, color: t.text, flexShrink: 0, letterSpacing: "-.02em", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, ...inst }}>
-              <img src={`/icons/${t.icon}`} alt="" style={{ width: 16, height: 16, objectFit: "contain" }} onError={e => e.target.style.display = "none"} />
+              <img src={`/icons/${t.icon}`} alt="" width={16} height={16} style={{ width: 16, height: 16, objectFit: "contain" }} onError={e => e.target.style.display = "none"} />
               {t.label}
             </span>
           ))}
@@ -419,8 +436,9 @@ export default function Landing() {
         <div className="recipes-row" style={{ display: "grid", gap: 12 }}>
           {RECIPE_CARDS.map(r => (
             <div key={r.title} className="recipe-card" style={{ backgroundColor: r.primaryTag.cardBg, border: `2px solid ${r.primaryTag.cardBorder}`, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 8px 24px rgba(0,0,0,.14)" }}>
+              {/* FIX CLS #1b — aspect-ratio réservé via paddingBottom trick pour éviter le saut au chargement photo */}
               <div style={{ width: "100%", aspectRatio: "4/3", position: "relative", overflow: "hidden" }}>
-                <img className="recipe-photo" src={r.img} alt={r.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} onError={e => { e.target.style.display = "none" }} />
+                <img className="recipe-photo" src={r.img} alt={r.title} width={400} height={300} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} onError={e => { e.target.style.display = "none" }} />
                 <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, opacity: 0.15 }}>🍽</div>
               </div>
               <div style={{ padding: "8px 10px 10px", flex: 1, display: "flex", flexDirection: "column", color: r.primaryTag.cardText }}>
@@ -432,7 +450,7 @@ export default function Landing() {
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: "auto" }}>
                   {r.tagDefs.slice(0, 2).map(t => (
                     <span key={t.label} style={{ display: "inline-flex", alignItems: "center", gap: 3, background: t.pillBg, color: t.pillText, borderRadius: 100, padding: "2px 7px", fontSize: 9, fontWeight: 700, ...inst }}>
-                      <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
+                      <img src={`/icons/${t.icon}.webp`} alt="" width={9} height={9} style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
                       {t.label}
                     </span>
                   ))}
@@ -459,9 +477,9 @@ export default function Landing() {
         <div className="how-cols" style={{ display: "flex", alignItems: "center" }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
             {[
-              { n: "01", bg: "#cfff79", border: "#b8e860", textBg: "#1a3d1a", icon: "book.png",     title: "ajoute tes recettes",         desc: "Crée ou importe depuis la communauté. Photos, tags, ingrédients — ton carnet enfin rangé.", pill: { bg: "#1a3d1a", c: "#cfff79", t: "recettes" } },
-              { n: "02", bg: "#9be7ff", border: "#7dd4f0", textBg: "#03225c", icon: "calendar.png", title: "planifie ta semaine",           desc: "Glisse tes recettes sur le calendrier. Ta semaine est bouclée en 5 minutes chrono.",        pill: { bg: "#03225c", c: "#9be7ff", t: "planning" } },
-              { n: "03", bg: "#ffb9e1", border: "#f0a0cc", textBg: "#510312", icon: "cart.png",     title: "fais tes courses sans stress", desc: "Ta liste est générée automatiquement. Ouvre-la sur ton téléphone au supermarché.",          pill: { bg: "#510312", c: "#ffb9e1", t: "liste auto" } },
+              { n: "01", bg: "#cfff79", border: "#b8e860", textBg: "#1a3d1a", icon: "book.webp",     title: "ajoute tes recettes",         desc: "Crée ou importe depuis la communauté. Photos, tags, ingrédients — ton carnet enfin rangé.", pill: { bg: "#1a3d1a", c: "#cfff79", t: "recettes" } },
+              { n: "02", bg: "#9be7ff", border: "#7dd4f0", textBg: "#03225c", icon: "calendar.webp", title: "planifie ta semaine",           desc: "Glisse tes recettes sur le calendrier. Ta semaine est bouclée en 5 minutes chrono.",        pill: { bg: "#03225c", c: "#9be7ff", t: "planning" } },
+              { n: "03", bg: "#ffb9e1", border: "#f0a0cc", textBg: "#510312", icon: "cart.webp",     title: "fais tes courses sans stress", desc: "Ta liste est générée automatiquement. Ouvre-la sur ton téléphone au supermarché.",          pill: { bg: "#510312", c: "#ffb9e1", t: "liste auto" } },
             ].map(s => (
               <div key={s.n} className="card-hover" style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 20, padding: "18px 20px", display: "flex", gap: 16, alignItems: "center", boxShadow: "0 4px 18px rgba(0,0,0,.06)" }}>
                 <div style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0, background: "rgba(255,255,255,.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -476,8 +494,18 @@ export default function Landing() {
               </div>
             ))}
           </div>
+          {/*
+            FIX CLS #1c — width + height explicites sur l'image "App Shrimply"
+            Même fichier que l'image LCP, mêmes dimensions à renseigner.
+          */}
           <div className="how-phone" style={{ flexShrink: 0, width: 270, position: "relative", marginLeft: 60 }}>
-            <img src="/IMG_6506-left.png" alt="App Shrimply" style={{ width: "100%", display: "block", borderRadius: 36 }} />
+            <img
+              src="/IMG_6506-left.webp"
+              alt="App Shrimply"
+              width={828}
+              height={1792}
+              style={{ width: "100%", height: "auto", display: "block", borderRadius: 36 }}
+            />
           </div>
         </div>
       </section>
@@ -517,13 +545,23 @@ export default function Landing() {
             <div style={{ position: "absolute", top: 14, left: 20, display: "flex", gap: 6 }}>
               {["#ff5f57","#ffbd2e","#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
             </div>
-            <img src="/calendarboth.png" alt="Shrimply sur desktop" style={{ width: "100%", display: "block", borderRadius: "10px 10px 0 0" }} />
+            {/*
+              FIX CLS #1d — width + height explicites sur calendarboth.webp
+              Remplace 1400/900 par les vraies dimensions de ton fichier.
+            */}
+            <img
+              src="/calendarboth.webp"
+              alt="Shrimply sur desktop"
+              width={1400}
+              height={900}
+              style={{ width: "100%", height: "auto", display: "block", borderRadius: "10px 10px 0 0" }}
+            />
           </div>
           <div className="sub-feat" style={{ display: "grid", gap: 12, marginTop: 16 }}>
             {[
-              { icon: "calendar.png", title: "planning semaine",  desc: "Vue semaine. Glisse-dépose.",             bg: "#cfff79", textC: "#1a3d1a" },
-              { icon: "cart.png",     title: "liste automatique", desc: "Générée depuis tes repas. Sync mobile.",  bg: "#9be7ff", textC: "#03225c" },
-              { icon: "phone.png",    title: "PWA installable",   desc: "Comme une vraie app. 0 téléchargement.", bg: "#ffb9e1", textC: "#510312" },
+              { icon: "calendar.webp", title: "planning semaine",  desc: "Vue semaine. Glisse-dépose.",             bg: "#cfff79", textC: "#1a3d1a" },
+              { icon: "cart.webp",     title: "liste automatique", desc: "Générée depuis tes repas. Sync mobile.",  bg: "#9be7ff", textC: "#03225c" },
+              { icon: "phone.webp",    title: "PWA installable",   desc: "Comme une vraie app. 0 téléchargement.", bg: "#ffb9e1", textC: "#510312" },
             ].map(f => (
               <div key={f.title} className="card-hover" style={{ background: f.bg, borderRadius: 16, padding: "20px", textAlign: "left", boxShadow: "0 4px 16px rgba(0,0,0,.06)" }}>
                 <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
@@ -572,7 +610,7 @@ export default function Landing() {
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 22 }}>
               {[["check","1 semaine de planification",false],["check","liste de courses automatique",false],["check","accès recettes communauté",false],["check","jusqu'à 5 recettes",false],["cross","historique illimité",true],["cross","import & partage",true]].map(([c,l,dim]) => (
                 <div key={l} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, color: dim ? "rgba(45,45,45,.28)" : D, fontWeight: dim ? 400 : 500, ...inst }}>
-                  <img src={`/icons/${c}.png`} alt={c} style={{ width: 16, height: 16, opacity: dim ? 0.35 : 1 }} />{l}
+                  <img src={`/icons/${c}.webp`} alt={c} width={16} height={16} style={{ width: 16, height: 16, opacity: dim ? 0.35 : 1 }} />{l}
                 </div>
               ))}
             </div>
@@ -582,7 +620,7 @@ export default function Landing() {
           </div>
           <div className="card-hover" style={{ background: "#111111", borderRadius: 24, padding: 28, textAlign: "left", border: `2px solid ${R}`, position: "relative", boxShadow: `0 24px 70px rgba(243,80,30,.2)` }}>
             <div style={{ position: "absolute", top: 16, right: 16, background: R, color: "#fff", padding: "4px 12px", borderRadius: 100, fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 5, ...inst }}>
-              <img src="/icons/star.png" alt="star" style={{ width: 12, height: 12 }} /> le plus populaire
+              <img src="/icons/star.webp" alt="star" width={12} height={12} style={{ width: 12, height: 12 }} /> le plus populaire
             </div>
             <div style={{ ...inst, fontSize: 11, color: "rgba(255,255,255,.32)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>premium</div>
             <div style={{ ...inst, fontSize: 12, color: R, fontWeight: 600, marginBottom: 10 }}>Pour ne plus jamais réfléchir</div>
@@ -591,7 +629,7 @@ export default function Landing() {
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 22 }}>
               {["recettes illimitées","planification illimitée","liste de courses auto","import de recettes","partage public + profil","nouvelles features en avant-première"].map(l => (
                 <div key={l} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, color: "#fff", fontWeight: 500, ...inst }}>
-                  <img src="/icons/check.png" alt="check" style={{ width: 16, height: 16 }} />{l}
+                  <img src="/icons/check.webp" alt="check" width={16} height={16} style={{ width: 16, height: 16 }} />{l}
                 </div>
               ))}
             </div>
@@ -627,7 +665,7 @@ export default function Landing() {
       {/* ── CTA FINAL ── */}
       <section className="cta-final" style={{ textAlign: "center", background: "var(--white)" }}>
         <div className="float" style={{ marginBottom: 16 }}>
-          <img src="/icons/shrim.png" alt="" style={{ width: 64, height: 64, objectFit: "contain" }} onError={e => e.target.style.opacity = "0"} />
+          <img src="/icons/shrim.webp" alt="" width={64} height={64} style={{ width: 64, height: 64, objectFit: "contain" }} onError={e => e.target.style.opacity = "0"} />
         </div>
         <h2 style={bigH({ fontSize: "clamp(26px,4.5vw,52px)", marginBottom: 10 })}>
           t'as assez réfléchi<br />à <span style={{ color: R }}>quoi manger.</span>
@@ -650,9 +688,9 @@ export default function Landing() {
       <footer style={{ padding: "20px 24px", borderTop: "1px solid rgba(45,45,45,.08)", background: "var(--cream)", ...inst, fontSize: 12, color: "rgba(45,45,45,.4)" }}>
         <div className="footer-inner" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-            <Icon src="shrim.png" size={16} />
+            <Icon src="shrim.webp" size={16} />
             <span style={{ ...syne, fontWeight: 700, color: D }}>shrimply</span>
-            <span>— fait avec amour <img src="/icons/love.png" alt="❤️" style={{ width: 13, height: 13, objectFit: "contain", verticalAlign: "middle" }} onError={e => e.target.replaceWith(document.createTextNode("❤️"))} /></span>
+            <span>— fait avec amour <img src="/icons/love.webp" alt="❤️" width={13} height={13} style={{ width: 13, height: 13, objectFit: "contain", verticalAlign: "middle" }} onError={e => e.target.replaceWith(document.createTextNode("❤️"))} /></span>
           </div>
           <span>© 2026 shrimply</span>
         </div>

@@ -2,17 +2,32 @@ import { supabase } from "../supabase"
 
 export default function Upgradepopup({ onClose, message }) {
   const handleUpgrade = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, email: user.email }),
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ user_id: user.id, email: user.email }),
+        }
+      )
+      const json = await res.json()
+      console.log("réponse Stripe:", json)
+
+      if (!json.url) {
+        alert("Erreur : " + (json.error || "pas d'URL reçue"))
+        return
       }
-    )
-    const { url } = await res.json()
-    window.location.href = url
+
+      window.location.href = json.url
+    } catch (e) {
+      alert("Erreur : " + e.message)
+    }
   }
 
   return (
@@ -37,7 +52,6 @@ export default function Upgradepopup({ onClose, message }) {
           gap: 0,
         }}
       >
-        {/* Icône shrimp */}
         <img
           src="/icons/shrim.png"
           alt=""
@@ -45,7 +59,6 @@ export default function Upgradepopup({ onClose, message }) {
           onError={e => e.target.style.display = "none"}
         />
 
-        {/* Titre */}
         <p style={{
           margin: "0 0 16px",
           fontFamily: "Poppins, sans-serif",
@@ -59,7 +72,6 @@ export default function Upgradepopup({ onClose, message }) {
           fonctionnalité premium
         </p>
 
-        {/* Message */}
         <p style={{
           margin: "0 0 28px",
           fontFamily: "Poppins, sans-serif",
@@ -73,7 +85,6 @@ export default function Upgradepopup({ onClose, message }) {
           {message}
         </p>
 
-        {/* Bouton premium */}
         <button
           onClick={handleUpgrade}
           style={{
@@ -97,7 +108,6 @@ export default function Upgradepopup({ onClose, message }) {
           passer premium — 4,99€/mois
         </button>
 
-        {/* Pas maintenant */}
         <button
           onClick={onClose}
           style={{

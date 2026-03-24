@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { TAGS } from "../tags"
-import { computeCostDetails, getMatchWords } from "../utils/priceEngine"
+import { computeCostDetails } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
 
 const S = {
@@ -116,7 +116,7 @@ function DeleteConfirmModal({ onConfirm, onCancel }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
       <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "28px 32px", maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", fontFamily: "Poppins, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <img src="/icons/trash.webp" alt="" style={{ width: 24, height: 24, opacity: 0.7 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/trash.png" alt="" style={{ width: 24, height: 24, opacity: 0.7 }} onError={e => e.target.style.display = "none"} />
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>Supprimer la recette ?</h2>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
@@ -205,55 +205,30 @@ export default function RecipeDetail() {
     await loadCostDetails(recipeData, ingredientsData)
   }
 
-  const loadCostDetails = async (recipeData, ingredientsData) => {
-    try {
-      const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
-      setCostDetails(computeCostDetails(ingredientsData, prices || [], recipeData.servings))
-    } catch (e) { console.error("Erreur calcul budget:", e) }
-  }
+ const loadCostDetails = async (recipeData, ingredientsData) => {
+  try {
+    const result = await computeCostDetails(ingredientsData, recipeData.servings)
+    setCostDetails(result)
+  } catch (e) { console.error("Erreur calcul budget:", e) }
+}
 
   const getEstimableIngredients = (list) => list.filter(i => hasValidQuantity(i))
 
-  const getMissingIngredients = (list, prices) => {
-    const details = computeCostDetails(list, prices || [], 1).details
-    return getEstimableIngredients(list).filter(i => {
-      const d = details.find(d => d.name === i.name)
-      return !d || !d.found
-    })
+
+const handleEstimate = async () => {
+  if (estimatingRef.current || cooldown > 0) return
+  estimatingRef.current = true; setEstimating(true); setApiError("")
+  try {
+    const result = await computeCostDetails(ingredients, recipe.servings)
+    setCostDetails(result)
+    setCooldown(COOLDOWN_SECONDS)
+  } catch (error) {
+    setApiError(error.message)
+    setCooldown(COOLDOWN_SECONDS)
+  } finally {
+    estimatingRef.current = false; setEstimating(false)
   }
-
-  const handleEstimate = async () => {
-    if (estimatingRef.current || cooldown > 0) return
-    estimatingRef.current = true; setEstimating(true); setApiError("")
-    try {
-      const { data: prices } = await supabase.from("ingredient_prices").select("name, price, unit")
-      const missing = getMissingIngredients(ingredients, prices)
-
-      // ── DEBUG LOGS ──
-      console.group("🔍 Diagnostic prix")
-      console.log("🟡 Prix en base:", prices?.map(p => `${p.name} → [${getMatchWords(p.name).join(", ")}]`))
-      console.log("🔴 Manquants:")
-      missing.forEach(m => console.log(`  "${m.name}" → mots clés: [${getMatchWords(m.name).join(", ")}] | unité: "${m.unit}" | qté: "${m.quantity}"`))
-      console.groupEnd()
-      // ── FIN DEBUG ──
-
-      if (missing.length === 0) { await loadCostDetails(recipe, ingredients); setCooldown(COOLDOWN_SECONDS); return }
-
-      const { data: gemini_prices, error: funcError } = await supabase.functions.invoke("estimate-costs", {
-        body: { ingredients: missing.map(m => ({ name: m.name, quantity: m.quantity, unit: m.unit })) }
-      })
-      if (funcError) throw new Error("Erreur serveur IA.")
-      if (gemini_prices?.prices?.length > 0) {
-        await supabase.from("ingredient_prices").upsert(
-          gemini_prices.prices.map(p => ({ name: p.name, price: p.price, unit: p.unit })),
-          { onConflict: "name" }
-        )
-      }
-      await loadCostDetails(recipe, ingredients)
-      setCooldown(COOLDOWN_SECONDS)
-    } catch (error) { setApiError(error.message); setCooldown(COOLDOWN_SECONDS) }
-    finally { estimatingRef.current = false; setEstimating(false) }
-  }
+}
 
   const handleDelete = async () => {
     setDeleting(true); setShowDeleteModal(false)
@@ -387,7 +362,7 @@ export default function RecipeDetail() {
                 const ti = TAGS.find(t => t.value === tv)
                 return (
                   <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
-                    <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                    <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
                     {ti.label}
                   </span>
                 )
@@ -398,7 +373,7 @@ export default function RecipeDetail() {
           <div>
             <div className="budget-bar">
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                <img src="/icons/money.webp" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
+                <img src="/icons/money.png" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
                 <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>budget</span>
               </div>
 
@@ -409,7 +384,7 @@ export default function RecipeDetail() {
                     <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>total</span>
                   </div>
                   <div className="budget-chip">
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{scaledPerServing.toFixed(2)}€</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{scaledPerServing != null ? scaledPerServing.toFixed(2) : "—"}€</span>
                     <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", fontFamily: "Poppins, sans-serif" }}>/personne</span>
                   </div>
                 </>
@@ -426,7 +401,7 @@ export default function RecipeDetail() {
                 onMouseEnter={e => { if (canEstimate) e.currentTarget.style.transform = "scale(1.04)" }}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
-                <img src="/icons/calc.webp" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
+                <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
                 {btnLabel}
               </button>
             </div>
@@ -440,7 +415,7 @@ export default function RecipeDetail() {
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <img src="/icons/cart.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+              <img src="/icons/cart.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
             </div>
             {baseServings > 0 && <ServingStepper servings={activeServings} onChange={setCurrentServings} baseServings={baseServings} />}
@@ -470,7 +445,7 @@ export default function RecipeDetail() {
 
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
-            <img src="/icons/chef.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+            <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

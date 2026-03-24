@@ -82,7 +82,7 @@ export default function ResetPasswordConfirm() {
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
-            <img src="/icons/shrim.png" alt="Shrimply" style={{ width: 40, height: 40 }} />
+            <img src="/icons/shrim.webp" alt="Shrimply" style={{ width: 40, height: 40 }} />
             <span style={{ fontSize: "28px", color: "#ffffff", fontWeight: 700 }}>
               Shrim<span style={{ color: "#f3501e" }}>ply</span>
             </span>
@@ -162,7 +162,7 @@ export default function ResetPasswordConfirm() {
                     />
                     <button onClick={() => setShowPassword(!showPassword)}
                       style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                      <img src={showPassword ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
+                      <img src={showPassword ? "/icons/oeilouvert.webp" : "/icons/oeilferme.webp"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
                     </button>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export default function ResetPasswordConfirm() {
                     />
                     <button onClick={() => setShowConfirm(!showConfirm)}
                       style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                      <img src={showConfirm ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
+                      <img src={showConfirm ? "/icons/oeilouvert.webp" : "/icons/oeilferme.webp"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
                     </button>
                   </div>
                   {passwordMatch && <p style={{ fontSize: "12px", color: "#34d399", margin: "6px 0 0 2px", fontWeight: 500 }}>✅ les mots de passe correspondent</p>}

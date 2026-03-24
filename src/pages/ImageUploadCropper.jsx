@@ -100,7 +100,7 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
           onMouseEnter={e => e.currentTarget.style.borderColor = "#f3501e"}
           onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border-2)"}
         >
-          <img src="/icons/photo.png" alt="" style={{ width: 40, height: 40, opacity: 0.5 }} />
+          <img src="/icons/photo.webp" alt="" style={{ width: 40, height: 40, opacity: 0.5 }} />
           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text-muted)" }}>ajouter la photo du plat</p>
           <p style={{ margin: 0, fontSize: 11, color: "var(--text-faint)" }}>JPG, PNG — max 10MB</p>
           <input ref={fileInputRef} type="file" style={{ display: "none" }} onChange={handleFileChange} accept="image/*" />

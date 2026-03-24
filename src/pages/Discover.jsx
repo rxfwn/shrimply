@@ -15,7 +15,7 @@ function getTextColor(hex) {
 function OfficialBadge({ small = false }) {
   return (
     <img
-      src="/icons/badge.png"
+      src="/icons/badge.webp"
       alt="Compte officiel Shrimply"
       title="Compte officiel Shrimply"
       style={{
@@ -303,7 +303,7 @@ export default function Discover() {
                         const ti = TAGS.find(t => t.value === tv)
                         return ti ? (
                           <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
-                            <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                            <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
                             {ti.label}
                           </span>
                         ) : null
@@ -314,7 +314,7 @@ export default function Discover() {
                   <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
                     <div className="discover-budget-bar" style={{ flex: 1, borderRadius: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                        <img src="/icons/money.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
+                        <img src="/icons/money.webp" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
                         <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>budget</span>
                       </div>
                       {previewRecipe.estimatedTotal != null ? (
@@ -354,7 +354,7 @@ export default function Discover() {
                     <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <img src="/icons/cart.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+                          <img src="/icons/cart.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
                           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
                         </div>
                         {previewRecipe.servings && (
@@ -377,7 +377,7 @@ export default function Discover() {
                   {previewSteps.length > 0 && (
                     <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
-                        <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+                        <img src="/icons/chef.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
                         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -407,7 +407,7 @@ export default function Discover() {
       {/* ── Header ── */}
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.05em" }}>
-          <img src="/icons/spark.png" alt="" style={{ width: 22, height: 22 }} />
+          <img src="/icons/spark.webp" alt="" style={{ width: 22, height: 22 }} />
           découvrir
         </h1>
         <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>
@@ -418,7 +418,7 @@ export default function Discover() {
 
       {/* Recherche */}
       <div style={{ marginBottom: 14, position: "relative", maxWidth: 400 }}>
-        <img src="/icons/loupe.png" alt="" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, pointerEvents: "none" }} />
+        <img src="/icons/loupe.webp" alt="" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, pointerEvents: "none" }} />
         <input
           style={{ width: "100%", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", fontSize: 13, color: "var(--text-main)", outline: "none", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
           placeholder="rechercher une recette..."
@@ -441,7 +441,7 @@ export default function Discover() {
         <button onClick={() => setFilter(filter === "all" ? "" : "all")}
           style={{ ...btnBase, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: filter !== "" && filter !== "all" ? 0.35 : 1, transition: "opacity 0.2s, transform 0.2s" }}
         >
-          <img src="/icons/book.png" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/book.webp" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
           toutes
         </button>
         {TAGS.map(tag => {
@@ -451,7 +451,7 @@ export default function Discover() {
             <button key={tag.key} onClick={() => setFilter(isActive ? "all" : tag.key)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer", flexShrink: 0, backgroundColor: tag.pillBg, opacity: anyActive && !isActive ? 0.35 : 1, transform: isActive ? "scale(1.08)" : "scale(1)", boxShadow: isActive ? "0 2px 8px rgba(0,0,0,0.25)" : "none", transition: "opacity 0.2s, transform 0.2s, box-shadow 0.2s" }}
             >
-              <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+              <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
               <span style={{ color: tag.pillText }}>{tag.label}</span>
             </button>
           )
@@ -462,7 +462,7 @@ export default function Discover() {
         <button onClick={() => setFilter(filter === "all" ? "" : "all")}
           style={{ ...btnBase, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: filter !== "" && filter !== "all" ? 0.35 : 1, transition: "opacity 0.2s" }}
         >
-          <img src="/icons/book.png" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/book.webp" alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
           toutes
         </button>
         {TAGS.map(tag => {
@@ -472,7 +472,7 @@ export default function Discover() {
             <button key={tag.key} onClick={() => setFilter(isActive ? "all" : tag.key)}
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "none", cursor: "pointer", flexShrink: 0, backgroundColor: tag.pillBg, opacity: anyActive && !isActive ? 0.35 : 1, transform: isActive ? "scale(1.08)" : "scale(1)", transition: "opacity 0.2s, transform 0.2s" }}
             >
-              <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
+              <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 13, height: 13 }} onError={e => e.target.style.display = "none"} />
               <span style={{ color: tag.pillText }}>{tag.label}</span>
             </button>
           )
@@ -547,7 +547,7 @@ export default function Discover() {
                     {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
                     {recipe.estimatedTotal !== null && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
-                        <img src="/icons/money.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                        <img src="/icons/money.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                         {recipe.estimatedTotal.toFixed(2)}€
                       </span>
                     )}
@@ -562,7 +562,7 @@ export default function Discover() {
                     <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8, flexWrap: "nowrap" }}>
                       {validTags.slice(0, 2).map(ti => (
                         <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, flexShrink: 0 }}>
-                          <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
+                          <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
                           {ti.label}
                         </span>
                       ))}
@@ -575,7 +575,7 @@ export default function Discover() {
                           <div className="tag-tooltip" style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column", zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120 }}>
                             {validTags.slice(2).map(ti => (
                               <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
-                                <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
+                                <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
                                 {ti.label}
                               </span>
                             ))}

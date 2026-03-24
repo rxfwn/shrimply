@@ -146,7 +146,7 @@ export default function Login() {
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
-            <img src="/icons/shrim.png" alt="Shrimply" style={{ width: 40, height: 40 }} />
+            <img src="/icons/shrim.webp" alt="Shrimply" style={{ width: 40, height: 40 }} />
             <span style={{ fontSize: "28px", color: isDay ? "#111111" : "#ffffff", fontWeight: 700 }}>
               Shrim<span style={{ color: "#f3501e" }}>ply</span>
             </span>
@@ -203,7 +203,7 @@ export default function Login() {
                 onClick={() => setShowPassword(!showPassword)}
                 style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
               >
-                <img src={showPassword ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
+                <img src={showPassword ? "/icons/oeilouvert.webp" : "/icons/oeilferme.webp"} alt="" style={{ width: 18, height: 18, opacity: 0.4 }} />
               </button>
             </div>
 

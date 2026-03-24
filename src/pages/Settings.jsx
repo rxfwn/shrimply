@@ -15,7 +15,7 @@ function SectionComp({ title, icon, children }) {
   return (
     <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", overflow: "hidden", marginBottom: 12 }}>
       <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
-        {icon && <img src={`/icons/${icon}.png`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}
+        {icon && <img src={`/icons/${icon}.webp`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}
         <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{title}</span>
       </div>
       {children}
@@ -209,7 +209,7 @@ export default function Settings() {
         )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-          <img src="/icons/settings.png" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/settings.webp" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>paramètres</h1>
         </div>
 
@@ -229,7 +229,7 @@ export default function Settings() {
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
-                <img src={isDay ? "/icons/night.png" : "/icons/sun.png"} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
+                <img src={isDay ? "/icons/night.webp" : "/icons/sun.webp"} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
                 {isDay ? "nuit" : "jour"}
               </button>
             }
@@ -311,7 +311,7 @@ export default function Settings() {
                     transform: active ? "scale(1.08)" : "scale(1)",
                     boxShadow: active ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
                   }}>
-                    <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
+                    <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                     {tag.label}
                   </button>
                 )
@@ -428,7 +428,7 @@ export default function Settings() {
                       onBlur={e => e.target.style.borderColor = "var(--input-border)"} />
                     <button onClick={() => setShowPwd(p => ({ ...p, current: !p.current }))}
                       style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                      <img src={showPwd.current ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
+                      <img src={showPwd.current ? "/icons/oeilouvert.webp" : "/icons/oeilferme.webp"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
                     </button>
                   </div>
                 </div>
@@ -446,7 +446,7 @@ export default function Settings() {
                       onBlur={e => e.target.style.borderColor = "var(--input-border)"} />
                     <button onClick={() => setShowPwd(p => ({ ...p, new: !p.new }))}
                       style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                      <img src={showPwd.new ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
+                      <img src={showPwd.new ? "/icons/oeilouvert.webp" : "/icons/oeilferme.webp"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
                     </button>
                   </div>
                 </div>
@@ -466,7 +466,7 @@ export default function Settings() {
                       onKeyDown={e => e.key === "Enter" && handlePasswordChange()} />
                     <button onClick={() => setShowPwd(p => ({ ...p, confirm: !p.confirm }))}
                       style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                      <img src={showPwd.confirm ? "/icons/oeilouvert.png" : "/icons/oeilferme.png"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
+                      <img src={showPwd.confirm ? "/icons/oeilouvert.webp" : "/icons/oeilferme.webp"} alt="" style={{ width: 16, height: 16, opacity: 0.4 }} />
                     </button>
                   </div>
                   {passwordMatch && <p style={{ fontSize: 11, color: "#34d399", margin: "4px 0 0 2px", fontWeight: 500 }}>✅ les mots de passe correspondent</p>}

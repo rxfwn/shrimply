@@ -45,7 +45,7 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
       transition: "opacity 0.2s ease, transform 0.2s ease",
       boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
     }}>
-      <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: iconSz, height: iconSz }} onError={e => e.target.style.display="none"} />
+      <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: iconSz, height: iconSz }} onError={e => e.target.style.display="none"} />
       <span style={{ color: tag.pillText }}>{tag.label}</span>
     </button>
   )
@@ -53,9 +53,9 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
 
 function DraftToast({ type, visible }) {
   const configs = {
-    saved:    { bg: "#5BC8F5", text: "#0a3d52", icon: "/icons/save.png",  msg: "brouillon sauvegardé" },
-    restored: { bg: "#A8E063", text: "#1a3a00", icon: "/icons/memo.png",  msg: "brouillon restauré"  },
-    cleared:  { bg: "#f3501e", text: "#ffffff",  icon: "/icons/trash.png", msg: "brouillon supprimé"  },
+    saved:    { bg: "#5BC8F5", text: "#0a3d52", icon: "/icons/save.webp",  msg: "brouillon sauvegardé" },
+    restored: { bg: "#A8E063", text: "#1a3a00", icon: "/icons/memo.webp",  msg: "brouillon restauré"  },
+    cleared:  { bg: "#f3501e", text: "#ffffff",  icon: "/icons/trash.webp", msg: "brouillon supprimé"  },
   }
   const c = configs[type] || configs.saved
   return (
@@ -347,7 +347,7 @@ export default function Recipes() {
         <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 10 }}>
-              <img src="/icons/pencil.png" alt="" style={{ width: 24, height: 24 }} />
+              <img src="/icons/pencil.webp" alt="" style={{ width: 24, height: 24 }} />
               nouvelle recette
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -427,7 +427,7 @@ export default function Recipes() {
                         color: isMain ? tag.pillText : "var(--text-muted)",
                         transition: "all 0.15s",
                       }}>
-                      <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                      <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                       {tag.label}
                     </button>
                   )
@@ -437,7 +437,7 @@ export default function Recipes() {
                 const t = TAGS.find(t => t.value === primaryTag)
                 return t ? (
                   <div style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, backgroundColor: t.cardBg, color: getTextColor(t.cardBg), fontSize: 11, fontWeight: 700 }}>
-                    <img src={`/icons/${t.icon}.png`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+                    <img src={`/icons/${t.icon}.webp`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
                     couleur : {t.label}
                   </div>
                 ) : null
@@ -548,7 +548,7 @@ export default function Recipes() {
                   onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "scale(1.03)" }}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                 >
-                  {loading ? "vérification..." : <><img src="/icons/save.png" alt="" style={{ width: 14, height: 14 }} />enregistrer</>}
+                  {loading ? "vérification..." : <><img src="/icons/save.webp" alt="" style={{ width: 14, height: 14 }} />enregistrer</>}
                 </button>
               </div>
             </div>
@@ -559,7 +559,7 @@ export default function Recipes() {
         <div style={{ maxWidth: 1200 }}>
           <div style={{ marginBottom: 20 }}>
             <h1 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8 }}>
-              <img src="/icons/book.png" alt="" style={{ width: 24, height: 24 }} />
+              <img src="/icons/book.webp" alt="" style={{ width: 24, height: 24 }} />
               mes recettes
               {!isPremium && (
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-faint)", marginLeft: 4 }}>
@@ -570,7 +570,7 @@ export default function Recipes() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <div style={{ position: "relative", flex: 1, maxWidth: 360 }}>
-                <img src="/icons/loupe.png" alt="" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, pointerEvents: "none" }} />
+                <img src="/icons/loupe.webp" alt="" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 16, height: 16, pointerEvents: "none" }} />
                 <input
                   style={{ width: "100%", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", fontSize: 13, color: "var(--text-main)", outline: "none", fontFamily: "Poppins, sans-serif", fontWeight: 700, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
                   placeholder="rechercher une recette..."
@@ -601,7 +601,7 @@ export default function Recipes() {
                 <div key={cls} className={cls}>
                   <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
                     style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
-                    <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                    <img src="/icons/book.webp" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                     toutes
                   </button>
                   {TAGS.map(tag => (
@@ -660,7 +660,7 @@ export default function Recipes() {
                               const ti = TAGS.find(t => t.value === tv)
                               return (
                                 <span key={tv} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText }}>
-                                  <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />
+                                  <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />
                                   {ti.label}
                                 </span>
                               )
@@ -672,18 +672,18 @@ export default function Recipes() {
                       <div style={{ display: "flex", gap: 6 }}>
                         {recipe.imported_from ? (
                           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: primaryTagInfo?.pillBg || "rgba(0,0,0,0.55)", color: primaryTagInfo?.pillText || "#ffffff", fontFamily: "Poppins, sans-serif", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <img src="/icons/globe.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                          <img src="/icons/globe.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                           importée
                           </span>
                         ) : (
                           <button onClick={e => togglePublic(e, recipe)}
                           style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center" }}>
-                          <img src={recipe.is_public ? "/icons/planet.png" : "/icons/lock.png"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
+                          <img src={recipe.is_public ? "/icons/planet.webp" : "/icons/lock.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                           </button>
                         )}
                         <button onClick={e => handleDuplicate(e, recipe)} disabled={duplicating===recipe.id}
                         style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1, display: "flex", alignItems: "center" }}>
-                        <img src={duplicating===recipe.id ? "/icons/hourglass.png" : "/icons/memo.png"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
+                        <img src={duplicating===recipe.id ? "/icons/hourglass.webp" : "/icons/memo.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                         </button>
                       </div>
                     </div>

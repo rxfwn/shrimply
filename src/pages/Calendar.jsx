@@ -15,9 +15,9 @@ const DAY_TEXT_COLORS = ["#510312", "#03225C", "#091718", "#510312", "#03225C", 
 const MONTH_NAMES = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
 
 const MEAL_ICONS = {
-  Matin: "/icons/sun.png",
-  Midi: "/icons/clock.png",
-  Soir: "/icons/moon.png",
+  Matin: "/icons/sun.webp",
+  Midi: "/icons/clock.webp",
+  Soir: "/icons/moon.webp",
 }
 
 function getWeekDays(startDate) {
@@ -136,7 +136,7 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
           </>
         ) : (
           <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img src="/icons/plus.png" alt="+" style={{ width: 18, height: 18, opacity: 0.2 }} />
+            <img src="/icons/plus.webp" alt="+" style={{ width: 18, height: 18, opacity: 0.2 }} />
           </div>
         )}
       </div>
@@ -158,7 +158,7 @@ function MealSlot({ date, mealType, meal, onRemove, isToday, isMobile, onMobileT
         </>
       ) : (
         <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <img src="/icons/plus.png" alt="+" style={{ width: 16, height: 16, opacity: isOver ? 1 : 0.15, transition: "opacity 0.15s" }} />
+          <img src="/icons/plus.webp" alt="+" style={{ width: 16, height: 16, opacity: isOver ? 1 : 0.15, transition: "opacity 0.15s" }} />
         </div>
       )}
     </div>
@@ -176,7 +176,7 @@ function MonthMealSlot({ dateStr, mealType, meal, onRemove, isDay }) {
     <div ref={setNodeRef} style={{ flex: 1, minHeight: 0, backgroundColor: meal ? cardBg : isOver ? "rgba(243,80,30,0.12)" : isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)", border: meal ? `1px solid ${cardBorder || "var(--border)"}` : isOver ? "1px solid #d57bff" : "1px solid transparent", borderRadius: 5, display: "flex", alignItems: "center", padding: "0 5px", gap: 3, overflow: "hidden", transition: "all 0.15s" }}>
       {meal ? (
         <>
-          {tagInfo && <img src={`/icons/${tagInfo.icon}.png`} alt="" style={{ width: 9, height: 9, flexShrink: 0, opacity: 0.8 }} onError={e => e.target.style.display = "none"} />}
+          {tagInfo && <img src={`/icons/${tagInfo.icon}.webp`} alt="" style={{ width: 9, height: 9, flexShrink: 0, opacity: 0.8 }} onError={e => e.target.style.display = "none"} />}
           <span style={{ fontSize: 9, fontWeight: 700, color: textColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, lineHeight: 1 }}>{meal.recipes?.name}</span>
           <button onClick={() => onRemove(meal.id)} style={{ background: "none", border: "none", cursor: "pointer", color: textColor, opacity: 0.25, fontSize: 11, lineHeight: 1, flexShrink: 0, padding: 0 }} onMouseEnter={e => e.currentTarget.style.opacity = "1"} onMouseLeave={e => e.currentTarget.style.opacity = "0.25"}>×</button>
         </>
@@ -214,7 +214,7 @@ function MobileMealSlot({ dateStr, mealType, meal, onRemove, handleMobileTap, is
         </>
       ) : (
         <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <img src="/icons/plus.png" alt="+" style={{ width: 12, height: 12, opacity: isOver ? 0.8 : 0.15, transition: "opacity 0.15s" }} />
+          <img src="/icons/plus.webp" alt="+" style={{ width: 12, height: 12, opacity: isOver ? 0.8 : 0.15, transition: "opacity 0.15s" }} />
         </div>
       )}
     </div>
@@ -264,11 +264,11 @@ function MobileRecipeModal({ recipes, onSelect, onClose, isDay }) {
                   <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: textColor, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" }}>{recipe.name}</p>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
                     {recipe.prep_time && <p style={{ margin: 0, fontSize: 11, color: mutedColor, fontFamily: "Poppins, sans-serif" }}>⏱ {recipe.prep_time} min</p>}
-                    {tagInfo && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: tagInfo.pillText, backgroundColor: tagInfo.pillBg, padding: "1px 7px", borderRadius: 20, fontFamily: "Poppins, sans-serif" }}><img src={`/icons/${tagInfo.icon}.png`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />{tagInfo.label}</span>}
+                    {tagInfo && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, fontWeight: 700, color: tagInfo.pillText, backgroundColor: tagInfo.pillBg, padding: "1px 7px", borderRadius: 20, fontFamily: "Poppins, sans-serif" }}><img src={`/icons/${tagInfo.icon}.webp`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />{tagInfo.label}</span>}
                   </div>
                 </div>
                 <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: tagInfo ? tagInfo.pillBg : "rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <img src="/icons/plus.png" alt="+" style={{ width: 16, height: 16, filter: tagInfo ? (getTextColor(tagInfo.pillBg) === "#ffffff" ? "invert(1)" : "invert(0)") : "none" }} />
+                  <img src="/icons/plus.webp" alt="+" style={{ width: 16, height: 16, filter: tagInfo ? (getTextColor(tagInfo.pillBg) === "#ffffff" ? "invert(1)" : "invert(0)") : "none" }} />
                 </div>
               </button>
             )
@@ -429,7 +429,7 @@ export default function Calendar() {
       {showBalancePopup && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
           <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, padding: 32, maxWidth: 360, width: "100%", textAlign: "center", border: "1px solid var(--border)" }}>
-            <img src="/icons/salad.png" alt="" style={{ width: 48, height: 48, marginBottom: 16 }} />
+            <img src="/icons/salad.webp" alt="" style={{ width: 48, height: 48, marginBottom: 16 }} />
             <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>bientôt disponible !</h2>
             <p className="text-light" style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>la fonctionnalité d'équilibrage automatique de ton planning est en cours de développement</p>
             <button onClick={() => setShowBalancePopup(false)} style={{ width: "100%", padding: "12px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>ok, j'attends !</button>
@@ -445,13 +445,13 @@ export default function Calendar() {
 
             {/* Titre + toggle vue */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <img src="/icons/calendar.png" alt="" style={{ width: 22, height: 22 }} />
+              <img src="/icons/calendar.webp" alt="" style={{ width: 22, height: 22 }} />
               <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>mon planning</h1>
               <div style={{ display: "flex", backgroundColor: "var(--bg-card-2)", borderRadius: 10, padding: 3, gap: 2 }}>
                 <button className="text-light" onClick={() => handleViewChange("week")} style={toggleBtnStyle(view === "week")}>semaine</button>
                 <button className="text-light" onClick={() => handleViewChange("month")} style={{ ...toggleBtnStyle(view === "month"), opacity: !isPremium ? 0.5 : 1, display: "flex", alignItems: "center", gap: 4 }}>
                   mois
-                  {!isPremium && <img src="/icons/lock.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />}
+                  {!isPremium && <img src="/icons/lock.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />}
                 </button>
               </div>
             </div>
@@ -459,30 +459,30 @@ export default function Calendar() {
             {/* Navigation date — flèches collées à la date */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <button onClick={prevPeriod} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "var(--bg-card-2)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: !isPremium && isCurrentWeek ? 0.4 : 1 }}>
-                <img src="/icons/left.png" alt="" style={{ width: 18, height: 18 }} />
+                <img src="/icons/left.webp" alt="" style={{ width: 18, height: 18 }} />
               </button>
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", textAlign: "center", whiteSpace: "nowrap" }}>
                 {view === "week" ? weekLabel : monthLabel}
                 {!isPremium && view === "week" && isCurrentWeek && (
                   <span className="text-light" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 10, color: "var(--text-muted)", marginTop: 2, width: "100%" }}>
                     semaine en cours · navigation Premium
-                    <img src="/icons/lock.png" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                    <img src="/icons/lock.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                   </span>
                 )}
               </span>
               <button onClick={nextPeriod} style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: "var(--bg-card-2)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: !isPremium && isCurrentWeek ? 0.4 : 1 }}>
-                <img src="/icons/right.png" alt="" style={{ width: 18, height: 18 }} />
+                <img src="/icons/right.webp" alt="" style={{ width: 18, height: 18 }} />
               </button>
             </div>
 
             {/* Boutons action */}
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button onClick={() => setShowBalancePopup(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"} onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}>
-                <img src="/icons/salad.png" alt="" style={{ width: 16, height: 16 }} />
+                <img src="/icons/salad.webp" alt="" style={{ width: 16, height: 16 }} />
                 équilibrer
               </button>
               <button id="btn-go-shopping" onClick={() => navigate("/shopping")} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#1a3d1a", transition: "transform 0.2s ease" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"} onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}>
-                <img src="/icons/cart.png" alt="" style={{ width: 16, height: 16 }} />
+                <img src="/icons/cart.webp" alt="" style={{ width: 16, height: 16 }} />
                 courses
               </button>
             </div>
@@ -558,7 +558,7 @@ export default function Calendar() {
                                   </>
                                 ) : (
                                   <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <img src="/icons/plus.png" alt="+" style={{ width: 22, height: 22, opacity: 0.35, userSelect: "none", pointerEvents: "none" }} />
+                                    <img src="/icons/plus.webp" alt="+" style={{ width: 22, height: 22, opacity: 0.35, userSelect: "none", pointerEvents: "none" }} />
                                   </div>
                                 )}
                               </div>
@@ -599,7 +599,7 @@ export default function Calendar() {
           <div id="calendar-recipe-list" style={{ width: 240, borderLeft: "1px solid var(--border)", backgroundColor: "var(--bg-card)", display: "flex", flexDirection: "column", flexShrink: 0, transition: "background-color 0.25s ease" }}>
             <div style={{ padding: "16px 12px 12px", borderBottom: "1px solid var(--border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <img src="/icons/book.png" alt="" style={{ width: 16, height: 16 }} />
+                <img src="/icons/book.webp" alt="" style={{ width: 16, height: 16 }} />
                 <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>mes recettes</span>
               </div>
               <input style={{ width: "100%", backgroundColor: "var(--bg-card-2)", border: "none", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "var(--text-main)", outline: "none", boxSizing: "border-box", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em" }} placeholder="rechercher..." value={search} onChange={e => setSearch(e.target.value)} />

@@ -23,7 +23,7 @@ function TagPill({ tag, active, onClick }) {
       boxShadow: active ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
       transition: "all 0.15s",
     }}>
-      <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+      <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
       <span style={{ color: tag.pillText }}>{tag.label}</span>
     </button>
   )
@@ -224,7 +224,7 @@ export default function RecipeEdit() {
               return (
                 <button key={tag.value} onClick={() => setPrimaryTag(isMain ? "" : tag.value)}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", border: isMain ? "none" : "1.5px solid var(--border-2)", backgroundColor: isMain ? tag.pillBg : "transparent", color: isMain ? tag.pillText : "var(--text-muted)", transition: "all 0.15s" }}>
-                  <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                  <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                   {tag.label}
                 </button>
               )

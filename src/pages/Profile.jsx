@@ -204,7 +204,7 @@ export default function Profile() {
               const tag = TAGS.find(t => t.value === pref || t.label === pref)
               return (
                 <span key={pref} style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, backgroundColor: tag?.pillBg || "rgba(243,80,30,0.15)", color: tag?.pillText || "#f3501e" }}>
-                  {tag && <img src={`/icons/${tag.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />}
+                  {tag && <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />}
                   {pref}
                 </span>
               )
@@ -291,7 +291,7 @@ export default function Profile() {
                   )}
                   {primaryTagInfo && (
                     <div style={{ position: "absolute", top: 6, left: 6, backgroundColor: primaryTagInfo.pillBg, borderRadius: 6, padding: "2px 5px", display: "flex", alignItems: "center", gap: 3 }}>
-                      <img src={`/icons/${primaryTagInfo.icon}.png`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                      <img src={`/icons/${primaryTagInfo.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                       <span style={{ fontSize: 9, fontWeight: 700, color: primaryTagInfo.pillText }}>{primaryTagInfo.label}</span>
                     </div>
                   )}

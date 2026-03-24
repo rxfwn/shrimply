@@ -116,7 +116,7 @@ function DeleteConfirmModal({ onConfirm, onCancel }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}>
       <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: "28px 32px", maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", fontFamily: "Poppins, sans-serif", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <img src="/icons/trash.png" alt="" style={{ width: 24, height: 24, opacity: 0.7 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/trash.webp" alt="" style={{ width: 24, height: 24, opacity: 0.7 }} onError={e => e.target.style.display = "none"} />
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>Supprimer la recette ?</h2>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>
@@ -369,10 +369,10 @@ export default function RecipeDetail() {
                 )}
               </div>
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                <ActionBtn onClick={handleShare} imgSrc="/icons/chain.png" alt="Partager" />
-                <ActionBtn onClick={handlePrint} imgSrc="/icons/printer.png" alt="Imprimer" />
-                <ActionBtn onClick={() => navigate(`/recipes/${id}/edit`)} imgSrc="/icons/pencil.png" alt="Modifier" />
-                <ActionBtn onClick={() => setShowDeleteModal(true)} disabled={deleting} imgSrc="/icons/trash.png" alt="Supprimer" danger />
+                <ActionBtn onClick={handleShare} imgSrc="/icons/chain.webp" alt="Partager" />
+                <ActionBtn onClick={handlePrint} imgSrc="/icons/printer.webp" alt="Imprimer" />
+                <ActionBtn onClick={() => navigate(`/recipes/${id}/edit`)} imgSrc="/icons/pencil.webp" alt="Modifier" />
+                <ActionBtn onClick={() => setShowDeleteModal(true)} disabled={deleting} imgSrc="/icons/trash.webp" alt="Supprimer" danger />
               </div>
             </div>
 
@@ -387,7 +387,7 @@ export default function RecipeDetail() {
                 const ti = TAGS.find(t => t.value === tv)
                 return (
                   <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
-                    <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                    <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
                     {ti.label}
                   </span>
                 )
@@ -398,7 +398,7 @@ export default function RecipeDetail() {
           <div>
             <div className="budget-bar">
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                <img src="/icons/money.png" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
+                <img src="/icons/money.webp" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
                 <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>budget</span>
               </div>
 
@@ -426,7 +426,7 @@ export default function RecipeDetail() {
                 onMouseEnter={e => { if (canEstimate) e.currentTarget.style.transform = "scale(1.04)" }}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
-                <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
+                <img src="/icons/calc.webp" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
                 {btnLabel}
               </button>
             </div>
@@ -440,7 +440,7 @@ export default function RecipeDetail() {
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <img src="/icons/cart.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+              <img src="/icons/cart.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
             </div>
             {baseServings > 0 && <ServingStepper servings={activeServings} onChange={setCurrentServings} baseServings={baseServings} />}
@@ -470,7 +470,7 @@ export default function RecipeDetail() {
 
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
-            <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+            <img src="/icons/chef.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

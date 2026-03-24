@@ -3,13 +3,13 @@ import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
 
 const CATEGORIES = [
-  { id: "legumes_fruits", label: "Fruits & Légumes", icon: "/icons/herb.png" },
-  { id: "viandes_poissons", label: "Viandes & Poissons", icon: "/icons/meat.png" },
-  { id: "frais", label: "Frais", icon: "/icons/cheese.png" },
-  { id: "epicerie", label: "Épicerie", icon: "/icons/falafel.png" },
-  { id: "boulangerie", label: "Boulangerie & Sucré", icon: "/icons/shortcake.png" },
-  { id: "hygiene", label: "Hygiène & Entretien", icon: "/icons/feather.png" },
-  { id: "autres", label: "Autres", icon: "/icons/kart.png" },
+  { id: "legumes_fruits", label: "Fruits & Légumes", icon: "/icons/herb.webp" },
+  { id: "viandes_poissons", label: "Viandes & Poissons", icon: "/icons/meat.webp" },
+  { id: "frais", label: "Frais", icon: "/icons/cheese.webp" },
+  { id: "epicerie", label: "Épicerie", icon: "/icons/falafel.webp" },
+  { id: "boulangerie", label: "Boulangerie & Sucré", icon: "/icons/shortcake.webp" },
+  { id: "hygiene", label: "Hygiène & Entretien", icon: "/icons/feather.webp" },
+  { id: "autres", label: "Autres", icon: "/icons/kart.webp" },
 ]
 
 const CATEGORY_KEYWORDS = {
@@ -288,7 +288,7 @@ export default function Shopping() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
-            <img src="/icons/kart.png" alt="" style={{ width: 22, height: 22 }} />
+            <img src="/icons/kart.webp" alt="" style={{ width: 22, height: 22 }} />
             courses
           </h1>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: textMuted }}>semaine du {weekLabel}</p>
@@ -309,7 +309,7 @@ export default function Shopping() {
             onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
             onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
           >
-            {generating ? "génération..." : <><img src="/icons/spark.png" alt="" style={{ width: 14, height: 14 }} />générer</>}
+            {generating ? "génération..." : <><img src="/icons/spark.webp" alt="" style={{ width: 14, height: 14 }} />générer</>}
           </button>
         </div>
       </div>
@@ -320,7 +320,7 @@ export default function Shopping() {
         /* ── ÉTAT VIDE — centré horizontalement et verticalement ── */
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
           <div style={{ backgroundColor: surface, borderRadius: 16, padding: "40px 32px", textAlign: "center", maxWidth: 360, width: "100%", border: surfaceBorder }}>
-            <img src="/icons/kart.png" alt="" style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.4 }} />
+            <img src="/icons/kart.webp" alt="" style={{ width: 48, height: 48, marginBottom: 16, opacity: 0.4 }} />
             <p style={{ margin: "0 0 6px", fontSize: 14, fontWeight: 700, color: textPrimary }}>aucun article cette semaine</p>
             <p style={{ margin: 0, fontSize: 12, color: textMuted, fontWeight: 500, lineHeight: 1.6 }}>génère depuis ton planning ou ajoute des articles manuellement.</p>
           </div>
@@ -341,7 +341,7 @@ export default function Shopping() {
           {checked.length > 0 && (
             <div style={{ backgroundColor: surface, borderRadius: 12, overflow: "hidden", border: surfaceBorder, marginTop: 12, opacity: 0.6 }}>
               <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: divider }}>
-                <img src="/icons/check.png" alt="" style={{ width: 16, height: 16 }} />
+                <img src="/icons/check.webp" alt="" style={{ width: 16, height: 16 }} />
                 <span style={{ fontSize: 11, fontWeight: 700, color: isDay ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", flex: 1 }}>dans le panier</span>
                 <span style={{ fontSize: 10, fontWeight: 700, color: textPrimary, backgroundColor: checkedBadgeBg, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>{checked.length}</span>
               </div>

@@ -8,7 +8,7 @@ function Avatar({ url, size = 36 }) {
     <div style={{ width: size, height: size, borderRadius: "50%", backgroundColor: "var(--bg-card-2)", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
       {url
         ? <img src={url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        : <img src="/icons/profile.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.target.style.display = "none"} />
+        : <img src="/icons/profile.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.target.style.display = "none"} />
       }
     </div>
   )
@@ -102,7 +102,7 @@ export default function Friends() {
 
       {/* Header */}
       <h1 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.05em" }}>
-        <img src="/icons/friends.png" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
+        <img src="/icons/friends.webp" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
         amis
       </h1>
 

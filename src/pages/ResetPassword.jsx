@@ -67,7 +67,7 @@ export default function ResetPassword() {
         {/* LOGO */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
-            <img src="/icons/shrim.png" alt="Shrimply" style={{ width: 40, height: 40 }} />
+            <img src="/icons/shrim.webp" alt="Shrimply" style={{ width: 40, height: 40 }} />
             <span style={{ fontSize: "28px", color: isDay ? "#111111" : "#ffffff", fontWeight: 700 }}>
               Shrim<span style={{ color: "#f3501e" }}>ply</span>
             </span>
@@ -100,7 +100,7 @@ export default function ResetPassword() {
 
           {sent ? (
             <div style={{ textAlign: "center" }}>
-              <img src="/icons/mailbox.png" alt="" style={{ width: 48, height: 48, marginBottom: "16px" }} />
+              <img src="/icons/mailbox.webp" alt="" style={{ width: 48, height: 48, marginBottom: "16px" }} />
               <p style={{ color: "#20ba59", fontWeight: 700, fontSize: "15px", margin: "0 0 8px 0" }}>Email envoyé !</p>
               <p style={{ color: isDay ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: 700, margin: "0 0 24px 0" }}>
                 Vérifie ta boîte mail et clique sur le lien.

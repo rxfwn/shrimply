@@ -3,9 +3,9 @@ import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
 
 const TYPES = [
-  { value: "bug", label: "Bug", icon: "bug.png", bg: "#2d0a0a", color: "#fca5a5", border: "rgba(239,68,68,0.3)" },
-  { value: "feature", label: "Amélioration", icon: "spark.png", bg: "#0a1a2d", color: "#93c5fd", border: "rgba(59,130,246,0.3)" },
-  { value: "idea", label: "Idée", icon: "bulb.png", bg: "#2d2a0a", color: "#fde68a", border: "rgba(234,179,8,0.3)" },
+  { value: "bug", label: "Bug", icon: "bug.webp", bg: "#2d0a0a", color: "#fca5a5", border: "rgba(239,68,68,0.3)" },
+  { value: "feature", label: "Amélioration", icon: "spark.webp", bg: "#0a1a2d", color: "#93c5fd", border: "rgba(59,130,246,0.3)" },
+  { value: "idea", label: "Idée", icon: "bulb.webp", bg: "#2d2a0a", color: "#fde68a", border: "rgba(234,179,8,0.3)" },
 ]
 
 const STATUS = {
@@ -16,9 +16,9 @@ const STATUS = {
 }
 
 const ROADMAP = [
-  { icon: "replace.png", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
-  { icon: "broccoli.png", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
-  { icon: "map.png", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
+  { icon: "replace.webp", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
+  { icon: "broccoli.webp", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
+  { icon: "map.webp", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
 ]
 
 const btnBase = {
@@ -99,7 +99,7 @@ export default function Suggestions() {
       {/* HEADER */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: textPrimary, display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/icons/ticket.png" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display = "none"} />
+          <img src="/icons/ticket.webp" alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display = "none"} />
           suggestions & bugs
         </h1>
         <p style={{ margin: 0, fontSize: 12, color: textMuted }}>
@@ -112,7 +112,7 @@ export default function Suggestions() {
         {/* COLONNE GAUCHE — Roadmap */}
         <div style={{ flex: 1, minWidth: 280 }}>
           <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}>
-            <img src="/icons/map.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+            <img src="/icons/map.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
             roadmap
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -133,7 +133,7 @@ export default function Suggestions() {
         <div style={{ width: 340, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <h2 style={{ margin: 0, fontSize: 11, fontWeight: 700, color: textMuted, textTransform: "uppercase", letterSpacing: "0.05em", display: "flex", alignItems: "center", gap: 6 }}>
-              <img src="/icons/ticket.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+              <img src="/icons/ticket.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
               soumettre
             </h2>
             <button onClick={() => setShowForm(!showForm)}

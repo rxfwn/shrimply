@@ -117,6 +117,7 @@ export default function Recipes() {
   const [dupError, setDupError] = useState("")
   const [dragOverIndex, setDragOverIndex] = useState(null)
   const [search, setSearch] = useState("")
+  const [tagPopup, setTagPopup] = useState(null)
   const [activeFilter, setActiveFilter] = useState("")
   const [toast, setToast] = useState({ type: "saved", visible: false })
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
@@ -260,12 +261,21 @@ export default function Recipes() {
       }
     }
 
+    // Tag économique automatique (< 3€/personne)
+    const ECONOMIC_THRESHOLD = 3
+    const autoTags = [...selectedTags]
+    if (estimatedTotal !== null && parseInt(servings) > 0) {
+      const perServing = estimatedTotal / parseInt(servings)
+      if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
+      else if (perServing >= ECONOMIC_THRESHOLD) autoTags.splice(autoTags.indexOf("economique"), 1)
+    }
+
     const { data: recipe, error } = await supabase
       .from("recipes")
       .insert({
         user_id: user.id, name, description,
         prep_time: parseInt(prepTime), servings: parseInt(servings),
-        tags: selectedTags, primary_tag: primaryTag || null,
+        tags: autoTags, primary_tag: primaryTag || null,
         color: recipeColor || null, is_public: false,
         photo_url: photoUrl || null,
         estimated_total: estimatedTotal,
@@ -677,13 +687,13 @@ export default function Recipes() {
                 const actionText = primaryTagInfo?.actionText || textColor
                 return (
                   <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)}
-                    style={{ backgroundColor: bg, border: `3px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                    style={{ backgroundColor: bg, border: `3px solid ${border}`, borderRadius: 16, overflow: "visible", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", position: "relative" }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)" }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
                   >
                     {recipe.photo_url
-                      ? <img src={recipe.photo_url} alt={recipe.name} style={{ display: "block", width: "100%", aspectRatio: "4/3", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bg, fontSize: 40 }}>🍽</div>
+                      ? <img src={recipe.photo_url} alt={recipe.name} style={{ display: "block", width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: "13px 13px 0 0" }} />
+                      : <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bg, fontSize: 40, borderRadius: "13px 13px 0 0" }}>🍽</div>
                     }
                     <div style={{ padding: "8px 12px 12px", color: textColor }}>
                       <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.name}</h3>
@@ -712,7 +722,28 @@ export default function Recipes() {
                                 </span>
                               )
                             })}
-                            {validT.length > 2 && <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.7, display: "flex", alignItems: "center", color: textColor }}>+{validT.length - 2}</span>}
+                            {validT.length > 2 && (
+                              <span
+                                style={{ fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", color: textColor + "80", cursor: "default", position: "relative" }}
+                                onMouseEnter={() => setTagPopup(recipe.id)}
+                                onMouseLeave={() => setTagPopup(null)}
+                              >
+                                +{validT.length - 2}
+                                {tagPopup === recipe.id && (
+                                  <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5, zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120, pointerEvents: "none", opacity: 1 }}>
+                                    {validT.slice(2).map(tv => {
+                                      const ti = TAGS.find(t => t.value === tv)
+                                      return ti ? (
+                                        <span key={tv} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
+                                          <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />
+                                          {ti.label}
+                                        </span>
+                                      ) : null
+                                    })}
+                                  </div>
+                                )}
+                              </span>
+                            )}
                           </div>
                         )
                       })()}

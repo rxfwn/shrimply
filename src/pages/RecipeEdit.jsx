@@ -130,7 +130,16 @@ export default function RecipeEdit() {
       }
     }
 
-    await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: selectedTags, photo_url: photoUrl || null, estimated_total: estimatedTotal }).eq("id", id)
+    // Tag économique automatique (< 3€/personne)
+    const ECONOMIC_THRESHOLD = 3
+    const autoTags = [...selectedTags]
+    if (estimatedTotal !== null && parseInt(servings) > 0) {
+      const perServing = estimatedTotal / parseInt(servings)
+      if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
+      else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
+    }
+
+    await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: autoTags, photo_url: photoUrl || null, estimated_total: estimatedTotal }).eq("id", id)
     await supabase.from("ingredients").delete().eq("recipe_id", id)
     if (validIngredients.length > 0) {
       const rows = validIngredients.map(i => ({ recipe_id: id, name: i.name, quantity: parseFloat(i.quantity) || null, unit: i.unit }))

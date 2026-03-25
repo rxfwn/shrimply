@@ -2,12 +2,13 @@ import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
+import { computeCostDetails } from "../utils/priceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
 
-const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce"]
+const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce","selon goût"]
 
 // ── Bloque tout sauf chiffres pour entiers (temps, portions) ──
 function handleIntegerKeyDown(e) {
@@ -34,19 +35,20 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
   const iconSz = size === "sm" ? 14 : 18
   const padding = size === "sm" ? "2px 8px" : "6px 12px"
   const fontSize = size === "sm" ? 10 : 12
-  const opacity = !anyActive ? 1 : active ? 1 : 0.35
   return (
     <button onClick={onClick} style={{
       display: "flex", alignItems: "center", gap: size === "sm" ? 4 : 6,
       padding, borderRadius: 20, fontSize, fontWeight: 700,
       fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-      border: "none", cursor: "pointer", backgroundColor: tag.pillBg,
-      opacity, transform: active ? "scale(1.1)" : "scale(1)",
-      transition: "opacity 0.2s ease, transform 0.2s ease",
-      boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3)" : "none",
+      cursor: "pointer", border: "none",
+      backgroundColor: tag.pillBg, color: tag.pillText,
+      opacity: anyActive && !active ? 0.35 : 1,
+      transform: active ? "scale(1.1)" : "scale(1)",
+      boxShadow: active ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
+      transition: "all 0.2s ease",
     }}>
       <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: iconSz, height: iconSz }} onError={e => e.target.style.display="none"} />
-      <span style={{ color: tag.pillText }}>{tag.label}</span>
+      {tag.label}
     </button>
   )
 }
@@ -231,20 +233,61 @@ export default function Recipes() {
     setErrors(e); return Object.keys(e).length===0
   }
 
+  // ── handleSubmit : calcule estimated_total avant l'INSERT ──
   const handleSubmit = async () => {
     if (!validate()) return
     setLoading(true)
-    const found = await checkBannedWords([name,description,...ingredients.map(i=>i.name),...steps.map(s=>s.description)])
+    const found = await checkBannedWords([name, description, ...ingredients.map(i => i.name), ...steps.map(s => s.description)])
     if (found) { setBannedPopup(found); setLoading(false); return }
-    const { data:{user} } = await supabase.auth.getUser()
-    const { data:recipe, error } = await supabase.from("recipes").insert({ user_id:user.id, name, description, prep_time:parseInt(prepTime), servings:parseInt(servings), tags:selectedTags, primary_tag:primaryTag||null, color:recipeColor||null, is_public:false, photo_url:photoUrl||null }).select().single()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Calcul du prix estimé (ne bloque pas la création si l'API est down)
+    const validIngredients = ingredients.filter(i => i.name.trim())
+    let estimatedTotal = null
+    let costDetails = null
+    if (validIngredients.length > 0) {
+      try {
+        const { total, details } = await computeCostDetails(
+          validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
+          parseInt(servings)
+        )
+        const hasAnyMatch = details?.some(d => d.found)
+        estimatedTotal = hasAnyMatch ? total : null
+        costDetails = details
+      } catch (e) {
+        // API indisponible en local → null, pas grave
+      }
+    }
+
+    const { data: recipe, error } = await supabase
+      .from("recipes")
+      .insert({
+        user_id: user.id, name, description,
+        prep_time: parseInt(prepTime), servings: parseInt(servings),
+        tags: selectedTags, primary_tag: primaryTag || null,
+        color: recipeColor || null, is_public: false,
+        photo_url: photoUrl || null,
+        estimated_total: estimatedTotal,
+      })
+      .select().single()
+
     if (!error && recipe) {
-      await supabase.from("ingredients").insert(ingredients.filter(i=>i.name.trim()).map(i=>({recipe_id:recipe.id,name:i.name,quantity:parseFloat(i.quantity),unit:i.unit})))
-      await supabase.from("steps").insert(steps.filter(s=>s.description.trim()).map((s,idx)=>({recipe_id:recipe.id,step_number:idx+1,description:s.description})))
-      setSuccess(true); setName(""); setDescription(""); setPrepTime(""); setServings(""); setSelectedTags([]); setPrimaryTag(""); setRecipeColor("")
+      const rows = validIngredients.map(i => ({ recipe_id: recipe.id, name: i.name, quantity: parseFloat(i.quantity), unit: i.unit }))
+      const { data: inserted } = await supabase.from("ingredients").insert(rows).select()
+      if (inserted && costDetails) {
+        await Promise.allSettled(inserted.map(ing => {
+          const detail = costDetails.find(d => d.name.toLowerCase() === ing.name.toLowerCase())
+          if (!detail?.found) return Promise.resolve()
+          return supabase.from("ingredients").update({ estimated_price: detail.estimated_price }).eq("id", ing.id)
+        }))
+      }
+      await supabase.from("steps").insert(steps.filter(s => s.description.trim()).map((s, idx) => ({ recipe_id: recipe.id, step_number: idx + 1, description: s.description })))
+      setSuccess(true); setName(""); setDescription(""); setPrepTime(""); setServings("")
+      setSelectedTags([]); setPrimaryTag(""); setRecipeColor("")
       setIngredients([{name:"",quantity:"",unit:""}]); setSteps([{description:""}]); setErrors({}); setPhotoUrl("")
       localStorage.removeItem(DRAFT_KEY); hasShownDraftPopup.current = false
-      setShowForm(false); fetchRecipes(); setTimeout(()=>setSuccess(false),3000)
+      setShowForm(false); fetchRecipes(); setTimeout(() => setSuccess(false), 3000)
     }
     setLoading(false)
   }
@@ -344,7 +387,7 @@ export default function Recipes() {
       )}
 
       {showForm ? (
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+        <div style={{ maxWidth: 780, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 10 }}>
               <img src="/icons/pencil.webp" alt="" style={{ width: 24, height: 24 }} />
@@ -399,8 +442,9 @@ export default function Recipes() {
 
             {/* Tag principal — OBLIGATOIRE */}
             <div>
-              <label style={labelStyle}>
-                🎨 tag principal <span style={{ color: "#d57bff" }}>*</span>{" "}
+              <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+                <img src="/icons/paint.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+                tag principal <span style={{ color: "#d57bff" }}>*</span>{" "}
                 <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
               </label>
               {errors.primaryTag && (
@@ -422,9 +466,12 @@ export default function Recipes() {
                         display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
                         borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer",
                         fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-                        border: isMain ? "none" : "1.5px solid var(--border-2)",
-                        backgroundColor: isMain ? tag.pillBg : "transparent",
-                        color: isMain ? tag.pillText : "var(--text-muted)",
+                        border: "none",
+                        backgroundColor: tag.pillBg,
+                        color: tag.pillText,
+                        opacity: primaryTag && !isMain ? 0.35 : 1,
+                        transform: isMain ? "scale(1.1)" : "scale(1)",
+                        boxShadow: isMain ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
                         transition: "all 0.15s",
                       }}>
                       <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
@@ -548,7 +595,7 @@ export default function Recipes() {
                   onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "scale(1.03)" }}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                 >
-                  {loading ? "vérification..." : <><img src="/icons/save.webp" alt="" style={{ width: 14, height: 14 }} />enregistrer</>}
+                  {loading ? "enregistrement..." : <><img src="/icons/save.webp" alt="" style={{ width: 14, height: 14 }} />enregistrer</>}
                 </button>
               </div>
             </div>

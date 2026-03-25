@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { TAGS } from "../tags"
-import { computeCostDetails } from "../utils/priceEngine"
+import { computeCostDetails, shouldSkipIngredient } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
 
 const S = {
@@ -201,16 +201,18 @@ export default function RecipeDetail() {
     setRecipe(recipeData); setIngredients(ingredientsData || []); setSteps(stepsData || [])
     setLoading(false)
     if (recipeData?.servings) setCurrentServings(parseInt(recipeData.servings))
-    if (!recipeData || !ingredientsData?.length) return
-    await loadCostDetails(recipeData, ingredientsData)
+    // Lit les prix stockés en DB — pas d'appel API
+    if (ingredientsData?.some(i => i.estimated_price != null)) {
+      const details = ingredientsData.map(i => ({
+        name: i.name, quantity: i.quantity, unit: i.unit,
+        estimated_price: i.estimated_price ?? 0,
+        found: i.estimated_price != null && i.estimated_price > 0,
+      }))
+      const total = details.reduce((s, d) => s + d.estimated_price, 0)
+      const per_serving = recipeData?.servings > 0 ? total / recipeData.servings : total
+      setCostDetails({ details, total: Number(total.toFixed(2)), per_serving: Number(per_serving.toFixed(2)) })
+    }
   }
-
- const loadCostDetails = async (recipeData, ingredientsData) => {
-  try {
-    const result = await computeCostDetails(ingredientsData, recipeData.servings)
-    setCostDetails(result)
-  } catch (e) { console.error("Erreur calcul budget:", e) }
-}
 
   const getEstimableIngredients = (list) => list.filter(i => hasValidQuantity(i))
 
@@ -222,6 +224,13 @@ const handleEstimate = async () => {
     const result = await computeCostDetails(ingredients, recipe.servings)
     setCostDetails(result)
     setCooldown(COOLDOWN_SECONDS)
+    // Sauvegarde les prix par ingrédient en DB
+    await Promise.all(result.details.map(detail => {
+      const ing = ingredients.find(i => i.name.toLowerCase() === detail.name.toLowerCase())
+      if (!ing?.id) return Promise.resolve()
+      return supabase.from("ingredients").update({ estimated_price: detail.found ? detail.estimated_price : null }).eq("id", ing.id)
+    }))
+    await supabase.from("recipes").update({ estimated_total: result.total }).eq("id", id)
   } catch (error) {
     setApiError(error.message)
     setCooldown(COOLDOWN_SECONDS)
@@ -260,7 +269,14 @@ const handleEstimate = async () => {
   const activeServings = currentServings ?? baseServings
   const displayIngredients = costDetails?.details || ingredients.map(i => ({ ...i, found: false, estimated_price: 0 }))
 
-  const scaledIngredients = displayIngredients.map(item => ({
+  const scaledIngredients = displayIngredients
+    .slice()
+    .sort((a, b) => {
+      const aSkip = shouldSkipIngredient(a.name, a.unit) ? 1 : 0
+      const bSkip = shouldSkipIngredient(b.name, b.unit) ? 1 : 0
+      return aSkip - bSkip
+    })
+    .map(item => ({
     ...item,
     quantity: item.quantity != null ? scaleQuantity(item.quantity, baseServings, activeServings) : item.quantity,
     estimated_price: item.found ? (item.estimated_price * activeServings / baseServings) : 0,
@@ -362,7 +378,7 @@ const handleEstimate = async () => {
                 const ti = TAGS.find(t => t.value === tv)
                 return (
                   <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
-                    <img src={`/icons/${ti.icon}.png`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
+                    <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
                     {ti.label}
                   </span>
                 )
@@ -373,7 +389,7 @@ const handleEstimate = async () => {
           <div>
             <div className="budget-bar">
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                <img src="/icons/money.png" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
+                <img src="/icons/money.webp" alt="" style={{ width: 18, height: 18 }} onError={e => e.target.style.display = "none"} />
                 <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>budget</span>
               </div>
 
@@ -390,7 +406,7 @@ const handleEstimate = async () => {
                 </>
               ) : (
                 <span style={{ fontSize: 11, color: "var(--text-faint)", fontFamily: "Poppins, sans-serif", fontStyle: "italic" }}>
-                  {estimableIngredients.length === 0 ? "aucun ingrédient estimable" : "clique sur calculer"}
+                  {estimableIngredients.length === 0 ? "aucun ingrédient estimable" : ""}
                 </span>
               )}
 

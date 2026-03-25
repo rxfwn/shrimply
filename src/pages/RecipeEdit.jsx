@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
+import { computeCostDetails } from "../utils/priceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
 import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
@@ -11,25 +12,26 @@ function getTextColor(hex) {
   return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
 }
 
-function TagPill({ tag, active, onClick }) {
+function TagPill({ tag, active, onClick, anyActive = false }) {
   return (
     <button onClick={onClick} style={{
       display: "flex", alignItems: "center", gap: 6,
       padding: "6px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
       fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em",
-      border: "none", cursor: "pointer", backgroundColor: tag.pillBg,
-      opacity: active ? 1 : 0.5,
-      transform: active ? "scale(1.08)" : "scale(1)",
+      cursor: "pointer", border: "none",
+      backgroundColor: tag.pillBg, color: tag.pillText,
+      opacity: anyActive && !active ? 0.35 : 1,
+      transform: active ? "scale(1.1)" : "scale(1)",
       boxShadow: active ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
       transition: "all 0.15s",
     }}>
       <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
-      <span style={{ color: tag.pillText }}>{tag.label}</span>
+      {tag.label}
     </button>
   )
 }
 
-const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce"]
+const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce","selon goût"]
 
 export default function RecipeEdit() {
   const { id } = useParams()
@@ -85,10 +87,22 @@ export default function RecipeEdit() {
     return null
   }
 
+  const ingredientNameRefs = useRef([])
+
   const toggleTag = (v) => setSelectedTags(prev => prev.includes(v) ? prev.filter(t => t !== v) : [...prev, v])
   const addIngredient = () => setIngredients(prev => [...prev, { name: "", quantity: "", unit: "" }])
   const removeIngredient = (i) => setIngredients(prev => prev.filter((_, idx) => idx !== i))
   const updateIngredient = (i, f, v) => setIngredients(prev => prev.map((ing, idx) => idx === i ? { ...ing, [f]: v } : ing))
+
+  const handleIngredientKeyDown = (e, i) => {
+    if (e.key !== "Enter") return
+    e.preventDefault()
+    setIngredients(prev => {
+      const next = [...prev, { name: "", quantity: "", unit: "" }]
+      setTimeout(() => ingredientNameRefs.current[next.length - 1]?.focus(), 0)
+      return next
+    })
+  }
   const addStep = () => setSteps(prev => [...prev, { description: "" }])
   const removeStep = (i) => setSteps(prev => prev.filter((_, idx) => idx !== i))
   const updateStep = (i, v) => setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, description: v } : s))
@@ -97,10 +111,39 @@ export default function RecipeEdit() {
     setSaving(true); setShowUnsavedPopup(false)
     const found = await checkBannedWords([name, description, ...ingredients.map(i => i.name), ...steps.map(s => s.description)])
     if (found) { setBannedPopup(found); setSaving(false); return }
-    await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: selectedTags, photo_url: photoUrl || null }).eq("id", id)
-    await supabase.from("ingredients").delete().eq("recipe_id", id)
     const validIngredients = ingredients.filter(i => i.name.trim())
-    if (validIngredients.length > 0) await supabase.from("ingredients").insert(validIngredients.map(i => ({ recipe_id: id, name: i.name, quantity: parseFloat(i.quantity) || null, unit: i.unit })))
+
+    // Calcul du prix estimé avant la mise à jour
+    let estimatedTotal = null
+    let costDetails = null
+    if (validIngredients.length > 0) {
+      try {
+        const { total, details } = await computeCostDetails(
+          validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+          parseInt(servings) || null
+        )
+        const hasAnyMatch = details?.some(d => d.found)
+        estimatedTotal = hasAnyMatch ? total : null
+        costDetails = details
+      } catch (e) {
+        // API indisponible → on garde null
+      }
+    }
+
+    await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: selectedTags, photo_url: photoUrl || null, estimated_total: estimatedTotal }).eq("id", id)
+    await supabase.from("ingredients").delete().eq("recipe_id", id)
+    if (validIngredients.length > 0) {
+      const rows = validIngredients.map(i => ({ recipe_id: id, name: i.name, quantity: parseFloat(i.quantity) || null, unit: i.unit }))
+      const { data: inserted } = await supabase.from("ingredients").insert(rows).select()
+      // Mise à jour du prix estimé séparément (ne bloque pas si la colonne n'existe pas encore)
+      if (inserted && costDetails) {
+        await Promise.allSettled(inserted.map(ing => {
+          const detail = costDetails.find(d => d.name.toLowerCase() === ing.name.toLowerCase())
+          if (!detail?.found) return Promise.resolve()
+          return supabase.from("ingredients").update({ estimated_price: detail.estimated_price }).eq("id", ing.id)
+        }))
+      }
+    }
     await supabase.from("steps").delete().eq("recipe_id", id)
     const validSteps = steps.filter(s => s.description.trim())
     if (validSteps.length > 0) await supabase.from("steps").insert(validSteps.map((s, idx) => ({ recipe_id: id, step_number: idx + 1, description: s.description })))
@@ -187,7 +230,7 @@ export default function RecipeEdit() {
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>✏️ modifier la recette</h1>
       </div>
 
-      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 20, maxWidth: 640 }}>
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 20, maxWidth: 780, margin: "0 auto" }}>
 
         <ImageUploadCropper onImageSaved={(url) => setPhotoUrl(url || "")} existingUrl={photoUrl || null} recipeId={id} />
 
@@ -215,15 +258,16 @@ export default function RecipeEdit() {
 
         {/* Tag principal */}
         <div>
-          <label style={labelStyle}>
-            🎨 tag principal <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
+          <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 6 }}>
+            <img src="/icons/paint.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+            tag principal <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
             {TAGS.map(tag => {
               const isMain = primaryTag === tag.value
               return (
                 <button key={tag.value} onClick={() => setPrimaryTag(isMain ? "" : tag.value)}
-                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", border: isMain ? "none" : "1.5px solid var(--border-2)", backgroundColor: isMain ? tag.pillBg : "transparent", color: isMain ? tag.pillText : "var(--text-muted)", transition: "all 0.15s" }}>
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", border: "none", backgroundColor: tag.pillBg, color: tag.pillText, opacity: primaryTag && !isMain ? 0.35 : 1, transform: isMain ? "scale(1.1)" : "scale(1)", boxShadow: isMain ? "0 2px 8px rgba(0,0,0,0.2)" : "none", transition: "all 0.15s" }}>
                   <img src={`/icons/${tag.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                   {tag.label}
                 </button>
@@ -245,7 +289,7 @@ export default function RecipeEdit() {
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {TAGS.filter(tag => tag.value !== primaryTag).map(tag => (
-              <TagPill key={tag.value} tag={tag} active={selectedTags.includes(tag.value)} onClick={() => toggleTag(tag.value)} />
+              <TagPill key={tag.value} tag={tag} active={selectedTags.includes(tag.value)} anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.value)} />
             ))}
           </div>
         </div>
@@ -256,8 +300,10 @@ export default function RecipeEdit() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ingredients.map((ing, i) => (
               <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input style={{ flex: 2, borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
-                  placeholder="ingrédient" value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)} />
+                <input ref={el => ingredientNameRefs.current[i] = el}
+                  style={{ flex: 2, borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
+                  placeholder="ingrédient" value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)}
+                  onKeyDown={e => handleIngredientKeyDown(e, i)} />
                 <input style={{ width: 70, borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
                   placeholder="qté" type="number" value={ing.quantity || ""} onChange={e => updateIngredient(i, "quantity", e.target.value)} />
                 <select style={{ width: 110, borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box", appearance: "none" }}

@@ -1,7 +1,6 @@
 import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_TEXT, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
-import { computeCostDetails } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
@@ -78,7 +77,7 @@ export default function Discover() {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) { setLoading(false); return }
       setCurrentUser(user)
-
+ 
       const { data } = await supabase
         .from("recipes")
         .select("*")
@@ -86,32 +85,27 @@ export default function Discover() {
         .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(40)
-
+ 
       if (!data) { setLoading(false); return }
-
-      setRecipes(data.map(r => ({ ...r, profiles: null, estimatedTotal: null })))
-      setLoading(false)
-
+ 
       const userIds = [...new Set(data.map(r => r.user_id))]
-      const recipeIds = data.map(r => r.id)
-
-      const [profilesRes, pricesRes, ingredientsRes] = await Promise.all([
-        supabase.from("profiles").select("id, username, avatar_url, is_official").in("id", userIds),
-        supabase.from("ingredient_prices").select("name, price, unit"),
-        supabase.from("ingredients").select("*").in("recipe_id", recipeIds),
-      ])
-
+ 
+      const profilesRes = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url, is_official")
+        .in("id", userIds)
+ 
       const profileMap = {}
       profilesRes.data?.forEach(p => { profileMap[p.id] = p })
 
-      const recipesWithData = data.map(r => {
-        const ings = ingredientsRes.data?.filter(i => i.recipe_id === r.id) || []
-        const { total, details } = computeCostDetails(ings, pricesRes.data || [], r.servings)
-        const hasAnyMatch = details.some(d => d.found)
-        return { ...r, profiles: profileMap[r.user_id] || null, estimatedTotal: hasAnyMatch ? total : null }
-      })
+      const recipesWithData = data.map(r => ({
+        ...r,
+        profiles: profileMap[r.user_id] ?? null,
+        estimatedTotal: r.estimated_total ?? null,
+      }))
 
       setRecipes(recipesWithData)
+      setLoading(false)
     } catch (e) { console.error("fetchRecipes error:", e); setLoading(false) }
   }
 

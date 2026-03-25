@@ -1,14 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 const VALID_UNITS = ["g", "kg", "ml", "l", "piece"];
-
 const SKIP_UNITS = ["c. à soupe", "c. à café", "pincée"];
-
 const SKIP_NAMES = ["sel", "poivre", "sel et poivre", "eau", "sel & poivre", "poivre noir", "fleur de sel"];
 
 function shouldSkip(name: string): boolean {
@@ -24,31 +21,28 @@ function normalizePrice(product: any) {
   console.log(`[normalizePrice] "${product.name}" → price=${price}, qty=${qty}, unit="${unit}"`);
 
   if (!price || !qty || qty === 0) {
-    console.warn(`[SKIP normalizePrice] ❌ Prix ou quantité invalide pour "${product.name}" → price=${price}, qty=${qty}`);
+    console.warn(`[SKIP] Prix ou quantité invalide pour "${product.name}"`);
     return null;
   }
   if (!VALID_UNITS.includes(unit)) {
-    console.warn(`[SKIP normalizePrice] ❌ Unité invalide "${unit}" pour "${product.name}" — attendu: ${VALID_UNITS.join(", ")}`);
+    console.warn(`[SKIP] Unité invalide "${unit}" pour "${product.name}"`);
     return null;
   }
 
   const MAX = { kg: 200, l: 100, piece: 50 };
   let normalized: { name: string; price: number; unit: string } | null = null;
 
-  if (unit === "ml")      normalized = { name: product.name, price: (price / qty) * 1000, unit: "l" };
-  else if (unit === "l")  normalized = { name: product.name, price: price / qty, unit: "l" };
-  else if (unit === "g")  normalized = { name: product.name, price: (price / qty) * 1000, unit: "kg" };
-  else if (unit === "kg") normalized = { name: product.name, price: price / qty, unit: "kg" };
+  if (unit === "ml")       normalized = { name: product.name, price: (price / qty) * 1000, unit: "l" };
+  else if (unit === "l")   normalized = { name: product.name, price: price / qty, unit: "l" };
+  else if (unit === "g")   normalized = { name: product.name, price: (price / qty) * 1000, unit: "kg" };
+  else if (unit === "kg")  normalized = { name: product.name, price: price / qty, unit: "kg" };
   else if (unit === "piece") normalized = { name: product.name, price: price / qty, unit: "piece" };
 
-  if (!normalized) {
-    console.warn(`[SKIP normalizePrice] ❌ Aucune règle de conversion pour "${product.name}" (unit="${unit}")`);
-    return null;
-  }
+  if (!normalized) return null;
 
   const limit = MAX[normalized.unit as keyof typeof MAX];
   if (limit && normalized.price > limit) {
-    console.warn(`[SKIP normalizePrice] ❌ Prix aberrant ${normalized.price.toFixed(2)}€/${normalized.unit} pour "${product.name}" (limite: ${limit}€)`);
+    console.warn(`[SKIP] Prix aberrant ${normalized.price.toFixed(2)}€/${normalized.unit} pour "${product.name}"`);
     return null;
   }
 
@@ -61,8 +55,7 @@ async function fetchPricesFromGemini(
   ingredients: { name: string; quantity: number; unit: string }[],
   apiKey: string
 ): Promise<any[]> {
-
-  console.log(`[Gemini] 📤 Envoi de ${ingredients.length} ingrédient(s):`, ingredients.map(i => i.name));
+  console.log(`[Gemini] 📤 Envoi de ${ingredients.length} ingrédient(s)`);
 
   const ingredientsList = ingredients
     .map(i => `- ${i.name} (utilisé en recette : ${i.quantity ?? "?"} ${i.unit ?? "?"})`)
@@ -135,7 +128,7 @@ RETOURNE UNIQUEMENT UN TABLEAU JSON VALIDE, sans texte autour, sans markdown :
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!text) {
-    console.error(`[Gemini] ❌ Réponse vide. data reçu:`, JSON.stringify(data, null, 2));
+    console.error(`[Gemini] ❌ Réponse vide:`, JSON.stringify(data));
     throw new Error("Réponse vide de Gemini.");
   }
 
@@ -143,35 +136,37 @@ RETOURNE UNIQUEMENT UN TABLEAU JSON VALIDE, sans texte autour, sans markdown :
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    console.error(`[Gemini] ❌ JSON invalide reçu:`, text);
+    console.error(`[Gemini] ❌ JSON invalide:`, text);
     throw new Error("JSON invalide retourné par Gemini.");
   }
 
-  console.log(`[Gemini] 📥 ${parsed.length} résultat(s) reçu(s):`, JSON.stringify(parsed, null, 2));
-
+  console.log(`[Gemini] 📥 ${parsed.length} résultat(s)`);
   return parsed.map((p: any) => ({
     ...p,
     name: (p.name || "").replace(/\[.*?\]/g, "").trim(),
   }));
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+// ✅ Deno.serve (nouvelle API Supabase Edge Functions — remplace serve() de std)
+Deno.serve(async (req) => {
+  // ✅ Preflight CORS — doit toujours retourner 200
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { status: 200, headers: corsHeaders });
+  }
 
   try {
     const body = await req.json();
-    console.log(`[serve] 📨 Requête reçue avec ${body.ingredients?.length ?? 0} ingrédient(s)`);
+    console.log(`[serve] 📨 ${body.ingredients?.length ?? 0} ingrédient(s)`);
 
     const { ingredients } = body;
-
     if (!ingredients || !Array.isArray(ingredients)) {
       throw new Error("Liste d'ingrédients invalide.");
     }
 
+    // ✅ Vérification clé API — erreur claire si absente
     const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_KEY) throw new Error("Clé API GEMINI_API_KEY manquante.");
+    if (!GEMINI_KEY) throw new Error("Clé API GEMINI_API_KEY manquante dans les secrets Supabase.");
 
-    // Filtrer les ingrédients à ignorer (noms ET unités non estimables)
     const toFetch = ingredients.filter((i: any) =>
       !shouldSkip(i.name) && !SKIP_UNITS.some(u => i.unit?.toLowerCase().trim() === u)
     );
@@ -181,10 +176,9 @@ serve(async (req) => {
       )
       .map((i: any) => ({ name: i.name, skipped: true }));
 
-    console.log(`[serve] 🔍 ${toFetch.length} à fetcher, ${skipped.length} skippé(s):`, skipped.map(s => s.name));
+    console.log(`[serve] 🔍 ${toFetch.length} à fetcher, ${skipped.length} skippé(s)`);
 
     if (toFetch.length === 0) {
-      console.log(`[serve] ℹ️ Tous les ingrédients sont skippés, retour immédiat.`);
       return new Response(JSON.stringify({ prices: [], skipped, allFound: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -197,44 +191,25 @@ serve(async (req) => {
       .map(normalizePrice)
       .filter((p): p is NonNullable<ReturnType<typeof normalizePrice>> => p !== null);
 
-    console.log(`[serve] ✅ Après 1er appel: ${normalized.length}/${toFetch.length} normalisés`);
+    console.log(`[serve] ✅ 1er appel: ${normalized.length}/${toFetch.length} normalisés`);
 
     // Retry pour les ingrédients sans prix valide
     const foundNames = new Set(normalized.map(p => p.name.toLowerCase()));
     const missing = toFetch.filter((i: any) => !foundNames.has(i.name.toLowerCase()));
 
     if (missing.length > 0) {
-      console.warn(`[serve] ⚠️ ${missing.length} ingrédient(s) manquant(s) après 1er appel:`);
-      missing.forEach((i: any) => {
-        const geminiMatch = raw.find(r => r.name.toLowerCase() === i.name.toLowerCase());
-        if (geminiMatch) {
-          console.warn(`  → "${i.name}" reçu de Gemini MAIS rejeté par normalizePrice:`, geminiMatch);
-        } else {
-          const geminiNames = raw.map(r => `"${r.name}"`).join(", ");
-          console.warn(`  → "${i.name}" absent de la réponse Gemini. Noms reçus: [${geminiNames}]`);
-        }
-      });
-
-      console.log(`[serve] 🔁 Retry pour: ${missing.map((i: any) => i.name).join(", ")}`);
+      console.warn(`[serve] ⚠️ Retry pour ${missing.length} ingrédient(s):`, missing.map((i: any) => i.name));
       const retryRaw = await fetchPricesFromGemini(missing, GEMINI_KEY);
       const retryNormalized = retryRaw
         .map(normalizePrice)
         .filter((p): p is NonNullable<ReturnType<typeof normalizePrice>> => p !== null);
 
-      console.log(`[serve] ✅ Après retry: ${retryNormalized.length}/${missing.length} récupérés`);
+      console.log(`[serve] ✅ Retry: ${retryNormalized.length}/${missing.length} récupérés`);
       normalized = [...normalized, ...retryNormalized];
-
-      const foundAfterRetry = new Set(normalized.map(p => p.name.toLowerCase()));
-      const stillMissing = missing.filter((i: any) => !foundAfterRetry.has(i.name.toLowerCase()));
-      if (stillMissing.length > 0) {
-        console.error(`[serve] ❌ Toujours sans prix après retry:`, stillMissing.map((i: any) => i.name));
-      }
     }
 
     const allFound = normalized.length >= toFetch.length;
-
-    console.log(`[serve] 📊 Résultat final: allFound=${allFound}, prices=${normalized.length}, skipped=${skipped.length}`);
-    console.log(`[serve] 💰 Prix finaux:`, JSON.stringify(normalized, null, 2));
+    console.log(`[serve] 📊 allFound=${allFound}, prices=${normalized.length}, skipped=${skipped.length}`);
 
     return new Response(
       JSON.stringify({ prices: normalized, skipped, allFound }),
@@ -245,7 +220,8 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error(`[serve] 💥 Erreur fatale:`, error.message);
+    console.error(`[serve] 💥 Erreur:`, error.message);
+    // ✅ Les headers CORS sont aussi sur la réponse d'erreur
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

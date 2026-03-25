@@ -80,10 +80,10 @@ export async function computeCostDetails(ingredientsData, servings) {
   try {
     const toProcess = ingredientsData.filter(i => !shouldSkipIngredient(i.name, i.unit));
 
-    // ── 1. Chercher les prix en cache (ingredient_price) ──────────────────────
+    // ── 1. Chercher les prix en cache (ingredient_prices) ──────────────────────
     const names = toProcess.map(i => i.name);
     const { data: cached } = await supabase
-      .from("ingredient_price")
+      .from("ingredient_prices")
       .select("name, price, unit")
       .in("name", names);
 
@@ -143,7 +143,7 @@ export async function computeCostDetails(ingredientsData, servings) {
 
       // ── Sauvegarder les nouveaux prix en cache (fire & forget) ───────────────
       if (toCache.length > 0) {
-        supabase.from("ingredient_price").upsert(toCache, { onConflict: "name" }).then(({ error }) => {
+        supabase.from("ingredient_prices").upsert(toCache, { onConflict: "name" }).then(({ error }) => {
           if (error) console.warn("[cache] ⚠️ Impossible de sauvegarder:", error.message);
           else console.log(`[cache] 💾 ${toCache.length} prix sauvegardés`);
         });

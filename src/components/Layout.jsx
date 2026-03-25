@@ -19,14 +19,33 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isDay } = useTheme()
-  const { profile, user } = useProfile()
+  const { profile, user, refreshProfile } = useProfile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showPremiumWelcome, setShowPremiumWelcome] = useState(false)
 
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
+  // Détecte le retour depuis Stripe (?success=true) et attend que le webhook ait mis à jour le profil
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get("success") !== "true") return
+
+    // Nettoie l'URL immédiatement
+    navigate(location.pathname, { replace: true })
+
+    // Attend 3s que le webhook Stripe ait le temps de mettre à jour le profil
+    const timer = setTimeout(async () => {
+      await refreshProfile()
+      setShowPremiumWelcome(true)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    navigate("/login")
+    navigate("/")
   }
 
   const navItem = (to, iconName, label, id) => (
@@ -110,7 +129,7 @@ export default function Layout() {
           paramètres
         </NavLink>
         <button
-          onClick={handleLogout}
+          onClick={() => setShowLogoutConfirm(true)}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "-0.05em", color: "white", background: "none", border: "none", cursor: "pointer" }}>
           <NavIcon name="door" />
           déconnexion
@@ -121,6 +140,44 @@ export default function Layout() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+
+      {/* POPUP confirmation déconnexion */}
+      {showLogoutConfirm && (
+        <div onClick={() => setShowLogoutConfirm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center", padding: "0 0 24px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#1a1a1a", borderRadius: 20, padding: "24px 20px", width: "100%", maxWidth: 360, margin: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ margin: 0, fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 15, color: "#fff", textAlign: "center", letterSpacing: "-0.04em" }}>
+              se déconnecter ?
+            </p>
+            <p style={{ margin: 0, fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 12, color: "rgba(255,255,255,0.4)", textAlign: "center" }}>
+              tu devras te reconnecter à ta prochaine visite.
+            </p>
+            <button onClick={handleLogout} style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: "#f3501e", color: "#fff", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.04em", cursor: "pointer" }}>
+              se déconnecter
+            </button>
+            <button onClick={() => setShowLogoutConfirm(false)} style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.04em", cursor: "pointer" }}>
+              annuler
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP bienvenue Premium */}
+      {showPremiumWelcome && (
+        <div onClick={() => setShowPremiumWelcome(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#111111", border: "1.5px solid rgba(243,80,30,0.4)", borderRadius: 24, padding: "32px 24px", width: "100%", maxWidth: 360, display: "flex", flexDirection: "column", alignItems: "center", gap: 0, textAlign: "center" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
+            <p style={{ margin: "0 0 8px", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 18, color: "#ffffff", letterSpacing: "-0.05em" }}>
+              tu es Premium !
+            </p>
+            <p style={{ margin: "0 0 24px", fontFamily: "Poppins, sans-serif", fontWeight: 400, fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>
+              toutes les fonctionnalités sont maintenant débloquées.<br />recettes illimitées, import, partage et bien plus.
+            </p>
+            <button onClick={() => setShowPremiumWelcome(false)} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: "#f3501e", color: "#fff", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.04em", cursor: "pointer" }}>
+              c'est parti 🚀
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* OVERLAY mobile */}
       {sidebarOpen && (

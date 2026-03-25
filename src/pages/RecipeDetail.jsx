@@ -211,6 +211,21 @@ export default function RecipeDetail() {
       const total = details.reduce((s, d) => s + d.estimated_price, 0)
       const per_serving = recipeData?.servings > 0 ? total / recipeData.servings : total
       setCostDetails({ details, total: Number(total.toFixed(2)), per_serving: Number(per_serving.toFixed(2)) })
+
+      // Tag économique automatique au chargement
+      if (recipeData?.servings > 0 && per_serving > 0) {
+        const currentTags = recipeData.tags || []
+        const hasTag = currentTags.includes("economique")
+        if (per_serving < 3 && !hasTag) {
+          const newTags = [...currentTags, "economique"]
+          supabase.from("recipes").update({ tags: newTags }).eq("id", recipeData.id)
+          setRecipe(r => ({ ...r, tags: newTags }))
+        } else if (per_serving >= 3 && hasTag) {
+          const newTags = currentTags.filter(t => t !== "economique")
+          supabase.from("recipes").update({ tags: newTags }).eq("id", recipeData.id)
+          setRecipe(r => ({ ...r, tags: newTags }))
+        }
+      }
     }
   }
 
@@ -386,7 +401,7 @@ const handleEstimate = async () => {
                   ⏱ {recipe.prep_time} min
                 </span>
               )}
-              {validTags.slice(0, 3).map(tv => {
+              {validTags.map(tv => {
                 const ti = TAGS.find(t => t.value === tv)
                 return (
                   <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>

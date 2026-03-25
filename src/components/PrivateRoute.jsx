@@ -9,15 +9,22 @@ export default function PrivateRoute({ children }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
     })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") return
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   if (session === undefined) return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-      <p className="text-zinc-400 text-sm">Chargement...</p>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-main)" }}>
+      <p style={{ color: "var(--text-muted)", fontSize: 14, fontFamily: "Poppins, sans-serif" }}>Chargement...</p>
     </div>
   )
 
-  if (!session) return <Navigate to="/login" />
+  if (!session) return <Navigate to="/" replace />
 
   return children ? children : <Outlet />
 }

@@ -188,6 +188,10 @@ export default function Login() {
               placeholder="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
             />
 
             <div style={{ position: "relative" }}>
@@ -198,6 +202,10 @@ export default function Login() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleLogin()}
+                autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
               />
               <button
                 onClick={() => setShowPassword(!showPassword)}

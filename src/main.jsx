@@ -30,6 +30,22 @@ import OnboardingTour from "./components/OnboardingTour"
 import { supabase } from "./supabase"
 import "./index.css"
 
+// ── Route racine : redirige les utilisateurs connectés vers /calendar ──
+function RootRoute() {
+  const [session, setSession] = useState(undefined)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+  }, [])
+
+  // Pendant la vérification, ne rien afficher (évite le flash de la landing)
+  if (session === undefined) return null
+
+  if (session) return <Navigate to="/calendar" replace />
+
+  return <Landing />
+}
+
 // ── Onboarding isolé — ne bloque pas le rendu ──
 function OnboardingManager() {
   const [state, setState] = useState({ userId: null, show: false })
@@ -90,7 +106,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
         <Routes>
           <Route path="/legal" element={<Legal />} />
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<RootRoute />} />
           <Route path="/home" element={<Navigate to="/calendar" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

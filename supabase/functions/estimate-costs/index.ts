@@ -76,9 +76,12 @@ RÈGLES STRICTES :
 
 CORRESPONDANCES PAR TYPE DE PRODUIT :
 - Viandes/volailles (poulet, bœuf, porc, dinde...) → "g", 500-600g, prix 3-10€
-- Poissons/fruits de mer → "g", 300-500g, prix 3-12€
+- Poissons/fruits de mer frais → "g", 300-500g, prix 3-12€
+- Thon en boîte, sardines en boîte, maquereaux en boîte → "piece", qty 1, prix 1.20-2.50€
 - Légumes entiers (tomate, courgette, poivron, aubergine...) → "piece", qty 1, prix 0.40-1.80€
+- Pommes de terre → "piece", qty 1, prix 0.30-0.60€
 - Fruits entiers (citron, orange, pomme, banane...) → "piece", qty 1, prix 0.30-1.50€
+- Jus de citron, jus d'orange (pressé à partir d'un fruit) → traite comme 1 citron/orange frais, "piece", qty 1, prix 0.30-0.50€. NE PAS traiter comme bouteille de jus industriel.
 - Herbes fraîches (basilic, persil, coriandre, ciboulette...) → "piece", qty 1, prix 0.70-1.20€
 - Tête d'ail (ail entier) → "piece", qty 1, prix 0.60-1.20€
 - Gousse d'ail, gousses d'ail → "piece", qty 1, prix 0.05-0.10€ (une seule gousse, pas une tête)
@@ -89,11 +92,13 @@ CORRESPONDANCES PAR TYPE DE PRODUIT :
 - Condiments solides (moutarde, pesto, tahini, miso...) → "g", 200g, prix 1.50-4€
 - Miel, sirop d'érable, sirop d'agave → "g", 250g, prix 2.50-6€
 - Féculents (riz, pâtes, farine, semoule, lentilles...) → "g", 500g, prix 0.80-3€
+- Fromage râpé, emmental râpé, gruyère râpé → "g", 200g, prix 1.50-3€
 - Fromages (chèvre, feta, parmesan, gruyère...) → "g", 150-200g, prix 1.50-5€
 - Produits laitiers liquides (lait, crème, lait de coco...) → "ml", 500ml, prix 0.80-3€
-- Œufs → "piece", qty 1, prix 0.25-0.40€
+- Œufs, blancs d'œufs, jaunes d'œufs → "piece", qty 1, prix 0.25-0.40€
 - Beurre → "g", 250g, prix 1.80-3.50€
-- Conserves (tomates pelées, pois chiches, maïs...) → "g", 400g, prix 0.70-2€
+- Conserves (tomates pelées, pois chiches, maïs, lentilles...) → "g", 400g, prix 0.70-2€
+- Feuilles de brick, feuilles de filo → "piece", qty 1, prix 1.80-3€
 - Bouillon cube → "piece", qty 1, prix 0.15-0.30€
 - Sucre, fécule, levure → "g", 500g, prix 0.80-2.50€
 - Pain, viennoiseries → "piece", qty 1, prix 0.15-1.50€

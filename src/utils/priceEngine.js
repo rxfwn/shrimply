@@ -21,10 +21,16 @@ export function shouldSkipIngredient(name, unit) {
 
 // Conversion des unités non-standard → unités API avant envoi
 const UNIT_CONVERSIONS = {
-  "c. à soupe": { unit: "ml", factor: 15 },
-  "c. à café":  { unit: "ml", factor: 5 },
-  "tranche":    { unit: "g",  factor: 30 },  // ~30g par tranche (jambon, pain de mie, fromage...)
-  "pincée":     { unit: "g",  factor: 1 },   // ~1g par pincée (épices, muscade...)
+  "c. à soupe": { unit: "ml",    factor: 15 },
+  "c. à café":  { unit: "ml",    factor: 5  },
+  "tranche":    { unit: "g",     factor: 30 },  // ~30g par tranche
+  "pincée":     { unit: "g",     factor: 1  },  // ~1g par pincée
+  "poignée":    { unit: "g",     factor: 40 },  // ~40g par poignée
+  "boîte":      { unit: "piece", factor: 1  },  // 1 boîte = 1 pièce
+  "botte":      { unit: "piece", factor: 1  },  // 1 botte = 1 pièce
+  "pièce":      { unit: "piece", factor: 1  },  // français → piece (API)
+  "paquet":     { unit: "piece", factor: 1  },  // 1 paquet = 1 pièce
+  "sachet":     { unit: "piece", factor: 1  },  // 1 sachet = 1 pièce
 }
 
 function normalizeIngredientUnit(ing) {

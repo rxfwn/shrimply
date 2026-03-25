@@ -165,7 +165,7 @@ export default function Discover() {
 
   const filteredRecipes = recipes.filter(r => {
     const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === "all" || (r.tags && r.tags.includes(filter))
+    const matchFilter = filter === "all" || r.primary_tag === filter || (r.tags && r.tags.includes(filter))
     return matchSearch && matchFilter
   })
 

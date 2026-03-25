@@ -96,7 +96,7 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
       {stage === "idle" && (
         <div
           onClick={() => fileInputRef.current.click()}
-          style={{ height: 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, cursor: "pointer", border: "2px dashed var(--border-2)", transition: "border-color 0.15s" }}
+          style={{ height: 160, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, cursor: "pointer", transition: "border-color 0.15s" }}
           onMouseEnter={e => e.currentTarget.style.borderColor = "#f3501e"}
           onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border-2)"}
         >
@@ -125,8 +125,8 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
             <img ref={imgRef} src={imageSrc} onLoad={onImageLoad} style={{ display: "none" }} alt="" />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={handleReset} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}>annuler</button>
-            <button onClick={handleConfirm} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#f3501e", color: "#ffffff" }}>valider la photo</button>
+            <button onClick={handleReset} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#130b2d", color: "#d57bf" }}>annuler</button>
+            <button onClick={handleConfirm} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#d57bff", color: "#130b2d" }}>valider la photo</button>
           </div>
         </div>
       )}

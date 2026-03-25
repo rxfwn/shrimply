@@ -1,7 +1,4 @@
 // src/pages/AuthCallback.jsx
-// Cette page est la cible du redirectTo après le login Google.
-// Elle gère les deux cas : redirection normale ET popup PWA.
-
 import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
@@ -11,20 +8,27 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handle = async () => {
-      // Supabase lit automatiquement les tokens dans l'URL (hash ou query params)
       const { data: { session } } = await supabase.auth.getSession()
 
       if (session) {
-        // Si cette page est ouverte dans un popup PWA, on ferme juste le popup.
-        // La fenêtre principale détecte la fermeture et récupère la session.
         if (window.opener && !window.opener.closed) {
           window.close()
           return
         }
-        // Sinon (redirection classique navigateur), on redirige vers l'app
-        navigate("/calendar", { replace: true })
+
+        // Vérifie si c'est un nouveau compte
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarded")
+          .eq("id", session.user.id)
+          .single()
+
+        if (profile?.onboarded === false) {
+          navigate("/recipes?onboarding=true", { replace: true })
+        } else {
+          navigate("/calendar", { replace: true })
+        }
       } else {
-        // Pas de session — retour login
         navigate("/login", { replace: true })
       }
     }

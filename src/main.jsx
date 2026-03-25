@@ -3,7 +3,7 @@ import Landing from "./pages/Landing"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import ReactDOM from "react-dom/client"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ProfileProvider } from "./context/ProfileContext"
 import Login from "./pages/Login"
@@ -33,8 +33,19 @@ import "./index.css"
 // ── Onboarding isolé — ne bloque pas le rendu ──
 function OnboardingManager() {
   const [state, setState] = useState({ userId: null, show: false })
+  const location = useLocation()
 
   useEffect(() => {
+    // Démarrage instantané si flag ?onboarding=true dans l'URL
+    const params = new URLSearchParams(location.search)
+    if (params.get("onboarding") === "true") {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) setState({ userId: user.id, show: true })
+      })
+      return
+    }
+
+    // Sinon comportement normal
     const checkOnboarding = async (userId) => {
       if (!userId) return
       const { data } = await supabase
@@ -47,24 +58,18 @@ function OnboardingManager() {
       }
     }
 
-    // Check utilisateur déjà connecté
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) checkOnboarding(user.id)
     })
 
-    // Écoute les nouveaux logins (signup)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "PASSWORD_RECOVERY") return  // ← ajoute cette ligne
-    if (event === "SIGNED_IN" && session?.user) {
-    checkOnboarding(session.user.id)
-    }
-    if (event === "SIGNED_OUT") {
-    setState({ userId: null, show: false })
-    }
-    })  
+      if (event === "PASSWORD_RECOVERY") return
+      if (event === "SIGNED_IN" && session?.user) checkOnboarding(session.user.id)
+      if (event === "SIGNED_OUT") setState({ userId: null, show: false })
+    })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [location.search])
 
   if (!state.show || !state.userId) return null
 

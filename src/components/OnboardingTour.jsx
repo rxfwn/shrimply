@@ -42,15 +42,15 @@ function SpotlightOverlay({ targetId, children, onSkip, PAD = 8 }) {
           <div style={{ pointerEvents: "auto", display: "inline-block" }}>{children}</div>
         </div>
         {onSkip && (
-          <button onClick={onSkip} 
+          <button onClick={onSkip}
             className="text-light"
             style={{
-            position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
-            background: "none", border: "none", cursor: "pointer",
-            fontSize: 12, color: "rgba(255,255,255,0.4)",
-            fontFamily: "Poppins, sans-serif", fontWeight: 600, letterSpacing: "-0.03em",
-            zIndex: 10003, pointerEvents: "auto",
-          }}>passer le tutoriel</button>
+              position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 12, color: "rgba(255,255,255)",
+              fontFamily: "Poppins, sans-serif", fontWeight: 600, letterSpacing: "-0.03em",
+              zIndex: 10003, pointerEvents: "auto",
+            }}>passer le tutoriel</button>
         )}
       </div>
     )
@@ -79,15 +79,15 @@ function SpotlightOverlay({ targetId, children, onSkip, PAD = 8 }) {
         <div style={{ pointerEvents: "auto", display: "inline-block" }}>{children}</div>
       </div>
       {onSkip && (
-        <button onClick={onSkip} 
+        <button onClick={onSkip}
           className="text-light"
           style={{
-          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
-          background: "none", border: "none", cursor: "pointer",
-          fontSize: 12, color: "rgba(255,255,255,0.4)",
-          fontFamily: "Poppins, sans-serif", fontWeight: 600, letterSpacing: "-0.03em",
-          zIndex: 10003, pointerEvents: "auto",
-        }}>passer le tutoriel</button>
+            position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 12, color: "rgba(255,255,255)",
+            fontFamily: "Poppins, sans-serif", fontWeight: 600, letterSpacing: "-0.03em",
+            zIndex: 10003, pointerEvents: "auto",
+          }}>passer le tutoriel</button>
       )}
     </div>
   )
@@ -142,7 +142,6 @@ function Bubble({ targetId, text, action, actionLabel, position = "bottom", fall
 
 // ── Bulle flottante centrée sur le contenu principal (hors sidebar) ──
 function FloatingBubble({ text, onDismiss }) {
-  // La sidebar fait ~208px sur desktop, 0 sur mobile
   const sidebarW = window.innerWidth >= 768 ? 208 : 0
   const contentW = window.innerWidth - sidebarW
   const left = sidebarW + contentW / 2
@@ -166,7 +165,7 @@ function FloatingBubble({ text, onDismiss }) {
         <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.5, letterSpacing: "-0.03em" }}>
           {text}
         </p>
-        <p style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
+        <p className="tex" style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 500, color: "rgba(255,255,255)", lineHeight: 1.4 }}>
           Attention à bien remplir toutes les cases obligatoires !
         </p>
         {onDismiss && (
@@ -241,7 +240,7 @@ function ModalCard({ img, emoji, title, text, actionLabel, onAction, onSkip, ste
             : <div style={{ fontSize: 44, marginBottom: 16 }}>{emoji}</div>
           }
           <h2 style={{ margin: "0 0 10px", fontSize: 17, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.05em" }}>{title}</h2>
-          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.65, fontWeight: 500 }}>{text}</p>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255)", lineHeight: 1.65, fontWeight: 500 }}>{text}</p>
         </div>
 
         <button onClick={onAction} style={{
@@ -256,13 +255,13 @@ function ModalCard({ img, emoji, title, text, actionLabel, onAction, onSkip, ste
         >{actionLabel}</button>
 
         {onSkip && (
-          <button onClick={onSkip} 
-            className="text-light" 
+          <button onClick={onSkip}
+            className="text-light"
             style={{
-            width: "100%", background: "none", border: "none", cursor: "pointer",
-            fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "Poppins, sans-serif",
-            fontWeight: 600, letterSpacing: "-0.03em", padding: "6px 0",
-          }}>passer le tutoriel</button>
+              width: "100%", background: "none", border: "none", cursor: "pointer",
+              fontSize: 11, color: "rgba(255,255,255)", fontFamily: "Poppins, sans-serif",
+              fontWeight: 600, letterSpacing: "-0.03em", padding: "6px 0",
+            }}>passer le tutoriel</button>
         )}
       </div>
     </div>
@@ -307,10 +306,8 @@ export default function OnboardingTour({ userId, onComplete }) {
       return count ?? 0
     }
 
-    // 1. D'abord snapshot le count actuel
     getCount().then(count => {
       baseline = count
-      // 2. Puis démarre le polling
       interval = setInterval(async () => {
         const current = await getCount()
         if (current > baseline) {
@@ -320,7 +317,6 @@ export default function OnboardingTour({ userId, onComplete }) {
       }, 800)
     })
 
-    // Drag detection
     const onDown = () => setIsDragging(true)
     const onUp = () => setTimeout(() => setIsDragging(false), 400)
     document.addEventListener("pointerdown", onDown)
@@ -420,7 +416,7 @@ export default function OnboardingTour({ userId, onComplete }) {
 
   if (navigating) return null
 
-  // ── Étape 0 : bienvenue ──
+  // ── Étape 0 : bienvenue — déjà sur /recipes grâce au flag ?onboarding=true ──
   if (step === 0) {
     return (
       <ModalCard
@@ -428,7 +424,7 @@ export default function OnboardingTour({ userId, onComplete }) {
         title="bienvenue sur Shrimply !"
         text="découvre l'app en quelques étapes, en moins de 2 minutes."
         actionLabel="c'est parti !"
-        onAction={() => { navigate("/recipes"); setTimeout(() => setStep(1), 500) }}
+        onAction={() => setStep(1)}
         onSkip={complete}
         step={1} total={TOTAL}
       />
@@ -444,7 +440,7 @@ export default function OnboardingTour({ userId, onComplete }) {
           text="Ici se trouvent toutes tes recettes. Pour l'instant, c'est vide."
           position={isMobile() ? "bottom" : "right"}
           fallbackCenter={isMobile()}
-          action={() => { navigate("/recipes"); setTimeout(() => setStep(2), 500) }}
+          action={() => setStep(2)}
           actionLabel="créer ma première recette !"
         />
       </SpotlightOverlay>

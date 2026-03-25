@@ -366,10 +366,10 @@ export default function Recipes() {
             <ImageUploadCropper onImageSaved={(url) => setPhotoUrl(url||"")} recipeId={null} />
 
             <div>
-              <label style={labelStyle}>nom <span style={{ color: "#f87171" }}>*</span></label>
+              <label style={labelStyle}>nom <span style={{ color: "#d57bff" }}>*</span></label>
               <input style={inputStyle(errors.name)} placeholder="ex : pâtes carbonara" value={name} spellCheck="true"
                 onChange={e => { setName(e.target.value); setErrors(p=>({...p,name:false})) }}
-                onFocus={e => e.target.style.borderColor = "#f3501e"}
+                onFocus={e => e.target.style.borderColor = "#d57bff"}
                 onBlur={e => e.target.style.borderColor = errors.name ? "rgba(239,68,68,0.5)" : "var(--input-border)"} />
               {errors.name && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
             </div>
@@ -382,14 +382,14 @@ export default function Recipes() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={labelStyle}>temps (min) <span style={{ color: "#f87171" }}>*</span></label>
+                <label style={labelStyle}>temps (min) <span style={{ color: "#d57bff" }}>*</span></label>
                 <input style={inputStyle(errors.prepTime)} placeholder="ex : 30" type="text" inputMode="numeric" value={prepTime}
                   onKeyDown={handleIntegerKeyDown}
                   onChange={e => { setPrepTime(e.target.value.replace(/[^0-9]/g, "")); setErrors(p=>({...p,prepTime:false})) }} />
                 {errors.prepTime && <p style={{ fontSize: 11, color: "#f87171", margin: "4px 0 0 4px", fontWeight: 500 }}>obligatoire</p>}
               </div>
               <div>
-                <label style={labelStyle}>portions <span style={{ color: "#f87171" }}>*</span></label>
+                <label style={labelStyle}>portions <span style={{ color: "#d57bff" }}>*</span></label>
                 <input style={inputStyle(errors.servings)} placeholder="ex : 4" type="text" inputMode="numeric" value={servings}
                   onKeyDown={handleIntegerKeyDown}
                   onChange={e => { setServings(e.target.value.replace(/[^0-9]/g, "")); setErrors(p=>({...p,servings:false})) }} />
@@ -400,7 +400,7 @@ export default function Recipes() {
             {/* Tag principal — OBLIGATOIRE */}
             <div>
               <label style={labelStyle}>
-                🎨 tag principal <span style={{ color: "#f87171" }}>*</span>{" "}
+                🎨 tag principal <span style={{ color: "#d57bff" }}>*</span>{" "}
                 <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
               </label>
               {errors.primaryTag && (
@@ -459,7 +459,7 @@ export default function Recipes() {
 
             {/* Ingrédients */}
             <div>
-              <label style={labelStyle}>ingrédients <span style={{ color: "#f87171" }}>*</span></label>
+              <label style={labelStyle}>ingrédients <span style={{ color: "#d57bff" }}>*</span></label>
               {errors.noIngredients && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>au moins un ingrédient requis</p>}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {ingredients.map((ing, i) => (
@@ -494,7 +494,7 @@ export default function Recipes() {
                     )}
                   </div>
                 ))}
-                <button onClick={addIngredient} style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
+                <button onClick={addIngredient} style={{ background: "none", border: "none", cursor: "pointer", color: "#d57bff", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
                   + ajouter un ingrédient
                 </button>
               </div>
@@ -503,7 +503,7 @@ export default function Recipes() {
             {/* Étapes */}
             <div>
               <label style={labelStyle}>
-                étapes <span style={{ color: "#f87171" }}>*</span>{" "}
+                étapes <span style={{ color: "#d57bff" }}>*</span>{" "}
                 <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— glisse ⠿ pour réordonner</span>
               </label>
               {errors.noSteps && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>au moins une étape requise</p>}
@@ -512,7 +512,7 @@ export default function Recipes() {
                   <div key={i} draggable onDragStart={() => handleDragStart(i)} onDragEnter={() => handleDragEnter(i)} onDragEnd={handleDragEnd} onDragOver={e => e.preventDefault()}
                     style={{ display: "flex", gap: 8, alignItems: "center", borderRadius: 10, padding: "4px 0", backgroundColor: dragOverIndex===i && dragItem.current!==i ? "rgba(243,80,30,0.06)" : "transparent", transition: "background 0.15s" }}>
                     <span style={{ color: "var(--text-ghost)", cursor: "grab", fontSize: 16, flexShrink: 0, userSelect: "none" }}>⠿</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#f3501e", width: 20, flexShrink: 0 }}>{i+1}.</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#d57bff", width: 20, flexShrink: 0 }}>{i+1}.</span>
                     <div style={{ flex: 1 }}>
                       <textarea ref={el => stepRefs.current[i]=el}
                         style={{ ...inputStyle(errors[`step_${i}`]), resize: "none", overflow: "hidden", minHeight: 42 }}
@@ -529,7 +529,7 @@ export default function Recipes() {
                     )}
                   </div>
                 ))}
-                <button onClick={addStep} style={{ background: "none", border: "none", cursor: "pointer", color: "#f3501e", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
+                <button onClick={addStep} style={{ background: "none", border: "none", cursor: "pointer", color: "#d57bff", fontSize: 13, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", textAlign: "left", padding: 0, marginTop: 4 }}>
                   + ajouter une étape
                 </button>
               </div>
@@ -575,7 +575,7 @@ export default function Recipes() {
                   style={{ width: "100%", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "9px 12px 9px 36px", fontSize: 13, color: "var(--text-main)", outline: "none", fontFamily: "Poppins, sans-serif", fontWeight: 700, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
                   placeholder="rechercher une recette..."
                   value={search} onChange={e => setSearch(e.target.value)}
-                  onFocus={e => e.target.style.borderColor = "#f3501e"}
+                  onFocus={e => e.target.style.borderColor = "#d57bff"}
                   onBlur={e => e.target.style.borderColor = "var(--border)"}
                 />
               </div>

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { computeCostDetails } from "../utils/priceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
-import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
 
@@ -88,7 +87,6 @@ function DraftToast({ type, visible }) {
 
 export default function Recipes() {
   const navigate = useNavigate()
-  const { isDay } = useTheme()
   const { isPremium } = usePremium()
   const ingredientRefs = useRef([])
   const stepRefs = useRef([])
@@ -175,7 +173,7 @@ export default function Recipes() {
         hasShownDraftPopup.current = true
         showToast("saved")
       }
-    }, 2000)
+    }, 5000)
     return () => clearTimeout(autoSaveTimer.current)
   }, [showForm, name, description, prepTime, servings, selectedTags, recipeColor, ingredients, steps])
 
@@ -200,7 +198,7 @@ export default function Recipes() {
       const { data:stps } = await supabase.from("steps").select("*").eq("recipe_id",recipe.id).order("step_number")
       const { data:newR, error } = await supabase.from("recipes").insert({ user_id:user.id, name:`Copie de ${recipe.name}`, description:recipe.description, prep_time:recipe.prep_time, servings:recipe.servings, tags:recipe.tags, photo_url:recipe.photo_url||null, is_public:false, duplicated_from:sourceId }).select().single()
       if (error) throw error
-      if (ings?.length>0) await supabase.from("ingredients").insert(ings.map(i=>({recipe_id:newR.id,name:i.name,quantity:i.quantity,unit:i.unit,calories:i.calories})))
+      if (ings?.length>0) await supabase.from("ingredients").insert(ings.map(i=>({recipe_id:newR.id,name:i.name,quantity:i.quantity,unit:i.unit})))
       if (stps?.length>0) await supabase.from("steps").insert(stps.map(s=>({recipe_id:newR.id,step_number:s.step_number,description:s.description})))
       await fetchRecipes(); setSuccess(`"Copie de ${recipe.name}" créée !`); setTimeout(()=>setSuccess(false),3000)
     } catch(err){console.error(err)} finally{setDuplicating(null)}
@@ -396,6 +394,20 @@ export default function Recipes() {
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#f87171", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>⚠️ {dupError}</div>
       )}
 
+      {tagPopup && (
+        <div style={{ position: "fixed", left: tagPopup.x, top: tagPopup.y - 6, transform: "translateX(-50%) translateY(-100%)", zIndex: 9999, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5, boxShadow: "0 4px 20px rgba(0,0,0,0.35)", minWidth: 120, pointerEvents: "none" }}>
+          {tagPopup.tags.map(tv => {
+            const ti = TAGS.find(t => t.value === tv)
+            return ti ? (
+              <span key={tv} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
+                <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />
+                {ti.label}
+              </span>
+            ) : null
+          })}
+        </div>
+      )}
+
       {showForm ? (
         <div style={{ maxWidth: 780, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
@@ -433,7 +445,7 @@ export default function Recipes() {
                 onChange={e => setDescription(e.target.value)} />
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="form-time-grid">
               <div>
                 <label style={labelStyle}>temps (min) <span style={{ color: "#d57bff" }}>*</span></label>
                 <input style={inputStyle(errors.prepTime)} placeholder="ex : 30" type="text" inputMode="numeric" value={prepTime}
@@ -520,13 +532,13 @@ export default function Recipes() {
               {errors.noIngredients && <p style={{ fontSize: 11, color: "#f87171", margin: "0 0 8px 4px", fontWeight: 500 }}>au moins un ingrédient requis</p>}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {ingredients.map((ing, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                    <div style={{ flex: 2 }}>
+                  <div key={i} className="ingredient-row">
+                    <div className="ing-name">
                       <input ref={el => ingredientRefs.current[i]=el} style={inputStyle(false)} placeholder="ingrédient *" value={ing.name} spellCheck="true"
                         onChange={e => updateIngredient(i,"name",e.target.value)}
                         onKeyDown={e => { if(e.key==="Enter"){e.preventDefault();if(i===ingredients.length-1)addIngredient();else ingredientRefs.current[i+1]?.focus()} }} />
                     </div>
-                    <div style={{ width: 80 }}>
+                    <div className="ing-qty">
                       <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *"
                         type="text" inputMode="decimal" value={ing.quantity}
                         onKeyDown={handleNumericKeyDown}
@@ -535,7 +547,7 @@ export default function Recipes() {
                           if (v === "" || parseFloat(v.replace(",", ".")) >= 0) updateIngredient(i,"quantity",v)
                         }} />
                     </div>
-                    <div style={{ width: 110 }}>
+                    <div className="ing-unit">
                       <select style={{ ...inputStyle(errors[`ing_${i}_unit`]), appearance: "none", color: ing.unit ? "var(--text-main)" : "var(--text-muted)" }}
                         value={ing.unit} onChange={e => updateIngredient(i,"unit",e.target.value)}>
                         <option value="" disabled>unité *</option>
@@ -677,7 +689,7 @@ export default function Recipes() {
           ) : filtered.length === 0 ? (
             <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette ne correspond.</div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+            <div className="recipes-grid">
               {filtered.map(recipe => {
                 const primaryTagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag || t.label === recipe.primary_tag)
                 const bg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
@@ -692,7 +704,7 @@ export default function Recipes() {
                     onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
                   >
                     {recipe.photo_url
-                      ? <img src={recipe.photo_url} alt={recipe.name} style={{ display: "block", width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: "13px 13px 0 0" }} />
+                      ? <img src={recipe.photo_url} alt={recipe.name} loading="lazy" style={{ display: "block", width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: "13px 13px 0 0" }} />
                       : <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bg, fontSize: 40, borderRadius: "13px 13px 0 0" }}>🍽</div>
                     }
                     <div style={{ padding: "8px 12px 12px", color: textColor }}>
@@ -724,24 +736,11 @@ export default function Recipes() {
                             })}
                             {validT.length > 2 && (
                               <span
-                                style={{ fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", color: textColor + "80", cursor: "default", position: "relative" }}
-                                onMouseEnter={() => setTagPopup(recipe.id)}
+                                style={{ fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", color: textColor + "80", cursor: "default" }}
+                                onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setTagPopup({ id: recipe.id, x: r.left + r.width / 2, y: r.top, tags: validT.slice(2) }) }}
                                 onMouseLeave={() => setTagPopup(null)}
                               >
                                 +{validT.length - 2}
-                                {tagPopup === recipe.id && (
-                                  <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5, zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120, pointerEvents: "none", opacity: 1 }}>
-                                    {validT.slice(2).map(tv => {
-                                      const ti = TAGS.find(t => t.value === tv)
-                                      return ti ? (
-                                        <span key={tv} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
-                                          <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />
-                                          {ti.label}
-                                        </span>
-                                      ) : null
-                                    })}
-                                  </div>
-                                )}
                               </span>
                             )}
                           </div>

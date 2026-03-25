@@ -125,3 +125,40 @@ button {
 /* ── Tags ───────────────────────────────────────────────────── */
 .tag-pill-inactive { opacity: 0.35 !important; }
 .tag-pill-active   { opacity: 1 !important; }
+
+/* ── Ligne ingrédient responsive ───────────────────────────── */
+.ingredient-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ingredient-row .ing-name { flex: 2; min-width: 0; }
+.ingredient-row .ing-qty  { width: 80px; flex-shrink: 0; }
+.ingredient-row .ing-unit { width: 110px; flex-shrink: 0; }
+
+@media (max-width: 500px) {
+  .ingredient-row { flex-wrap: wrap; }
+  .ingredient-row .ing-name { width: 100%; flex: none; }
+  .ingredient-row .ing-qty  { flex: 1; width: auto; min-width: 60px; }
+  .ingredient-row .ing-unit { flex: 2; width: auto; min-width: 90px; }
+}
+
+/* ── Grilles recettes ───────────────────────────────────────── */
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 380px) {
+  .recipes-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Formulaire recette ─────────────────────────────────────── */
+.form-time-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .form-time-grid { grid-template-columns: 1fr; }
+}

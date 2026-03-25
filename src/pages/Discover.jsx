@@ -1,4 +1,4 @@
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_TEXT, DEFAULT_CARD_BORDER } from "../tags"
+import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
@@ -57,7 +57,6 @@ export default function Discover() {
   const { isPremium } = usePremium()
 
   const [recipes, setRecipes] = useState([])
-  const [currentUser, setCurrentUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [success, setSuccess] = useState("")
   const [search, setSearch] = useState("")
@@ -69,6 +68,7 @@ export default function Discover() {
   const [previewLoading, setPreviewLoading] = useState(false)
   const [checkedSteps, setCheckedSteps] = useState({})
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
+  const [tagTooltip, setTagTooltip] = useState(null) // { tags, x, y }
 
   useEffect(() => { fetchRecipes() }, [])
 
@@ -76,20 +76,19 @@ export default function Discover() {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) { setLoading(false); return }
-      setCurrentUser(user)
  
       const { data } = await supabase
         .from("recipes")
-        .select("*")
+        .select("id, name, photo_url, user_id, primary_tag, tags, rating, prep_time, servings, estimated_total, imported_from, description")
         .eq("is_public", true)
         .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(40)
- 
+
       if (!data) { setLoading(false); return }
- 
+
       const userIds = [...new Set(data.map(r => r.user_id))]
- 
+
       const profilesRes = await supabase
         .from("profiles")
         .select("id, username, avatar_url, is_official")
@@ -154,9 +153,15 @@ export default function Discover() {
       is_public: false, photo_url: recipe.photo_url || null,
       imported_from: recipe.id,
     }).select().single()
-    if (error) { console.error(error); return }
+    if (error) { console.error("[import] erreur création recette:", error); return }
+    console.log("[import] nouvelle recette créée:", newRecipe?.id)
     if (newRecipe) {
-      if (ingredients?.length > 0) await supabase.from("ingredients").insert(ingredients.map(i => ({ recipe_id: newRecipe.id, name: i.name, quantity: i.quantity, unit: i.unit, calories: i.calories })))
+      if (ingredients?.length > 0) {
+        const { error: ingInsertErr } = await supabase.from("ingredients").insert(ingredients.map(i => ({ recipe_id: newRecipe.id, name: i.name, quantity: i.quantity, unit: i.unit })))
+        console.log("[import] insert ingrédients erreur:", ingInsertErr)
+      } else {
+        console.warn("[import] aucun ingrédient à insérer")
+      }
       if (steps?.length > 0) await supabase.from("steps").insert(steps.map(s => ({ recipe_id: newRecipe.id, step_number: s.step_number, description: s.description })))
       setSuccess(`"${recipe.name}" ajoutée !`)
       setTimeout(() => setSuccess(""), 3000)
@@ -183,6 +188,17 @@ export default function Discover() {
           onClose={() => setShowUpgradePopup(false)}
           message="L'import de recettes de la communauté est réservé aux membres premium. Passe premium pour importer sans limite."
         />
+      )}
+
+      {tagTooltip && (
+        <div style={{ position: "fixed", left: tagTooltip.x, top: tagTooltip.y - 6, transform: "translateX(-50%) translateY(-100%)", zIndex: 9999, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5, boxShadow: "0 4px 20px rgba(0,0,0,0.35)", minWidth: 120, pointerEvents: "none" }}>
+          {tagTooltip.tags.map(ti => (
+            <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
+              <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
+              {ti.label}
+            </span>
+          ))}
+        </div>
       )}
 
       {/* Popup mot banni */}
@@ -475,7 +491,7 @@ export default function Discover() {
 
       {/* Grille */}
       {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+        <div className="recipes-grid">
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} style={{ borderRadius: 16, overflow: "hidden", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)" }}>
               <div style={{ width: "100%", aspectRatio: "4/3", backgroundColor: "var(--bg-card-2)", animation: "pulse 1.5s ease-in-out infinite" }} />
@@ -494,7 +510,7 @@ export default function Discover() {
           <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>partage tes recettes pour qu'elles apparaissent ici !</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+        <div className="recipes-grid">
           {filteredRecipes.map(recipe => {
             const primaryTag = TAGS.find(t => t.value === recipe.primary_tag)
             const bg = primaryTag?.cardBg || DEFAULT_CARD_BG
@@ -514,7 +530,7 @@ export default function Discover() {
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
               >
                 {recipe.photo_url ? (
-                  <img src={recipe.photo_url} alt={recipe.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", borderRadius: "14px 14px 0 0" }} />
+                  <img src={recipe.photo_url} alt={recipe.name} loading="lazy" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", borderRadius: "14px 14px 0 0" }} />
                 ) : (
                   <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, opacity: 0.2, backgroundColor: bg, borderRadius: "14px 14px 0 0" }}>🍽</div>
                 )}
@@ -561,19 +577,12 @@ export default function Discover() {
                         </span>
                       ))}
                       {validTags.length > 2 && (
-                        <span style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}
-                          onMouseEnter={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "flex"}
-                          onMouseLeave={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "none"}
+                        <span
+                          style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, fontSize: 10, fontWeight: 700, color: textColor, opacity: 0.6, cursor: "default" }}
+                          onMouseEnter={e => { const r = e.currentTarget.getBoundingClientRect(); setTagTooltip({ tags: validTags.slice(2), x: r.left + r.width / 2, y: r.top }) }}
+                          onMouseLeave={() => setTagTooltip(null)}
                         >
-                          <span style={{ fontSize: 10, fontWeight: 700, color: textColor, opacity: 0.6, cursor: "default" }}>+{validTags.length - 2}</span>
-                          <div className="tag-tooltip" style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column", zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120 }}>
-                            {validTags.slice(2).map(ti => (
-                              <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
-                                <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />
-                                {ti.label}
-                              </span>
-                            ))}
-                          </div>
+                          +{validTags.length - 2}
                         </span>
                       )}
                     </div>

@@ -88,44 +88,62 @@ export default function Landing() {
       .recipe-card:hover img.recipe-photo { transform: scale(1.06); }
 
       /* ── MOBILE (défaut) ── */
-      .l-nav { padding: 10px 18px !important; }
-      .nav-cta-label { display: none; }
+      .l-nav { padding: 10px 16px !important; }
+      .nav-short { display: inline; }
+      .nav-long  { display: none; }
       .hero-mobile { display: block !important; }
 
       /* FIX CLS #2 — réserve la hauteur du hero-desktop avant que le contenu charge */
       .hero-desktop { display: none !important; min-height: 680px; }
 
-      .sec { padding: 60px 20px !important; }
-      .features-pills { flex-direction: column !important; gap: 10px !important; }
+      .sec { padding: 48px 18px !important; }
+      .features-pills { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
       .feature-pill { min-width: unset !important; width: 100% !important; }
       .recipes-row { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-      .how-cols { flex-direction: column !important; gap: 24px !important; }
-      .how-phone { display: none !important; }
-      .pain-g { grid-template-columns: 1fr !important; }
-      .app-screenshot { border-radius: 14px !important; padding: 28px 10px 0 !important; }
-      .sub-feat { grid-template-columns: 1fr !important; gap: 10px !important; }
+      .how-cols { flex-direction: column !important; gap: 20px !important; }
+      .how-phone { display: flex !important; justify-content: center !important; width: 100% !important; margin-left: 0 !important; }
+      .how-phone img { width: 180px !important; height: auto !important; }
+      .pain-g { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+      .pain-g .card-hover { padding: 14px !important; }
+      .app-screenshot { border-radius: 14px !important; padding: 24px 8px 0 !important; }
+      .sub-feat { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
       .pricing-g { grid-template-columns: 1fr !important; gap: 16px !important; }
       .footer-inner { flex-direction: column !important; gap: 8px !important; text-align: center !important; }
-      .cta-band { padding: 60px 20px !important; }
-      .cta-final { padding: 60px 20px !important; }
-      .faq-section { padding: 60px 20px !important; }
-      .pain-section { padding: 60px 20px !important; }
+      .cta-band { padding: 48px 18px !important; }
+      .cta-final { padding: 48px 18px !important; }
+      .faq-section { padding: 48px 18px !important; }
+      .pain-section { padding: 48px 18px !important; }
       .cta-btns { flex-direction: column !important; align-items: stretch !important; }
       .cta-btn-main { width: 100% !important; text-align: center; }
+      .stat-blocks { flex-wrap: wrap !important; gap: 8px !important; }
 
-      /* ── TABLET ── */
+      /* ── TRÈS PETIT ÉCRAN (<380px) ── */
+      @media (max-width: 379px) {
+        .features-pills { grid-template-columns: 1fr !important; }
+        .pain-g { grid-template-columns: 1fr !important; }
+        .sub-feat { grid-template-columns: 1fr !important; }
+        .recipes-row { grid-template-columns: 1fr 1fr !important; }
+        .sec { padding: 40px 14px !important; }
+        .how-phone { display: none !important; }
+      }
+
+      /* ── TABLET (600px+) ── */
       @media (min-width: 600px) {
+        .l-nav { padding: 10px 28px !important; }
+        .nav-short { display: none; }
+        .nav-long  { display: inline; }
         .recipes-row { grid-template-columns: repeat(3, 1fr) !important; }
-        .features-pills { flex-direction: row !important; flex-wrap: wrap !important; }
+        .features-pills { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; }
         .feature-pill { width: auto !important; }
         .sub-feat { grid-template-columns: repeat(3,1fr) !important; }
         .pricing-g { grid-template-columns: 1fr 1fr !important; }
         .pain-g { grid-template-columns: 1fr 1fr !important; }
         .footer-inner { flex-direction: row !important; }
-        .nav-cta-label { display: inline !important; }
+        .how-phone img { width: 220px !important; }
+        .stat-blocks { flex-wrap: nowrap !important; }
       }
 
-      /* ── DESKTOP ── */
+      /* ── DESKTOP (900px+) ── */
       @media (min-width: 900px) {
         .l-nav { padding: 10px 48px !important; }
         .hero-mobile { display: none !important; }
@@ -133,7 +151,8 @@ export default function Landing() {
         .sec { padding: 80px 60px !important; }
         .recipes-row { grid-template-columns: repeat(6, 1fr) !important; }
         .how-cols { flex-direction: row !important; gap: 60px !important; }
-        .how-phone { display: block !important; }
+        .how-phone { display: block !important; flex-shrink: 0; width: 270px !important; margin-left: 60px !important; }
+        .how-phone img { width: 100% !important; }
         .pain-g { grid-template-columns: repeat(auto-fill, minmax(280px,1fr)) !important; }
         .app-screenshot { padding: 38px 14px 0 !important; border-radius: 22px !important; }
         .cta-band { padding: 80px 60px !important; }
@@ -214,7 +233,8 @@ export default function Landing() {
         </button>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button className="btn btn-orange" onClick={() => navigate("/register")} style={btnO({ padding: "9px 16px", fontSize: 13 })}>
-            <span className="nav-cta-label">essayer gratuitement</span>
+            <span className="nav-short">essayer</span>
+            <span className="nav-long">essayer gratuitement</span>
           </button>
           <button className="btn btn-ghost-light" onClick={() => navigate("/login")} style={btnG({ padding: "8px 16px", fontSize: 13 })}>connexion</button>
         </div>
@@ -240,9 +260,9 @@ export default function Landing() {
               repas planifiés, courses générées.<br />
               <strong style={{ color: "rgba(255,255,255,0.85)" }}>5 minutes par semaine.</strong>
             </p>
-            <div className="fade3" style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
+            <div className="fade3 stat-blocks" style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
               {statBlocks.map(g => (
-                <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "baseline", gap: 5 }}>
+                <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "baseline", gap: 5, flex: "1 1 auto", minWidth: 80 }}>
                   <span style={{ ...syne, fontSize: 20, fontWeight: 800, color: g.textN, letterSpacing: "-.04em" }}>{g.n}</span>
                   <span style={{ ...inst, fontSize: 10, color: g.textL, fontWeight: 500 }}>{g.l}</span>
                 </div>
@@ -475,7 +495,7 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-            <div className="how-phone" style={{ flexShrink: 0, width: 270, position: "relative", marginLeft: 60 }}>
+            <div className="how-phone" style={{ flexShrink: 0, width: 270, position: "relative" }}>
               <img
                 src="/IMG_6506-left.webp"
                 alt="App Shrimply"

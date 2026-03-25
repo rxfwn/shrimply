@@ -120,6 +120,7 @@ export async function computeCostDetails(ingredientsData, servings) {
       const data = await response.json();
       console.log("[computeCostDetails] ✅ Réponse API reçue :", data);
 
+      const toCache = [];
       normalizedIngredients.forEach((normIng, idx) => {
         const ingName = normIng.name.toLowerCase().trim();
         const apiResult = data.prices.find(p => {
@@ -129,8 +130,18 @@ export async function computeCostDetails(ingredientsData, servings) {
         if (apiResult) {
           const price = computeIngredientCost(apiResult.price, apiResult.unit, normIng.quantity, normIng.unit);
           priceMap[needApi[idx].name.toLowerCase()] = Number(price.toFixed(2));
+          // Sauvegarder le prix normalisé (par kg/L/pièce) dans le cache, pas le prix calculé
+          toCache.push({ name: needApi[idx].name, price: apiResult.price, unit: apiResult.unit });
         }
       });
+
+      // ── Sauvegarder les nouveaux prix en cache (fire & forget) ───────────────
+      if (toCache.length > 0) {
+        supabase.from("ingredient_price").upsert(toCache, { onConflict: "name" }).then(({ error }) => {
+          if (error) console.warn("[cache] ⚠️ Impossible de sauvegarder:", error.message);
+          else console.log(`[cache] 💾 ${toCache.length} prix sauvegardés`);
+        });
+      }
     }
 
     // ── 4. Reconstruire le tableau complet ────────────────────────────────────

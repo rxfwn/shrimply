@@ -258,7 +258,7 @@ export default function RecipeEdit() {
           <textarea style={{ ...inputStyle, resize: "none", minHeight: 70 }} placeholder="décris ta recette..." rows={2} value={description} onChange={e => setDescription(e.target.value)} />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="form-time-grid">
           <div>
             <label style={labelStyle}>temps (min)</label>
             <input style={inputStyle} placeholder="ex : 30" type="number" value={prepTime} onChange={e => setPrepTime(e.target.value)} />
@@ -312,18 +312,24 @@ export default function RecipeEdit() {
           <label style={labelStyle}>ingrédients</label>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {ingredients.map((ing, i) => (
-              <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input ref={el => ingredientNameRefs.current[i] = el}
-                  style={{ flex: 2, borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
-                  placeholder="ingrédient" value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)}
-                  onKeyDown={e => handleIngredientKeyDown(e, i)} />
-                <input style={{ width: 70, borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
-                  placeholder="qté" type="number" value={ing.quantity || ""} onChange={e => updateIngredient(i, "quantity", e.target.value)} />
-                <select style={{ width: 110, borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box", appearance: "none" }}
-                  value={ing.unit || ""} onChange={e => updateIngredient(i, "unit", e.target.value)}>
-                  <option value="" disabled>unité</option>
-                  {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+              <div key={i} className="ingredient-row">
+                <div className="ing-name">
+                  <input ref={el => ingredientNameRefs.current[i] = el}
+                    style={{ width: "100%", borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
+                    placeholder="ingrédient" value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)}
+                    onKeyDown={e => handleIngredientKeyDown(e, i)} />
+                </div>
+                <div className="ing-qty">
+                  <input style={{ width: "100%", borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
+                    placeholder="qté" type="number" value={ing.quantity || ""} onChange={e => updateIngredient(i, "quantity", e.target.value)} />
+                </div>
+                <div className="ing-unit">
+                  <select style={{ width: "100%", borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box", appearance: "none" }}
+                    value={ing.unit || ""} onChange={e => updateIngredient(i, "unit", e.target.value)}>
+                    <option value="" disabled>unité</option>
+                    {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
                 {ingredients.length > 1 && (
                   <button onClick={() => removeIngredient(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-ghost)", fontSize: 20, lineHeight: 1 }}
                     onMouseEnter={e => e.currentTarget.style.color = "#f87171"}

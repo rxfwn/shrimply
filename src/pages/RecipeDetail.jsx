@@ -55,7 +55,7 @@ function ServingStepper({ servings, onChange, baseServings }) {
         >−</button>
         <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "0 10px", borderLeft: "1px solid #D5CEC3", borderRight: "1px solid #D5CEC3" }}>
           <span style={{ fontSize: 12, fontWeight: 800, color: PURPLE, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em" }}>{servings}</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: PURPLE, fontFamily: "Poppins, sans-serif" }}>personne{servings > 1 ? "s" : ""}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#111111", fontFamily: "Poppins, sans-serif" }}>personne{servings > 1 ? "s" : ""}</span>
         </div>
         <button onClick={() => !atMax && onChange(servings + 1)} disabled={atMax}
           style={{ ...S.btn, width: 30, height: "100%", borderRadius: 0, background: "none", fontSize: 20, fontWeight: 300, color: atMax ? "var(--text-ghost)" : PURPLE, cursor: atMax ? "not-allowed" : "pointer", flexShrink: 0, lineHeight: 1 }}
@@ -214,7 +214,7 @@ export default function RecipeDetail() {
     }
   }
 
-  const getEstimableIngredients = (list) => list.filter(i => hasValidQuantity(i))
+  const getEstimableIngredients = (list) => list.filter(i => hasValidQuantity(i) && !shouldSkipIngredient(i.name, i.unit))
 
 
 const handleEstimate = async () => {
@@ -230,7 +230,19 @@ const handleEstimate = async () => {
       if (!ing?.id) return Promise.resolve()
       return supabase.from("ingredients").update({ estimated_price: detail.found ? detail.estimated_price : null }).eq("id", ing.id)
     }))
-    await supabase.from("recipes").update({ estimated_total: result.total }).eq("id", id)
+    // Tag économique automatique
+    const ECONOMIC_THRESHOLD = 3
+    if (recipe?.servings > 0) {
+      const perServing = result.total / recipe.servings
+      const currentTags = recipe.tags || []
+      const newTags = [...currentTags]
+      if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !newTags.includes("economique")) newTags.push("economique")
+      else if (perServing >= ECONOMIC_THRESHOLD) { const idx = newTags.indexOf("economique"); if (idx !== -1) newTags.splice(idx, 1) }
+      await supabase.from("recipes").update({ estimated_total: result.total, tags: newTags }).eq("id", id)
+      setRecipe(r => ({ ...r, tags: newTags, estimated_total: result.total }))
+    } else {
+      await supabase.from("recipes").update({ estimated_total: result.total }).eq("id", id)
+    }
   } catch (error) {
     setApiError(error.message)
     setCooldown(COOLDOWN_SECONDS)
@@ -338,9 +350,9 @@ const handleEstimate = async () => {
       `}</style>
 
       <button onClick={() => navigate("/recipes")}
-        style={{ ...S.btn, background: "none", color: "var(--text-faint)", fontSize: 12, padding: "0 0 14px", display: "flex", alignItems: "center", gap: 6 }}
-        onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
-        onMouseLeave={e => e.currentTarget.style.color = "var(--text-faint)"}
+        style={{ ...S.btn, backgroundColor: "#1a1033", color: "#CE80FF", fontSize: 13, padding: "10px 20px", marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 12 }}
+        onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
       >retour</button>
 
       <div className="hero-card">
@@ -356,7 +368,7 @@ const handleEstimate = async () => {
                 {recipe.duplicated_from && <span style={{ fontSize: 10, color: "var(--text-faint)", fontStyle: "italic", display: "block", marginBottom: 2 }}>📋 copie</span>}
                 <h1 style={{ margin: "0 0 5px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", lineHeight: 1.2, letterSpacing: "-0.05em" }}>{recipe.name}</h1>
                 {recipe.description && (
-                  <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)", lineHeight: 1.45, fontWeight: 400, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.description}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: isDay ? "#111111" : "var(--text-muted)", lineHeight: 1.45, fontWeight: 400, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.description}</p>
                 )}
               </div>
               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -432,7 +444,7 @@ const handleEstimate = async () => {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <img src="/icons/cart.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: isDay ? "#111111" : "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>ingrédients</span>
             </div>
             {baseServings > 0 && <ServingStepper servings={activeServings} onChange={setCurrentServings} baseServings={baseServings} />}
           </div>
@@ -462,7 +474,7 @@ const handleEstimate = async () => {
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
             <img src="/icons/chef.png" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
-            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: isDay ? "#111111" : "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {steps.map((step, i) => (

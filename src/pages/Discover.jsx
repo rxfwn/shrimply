@@ -509,14 +509,14 @@ export default function Discover() {
             return (
               <div key={recipe.id}
                 onClick={() => openPreview(recipe)}
-                style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column" }}
+                style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "visible", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", position: "relative" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)" }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
               >
                 {recipe.photo_url ? (
-                  <img src={recipe.photo_url} alt={recipe.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                  <img src={recipe.photo_url} alt={recipe.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block", borderRadius: "14px 14px 0 0" }} />
                 ) : (
-                  <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, opacity: 0.2, backgroundColor: bg }}>🍽</div>
+                  <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, opacity: 0.2, backgroundColor: bg, borderRadius: "14px 14px 0 0" }}>🍽</div>
                 )}
 
                 <div style={{ padding: "8px 12px 12px", color: textColor, flex: 1, display: "flex", flexDirection: "column" }}>
@@ -566,7 +566,7 @@ export default function Discover() {
                           onMouseLeave={e => e.currentTarget.querySelector(".tag-tooltip").style.display = "none"}
                         >
                           <span style={{ fontSize: 10, fontWeight: 700, color: textColor, opacity: 0.6, cursor: "default" }}>+{validTags.length - 2}</span>
-                          <div className="tag-tooltip" style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column", zIndex: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120 }}>
+                          <div className="tag-tooltip" style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 12, padding: "8px", gap: 4, flexDirection: "column", zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.3)", minWidth: 120 }}>
                             {validTags.slice(2).map(ti => (
                               <span key={ti.value} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
                                 <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 9, height: 9 }} onError={e => e.target.style.display = "none"} />

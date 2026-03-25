@@ -10,7 +10,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Ingrédients à ne jamais estimer — affichés "selon goût"
 const SKIP_NAMES = ["sel", "poivre", "sel et poivre", "eau", "sel & poivre", "poivre noir", "fleur de sel", "poivre et sel"]
-const SKIP_UNITS_DISPLAY = ["pincée", "selon goût", "selon gout"]
+const SKIP_UNITS_DISPLAY = ["selon goût", "selon gout"]
 
 export function shouldSkipIngredient(name, unit) {
   const lower = (name || "").toLowerCase().trim()
@@ -19,10 +19,12 @@ export function shouldSkipIngredient(name, unit) {
   return SKIP_NAMES.some(skip => lower === skip || lower.startsWith(skip + " "))
 }
 
-// Conversion "c. à soupe" / "c. à café" → ml pour l'API
+// Conversion des unités non-standard → unités API avant envoi
 const UNIT_CONVERSIONS = {
   "c. à soupe": { unit: "ml", factor: 15 },
   "c. à café":  { unit: "ml", factor: 5 },
+  "tranche":    { unit: "g",  factor: 30 },  // ~30g par tranche (jambon, pain de mie, fromage...)
+  "pincée":     { unit: "g",  factor: 1 },   // ~1g par pincée (épices, muscade...)
 }
 
 function normalizeIngredientUnit(ing) {
@@ -57,6 +59,8 @@ function computeIngredientCost(normalizedPrice, normalizedUnit, quantity, ingred
     if (unit === "l")  return normalizedPrice * qty;
     // Solides mesurés en g → 1 pièce (ex: ciboulette 10g → 1 botte)
     if (unit === "g" || unit === "kg") return normalizedPrice;
+    // Tranche = fraction d'un paquet → prix du paquet (évite ×qty aberrant)
+    if (unit === "tranche") return normalizedPrice;
     // Pièces → multiplier par la quantité
     return normalizedPrice * qty;
   }

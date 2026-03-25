@@ -53,6 +53,7 @@ export default function RecipeEdit() {
   const [bannedPopup, setBannedPopup] = useState(null)
   const [showUnsavedPopup, setShowUnsavedPopup] = useState(false)
   const initialData = useRef(null)
+  const initialEstimatedTotal = useRef(null)
 
   const isDirty = () => {
     if (!initialData.current) return false
@@ -73,6 +74,7 @@ export default function RecipeEdit() {
       setPrimaryTag(recipe.primary_tag || ""); setSelectedTags(recipe.tags || []); setPhotoUrl(recipe.photo_url || "")
       setIngredients(ings); setSteps(stps)
       initialData.current = JSON.stringify({ name: recipe.name, description: recipe.description || "", prepTime: String(recipe.prep_time || ""), servings: String(recipe.servings || ""), primaryTag: recipe.primary_tag || "", selectedTags: recipe.tags || [], ingredients: ings, steps: stps, photoUrl: recipe.photo_url || "" })
+      initialEstimatedTotal.current = recipe.estimated_total ?? null
     }
     setLoading(false)
   }
@@ -113,10 +115,12 @@ export default function RecipeEdit() {
     if (found) { setBannedPopup(found); setSaving(false); return }
     const validIngredients = ingredients.filter(i => i.name.trim())
 
-    // Calcul du prix estimé avant la mise à jour
-    let estimatedTotal = null
+    // Calcul du prix estimé — uniquement si les ingrédients ont changé
+    let estimatedTotal = initialEstimatedTotal.current
     let costDetails = null
-    if (validIngredients.length > 0) {
+    const initialParsed = initialData.current ? JSON.parse(initialData.current) : null
+    const ingredientsChanged = !initialParsed || JSON.stringify(validIngredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }))) !== JSON.stringify(initialParsed.ingredients.filter(i => i.name?.trim()).map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit })))
+    if (validIngredients.length > 0 && ingredientsChanged) {
       try {
         const { total, details } = await computeCostDetails(
           validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
@@ -126,7 +130,7 @@ export default function RecipeEdit() {
         estimatedTotal = hasAnyMatch ? total : null
         costDetails = details
       } catch (e) {
-        // API indisponible → on garde null
+        // API indisponible → on garde la valeur existante
       }
     }
 

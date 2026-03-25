@@ -5,7 +5,7 @@ const corsHeaders = {
 };
 
 const VALID_UNITS = ["g", "kg", "ml", "l", "piece"];
-const SKIP_UNITS = ["c. à soupe", "c. à café", "pincée"];
+const SKIP_UNITS = ["c. à soupe", "c. à café"];
 const SKIP_NAMES = ["sel", "poivre", "sel et poivre", "eau", "sel & poivre", "poivre noir", "fleur de sel"];
 
 function shouldSkip(name: string): boolean {
@@ -80,7 +80,8 @@ CORRESPONDANCES PAR TYPE DE PRODUIT :
 - Légumes entiers (tomate, courgette, poivron, aubergine...) → "piece", qty 1, prix 0.40-1.80€
 - Fruits entiers (citron, orange, pomme, banane...) → "piece", qty 1, prix 0.30-1.50€
 - Herbes fraîches (basilic, persil, coriandre, ciboulette...) → "piece", qty 1, prix 0.70-1.20€
-- Ail (tête, gousse) → "piece", qty 1, prix 0.60-1.20€
+- Tête d'ail (ail entier) → "piece", qty 1, prix 0.60-1.20€
+- Gousse d'ail, gousses d'ail → "piece", qty 1, prix 0.05-0.10€ (une seule gousse, pas une tête)
 - Gingembre frais → "piece", qty 1, prix 0.80€
 - Épices sèches (curcuma, paprika, cumin, cannelle...) → "g", 40-50g, prix 1-3€
 - Huiles (tournesol, olive, sésame, coco...) → "ml", 750ml, prix 2-7€

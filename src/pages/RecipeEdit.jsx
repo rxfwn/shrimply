@@ -120,7 +120,7 @@ export default function RecipeEdit() {
     let costDetails = null
     const initialParsed = initialData.current ? JSON.parse(initialData.current) : null
     const ingredientsChanged = !initialParsed || JSON.stringify(validIngredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }))) !== JSON.stringify(initialParsed.ingredients.filter(i => i.name?.trim()).map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit })))
-    if (validIngredients.length > 0 && ingredientsChanged) {
+    if (validIngredients.length > 0 && (ingredientsChanged || initialEstimatedTotal.current === null)) {
       try {
         const { total, details } = await computeCostDetails(
           validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),

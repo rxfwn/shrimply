@@ -20,12 +20,12 @@ const TAGS = [
 ]
 
 const RECIPE_CARDS = [
-  { title: "Bowl Buddha végé",   time: "20", servings: "2", rating: "4,8", primaryTag: { cardText: "#cfff79", cardBg: "#091718", cardBorder: "#b8e860" }, tagDefs: [{ label: "végé", pillBg: "#cfff79", pillText: "#091718", icon: "herb" }, { label: "léger", pillBg: "#03225c", pillText: "#9be7ff", icon: "feather" }], img: "/recipes/bowl-buddha.webp" },
-  { title: "Saumon teriyaki",    time: "15", servings: "2", rating: "4,6", primaryTag: { cardText: "#9be7ff", cardBg: "#03225c", cardBorder: "#7dd4f0" }, tagDefs: [{ label: "poisson", pillBg: "#9be7ff", pillText: "#03225c", icon: "fih" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/saumon.webp" },
-  { title: "Poulet rôti citron", time: "45", servings: "4", rating: "4,9", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "viande", pillBg: "#ffb9e1", pillText: "#510312", icon: "meat" }], img: "/recipes/poulet.webp" },
-  { title: "Tarte tatin",        time: "55", servings: "6", rating: "4,7", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "dessert", pillBg: "#ffb9e1", pillText: "#510312", icon: "shortcake" }, { label: "français", pillBg: "#03225c", pillText: "#ffffff", icon: "cheese" }], img: "/recipes/tarte.webp" },
-  { title: "Risotto parmesan",   time: "30", servings: "2", rating: "4,5", primaryTag: { cardText: "#cfff79", cardBg: "#1a3d1a", cardBorder: "#b8e860" }, tagDefs: [{ label: "italien", pillBg: "#cfff79", pillText: "#1a3d1a", icon: "pasta" }], img: "/recipes/risotto.webp" },
-  { title: "Ramen maison",       time: "25", servings: "2", rating: "4,8", primaryTag: { cardText: "#510312", cardBg: "#ffffff", cardBorder: "#6b0000" }, tagDefs: [{ label: "asiatique", pillBg: "#510312", pillText: "#ffffff", icon: "chopsticks" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/ramen.webp" },
+  { title: "Bowl Buddha végé",   time: "20", servings: "2", rating: "4,8", primaryTag: { cardText: "#cfff79", cardBg: "#091718", cardBorder: "#b8e860" }, tagDefs: [{ label: "végé", pillBg: "#cfff79", pillText: "#091718", icon: "herb" }, { label: "léger", pillBg: "#03225c", pillText: "#9be7ff", icon: "feather" }], img: "/recipes/bowl-buddha-sm.webp" },
+  { title: "Saumon teriyaki",    time: "15", servings: "2", rating: "4,6", primaryTag: { cardText: "#9be7ff", cardBg: "#03225c", cardBorder: "#7dd4f0" }, tagDefs: [{ label: "poisson", pillBg: "#9be7ff", pillText: "#03225c", icon: "fih" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/saumon-sm.webp" },
+  { title: "Poulet rôti citron", time: "45", servings: "4", rating: "4,9", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "viande", pillBg: "#ffb9e1", pillText: "#510312", icon: "meat" }], img: "/recipes/poulet-sm.webp" },
+  { title: "Tarte tatin",        time: "55", servings: "6", rating: "4,7", primaryTag: { cardText: "#ffb9e1", cardBg: "#510312", cardBorder: "#f0a0cc" }, tagDefs: [{ label: "dessert", pillBg: "#ffb9e1", pillText: "#510312", icon: "shortcake" }, { label: "français", pillBg: "#03225c", pillText: "#ffffff", icon: "cheese" }], img: "/recipes/tarte-sm.webp" },
+  { title: "Risotto parmesan",   time: "30", servings: "2", rating: "4,5", primaryTag: { cardText: "#cfff79", cardBg: "#1a3d1a", cardBorder: "#b8e860" }, tagDefs: [{ label: "italien", pillBg: "#cfff79", pillText: "#1a3d1a", icon: "pasta" }], img: "/recipes/risotto-sm.webp" },
+  { title: "Ramen maison",       time: "25", servings: "2", rating: "4,8", primaryTag: { cardText: "#510312", cardBg: "#ffffff", cardBorder: "#6b0000" }, tagDefs: [{ label: "asiatique", pillBg: "#510312", pillText: "#ffffff", icon: "chopsticks" }, { label: "rapide", pillBg: "#E49300", pillText: "#FFF4C7", icon: "eclair" }], img: "/recipes/ramen-sm.webp" },
 ]
 
 const FAQ_ITEMS = [
@@ -50,7 +50,6 @@ export default function Landing() {
   // Le CSS est placé ici en tant que string pour être injecté de façon synchrone dans le JSX
   // et éviter le "Flash of Unstyled Content" (CLS) causé par le useEffect précédent.
   const cssStyles = `
-      @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@400;500;600&display=swap');
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       :root { --cream:#f2ede4; --cream2:#ebe4d8; --white:#ffffff; --dark:#111111; --orange:#f3501e; }
       html { scroll-behavior: smooth; }
@@ -65,8 +64,8 @@ export default function Landing() {
       .fade3 { animation: fadeUp .65s .28s cubic-bezier(.16,1,.3,1) both; }
       .fade4 { animation: fadeUp .65s .42s cubic-bezier(.16,1,.3,1) both; }
 
-      .tags-run { animation: scrollLeft 38s linear infinite; }
-      .float { animation: float 3.8s ease-in-out infinite; display: inline-block; }
+      .tags-run { animation: scrollLeft 38s linear infinite; will-change: transform; }
+      .float { animation: float 3.8s ease-in-out infinite; display: inline-block; will-change: transform; }
 
       /* CORRECTION LIGHTHOUSE : box-shadow à la place de filter pour éviter l'alerte "animations non composées" */
       .btn { transition: transform .15s, box-shadow .15s; cursor: pointer; border: none; outline: none; font-family: 'Instrument Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -87,6 +86,9 @@ export default function Landing() {
       .recipe-card img.recipe-photo { transition: transform .4s; }
       .recipe-card:hover img.recipe-photo { transform: scale(1.06); }
 
+      /* Sections hors-écran — rendu différé pour économiser le main thread */
+      .pain-section, .cta-band, .cta-final, .faq-section { content-visibility: auto; contain-intrinsic-size: 0 600px; }
+
       /* ── MOBILE (défaut) ── */
       .l-nav { padding: 10px 16px !important; }
       .nav-short { display: inline; }
@@ -105,6 +107,7 @@ export default function Landing() {
       .how-phone img { width: 180px !important; height: auto !important; }
       .pain-g { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
       .pain-g .card-hover { padding: 14px !important; }
+      .pain-g p { font-size: 11px !important; line-height: 1.45 !important; }
       .app-screenshot { border-radius: 14px !important; padding: 24px 8px 0 !important; }
       .sub-feat { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
       .pricing-g { grid-template-columns: 1fr !important; gap: 16px !important; }
@@ -119,8 +122,8 @@ export default function Landing() {
 
       /* ── MOBILE ONLY (<600px) ── */
       @media (max-width: 599px) {
-        .features-pills > *:last-child { grid-column: 1 / -1; width: auto !important; margin: 0 auto; }
-        .sub-feat > *:last-child { grid-column: 1 / -1; width: auto !important; margin: 0 auto; }
+        .features-pills > *:last-child { grid-column: 1 / -1; width: 100% !important; }
+        .sub-feat > *:last-child { grid-column: 1 / -1; width: 100% !important; }
       }
 
       /* ── TRÈS PETIT ÉCRAN (<380px) ── */
@@ -251,38 +254,42 @@ export default function Landing() {
         {/* ══════════════════════════════════════════
             HERO MOBILE 
         ══════════════════════════════════════════ */}
-        <div className="hero-mobile" style={{ background: "#111111", paddingTop: 58 }}>
-          {/* ... contenu mobile inchangé ... */}
+        <div className="hero-mobile" style={{ background: "var(--cream)", paddingTop: 58 }}>
           <div style={{ padding: "28px 20px 0", textAlign: "center" }}>
-            <h1 className="fade1" style={{ ...syne, fontSize: 36, fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.05em", color: "#ffffff", marginBottom: 14 }}>
+            <h1 className="fade1" style={{ ...syne, fontSize: 36, fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.05em", color: "#111111", marginBottom: 14 }}>
               ne réfléchis plus<br />
               à <span style={{ color: "#f3501e" }}>quoi manger.</span>
             </h1>
-            <p className="fade2" style={{ ...inst, fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.65, marginBottom: 22 }}>
+            <p className="fade2" style={{ ...inst, fontSize: 14, color: "rgba(17,17,17,0.5)", lineHeight: 1.65, marginBottom: 22 }}>
               repas planifiés, courses générées.<br />
-              <strong style={{ color: "rgba(255,255,255,0.85)" }}>5 minutes par semaine.</strong>
+              <strong style={{ color: "rgba(17,17,17,0.85)" }}>5 minutes par semaine.</strong>
             </p>
             <div className="fade3 stat-blocks" style={{ display: "flex", gap: 8, marginBottom: 28, justifyContent: "center" }}>
               {statBlocks.map(g => (
-                <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "7px 12px", display: "flex", alignItems: "baseline", gap: 4 }}>
-                  <span style={{ ...syne, fontSize: 18, fontWeight: 800, color: g.textN, letterSpacing: "-.04em" }}>{g.n}</span>
-                  <span style={{ ...inst, fontSize: 9, color: g.textL, fontWeight: 500 }}>{g.l}</span>
+                <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "7px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                  <span style={{ ...syne, fontSize: 18, fontWeight: 800, color: g.textN, letterSpacing: "-.04em", lineHeight: 1 }}>{g.n}</span>
+                  <span style={{ ...inst, fontSize: 9, color: g.textL, fontWeight: 500, lineHeight: 1.2 }}>{g.l}</span>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", position: "relative" }}>
-              <div style={{ position: "absolute", top: 20, left: "20%", right: "20%", bottom: 0, background: "rgba(243,80,30,0.25)", filter: "blur(40px)", borderRadius: "50%", zIndex: 0 }} />
-              <img
-                src="/IMG_6506-left.webp"
-                alt="App Shrimply"
-                fetchPriority="high"
-                style={{ width: "62%", maxWidth: 220, height: "auto", display: "block", borderRadius: 28, position: "relative", zIndex: 1 }}
-              />
+            <div style={{ display: "flex", justifyContent: "center", position: "relative", overflow: "hidden", maxHeight: 190 }}>
+              <div style={{ position: "absolute", top: 20, left: "20%", right: "20%", bottom: 0, background: "rgba(243,80,30,0.15)", filter: "blur(40px)", borderRadius: "50%", zIndex: 0 }} />
+              <picture>
+                <source srcSet="/IMG_6506-mobile.webp" type="image/webp" />
+                <img
+                  src="/IMG_6506-mobile.webp"
+                  alt="App Shrimply"
+                  fetchPriority="high"
+                  width={440}
+                  height={734}
+                  style={{ width: "62%", maxWidth: 220, height: "auto", display: "block", borderRadius: "28px 28px 0 0", position: "relative", zIndex: 1, objectFit: "cover", objectPosition: "top" }}
+                />
+              </picture>
             </div>
           </div>
 
-          <div style={{ background: "var(--cream)", borderRadius: "24px 24px 0 0", marginTop: -16, padding: "24px 20px 32px", position: "relative", zIndex: 2 }}>
+          <div style={{ background: "var(--cream)", padding: "24px 20px 32px", position: "relative", zIndex: 2 }}>
             <button className="btn btn-orange" onClick={() => navigate("/register")}
               style={{ width: "100%", padding: "15px", textAlign: "center", fontSize: 15, fontWeight: 700, borderRadius: 100, letterSpacing: "-.02em", marginBottom: 12 }}>
               commencer — c'est gratuit
@@ -372,7 +379,7 @@ export default function Landing() {
         </div>
 
         {/* ── TAGS SCROLL ── */}
-        <div style={{ overflow: "hidden", padding: "20px 0", background: "var(--cream)" }}>
+        <div style={{ overflow: "hidden", padding: "20px 0", background: "var(--cream)", contain: "layout paint" }}>
           <div className="tags-run" style={{ display: "flex", gap: 10, width: "max-content", alignItems: "center" }}>
             {[...TAGS, ...TAGS].map((t, i) => (
               <span key={i} style={{ padding: "7px 16px 7px 10px", borderRadius: 100, fontSize: 13, whiteSpace: "nowrap", background: t.bg, color: t.text, flexShrink: 0, letterSpacing: "-.02em", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7, ...inst }}>
@@ -527,12 +534,12 @@ export default function Landing() {
                 {["#ff5f57","#ffbd2e","#28c840"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}
               </div>
               <img
-                src="/calendarboth.webp"
+                src="/calendarboth-sm.webp"
                 alt="Shrimply sur desktop"
                 loading="lazy"
                 decoding="async"
-                width={1400}
-                height={900}
+                width={1260}
+                height={471}
                 style={{ width: "100%", height: "auto", display: "block", borderRadius: "10px 10px 0 0" }}
               />
             </div>
@@ -542,12 +549,14 @@ export default function Landing() {
                 { icon: "cart.webp",     title: "liste automatique", desc: "Générée depuis tes repas. Sync mobile.",  bg: "#9be7ff", textC: "#03225c" },
                 { icon: "phone.webp",    title: "PWA installable",   desc: "Comme une vraie app. 0 téléchargement.", bg: "#ffb9e1", textC: "#510312" },
               ].map(f => (
-                <div key={f.title} className="card-hover" style={{ background: f.bg, borderRadius: 16, padding: "20px", textAlign: "left", boxShadow: "0 4px 16px rgba(0,0,0,.06)" }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-                    <Icon src={f.icon} size={22} />
+                <div key={f.title} className="card-hover" style={{ background: f.bg, borderRadius: 16, padding: "14px 16px", textAlign: "left", boxShadow: "0 4px 16px rgba(0,0,0,.06)", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(0,0,0,.08)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon src={f.icon} size={20} />
                   </div>
-                  <h3 style={{ ...syne, fontSize: 14, fontWeight: 700, color: f.textC, marginBottom: 4, letterSpacing: "-.03em" }}>{f.title}</h3>
-                  <p style={{ ...inst, fontSize: 12, color: f.textC, opacity: .65, lineHeight: 1.6 }}>{f.desc}</p>
+                  <div>
+                    <h3 style={{ ...syne, fontSize: 13, fontWeight: 700, color: f.textC, marginBottom: 2, letterSpacing: "-.03em" }}>{f.title}</h3>
+                    <p style={{ ...inst, fontSize: 11, color: f.textC, opacity: .65, lineHeight: 1.4 }}>{f.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>

@@ -1,16 +1,8 @@
 <!doctype html>
 <html lang="fr">
   <head>
-    <!-- Google Tag Manager — déféré pour ne pas bloquer le rendu -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-WFFX7DHC');</script>
-
-    <meta name="color-scheme" content="light dark">
-    <meta name="darkreader-lock">
     <meta charset="UTF-8" />
+    <meta name="darkreader-lock">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="icon" type="image/webp" href="/icons/shrim.webp" />
     <title>Shrimply — Planifie tes repas, génère ta liste de courses</title>
@@ -29,29 +21,37 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Fonts Syne + Instrument Sans — non bloquantes -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-    </noscript>
+    <!-- Préchargement hero mobile (LCP) -->
+    <link rel="preload" as="image" href="/IMG_6506-mobile.webp" fetchpriority="high" media="(max-width: 899px)" />
 
-    <!-- Poppins pour l'app (pages internes) — non bloquant -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <!-- Fonts Syne + Instrument Sans (landing) + Poppins (app) — non bloquantes -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&family=Poppins:wght@700&display=optional" />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&family=Poppins:wght@700&display=optional" rel="stylesheet" media="print" onload="this.media='all'" />
     <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Sans:wght@400;500;600&family=Poppins:wght@700&display=optional" rel="stylesheet" />
     </noscript>
 
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#111111" />
 
     <!-- AdSense — déféré, ne bloque pas le rendu -->
-    <script async defer src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5816346049956443" crossorigin="anonymous"></script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5816346049956443" crossorigin="anonymous"></script>
 
     <style>
       body { margin: 0; padding: 0; background: #f2ede4; }
       #root { min-height: 100vh; }
     </style>
+
+    <!-- Google Tag Manager — chargé après le rendu initial -->
+    <script>
+      window.addEventListener('load', function() {
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-WFFX7DHC');
+      });
+    </script>
   </head>
   <body>
     <!-- Google Tag Manager (noscript) -->

@@ -1,34 +1,38 @@
-import React, { useState, useEffect } from "react"
-import Landing from "./pages/Landing"
+import React, { useState, useEffect, lazy, Suspense } from "react"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ProfileProvider } from "./context/ProfileContext"
-import Login from "./pages/Login"
-import Register from "./pages/Register"
 import PrivateRoute from "./components/PrivateRoute"
-import AuthCallback from "./pages/AuthCallback"
-import Layout from "./components/Layout"
-import Calendar from "./pages/Calendar"
-import Recipes from "./pages/Recipes"
-import RecipeDetail from "./pages/RecipeDetail"
-import RecipeEdit from "./pages/RecipeEdit"
-import Shopping from "./pages/Shopping"
-import Fridge from "./pages/Fridge"
-import Friends from "./pages/Friends"
-import Discover from "./pages/Discover"
-import Nutrition from "./pages/Nutrition"
-import Suggestions from "./pages/Suggestions"
-import Legal from "./components/Legal"
-import Settings from "./pages/Settings"
-import Profile from "./pages/Profile"
-import ResetPassword from "./pages/ResetPassword"
-import ResetPasswordConfirm from "./pages/ResetPasswordConfirm"
-import OnboardingTour from "./components/OnboardingTour"
 import { supabase } from "./supabase"
 import "./index.css"
+
+// Pages chargées immédiatement (premier rendu critique)
+import Landing from "./pages/Landing"
+import Login from "./pages/Login"
+import Register from "./pages/Register"
+
+// Pages chargées à la demande (lazy)
+const AuthCallback          = lazy(() => import("./pages/AuthCallback"))
+const Layout                = lazy(() => import("./components/Layout"))
+const Calendar              = lazy(() => import("./pages/Calendar"))
+const Recipes               = lazy(() => import("./pages/Recipes"))
+const RecipeDetail          = lazy(() => import("./pages/RecipeDetail"))
+const RecipeEdit            = lazy(() => import("./pages/RecipeEdit"))
+const Shopping              = lazy(() => import("./pages/Shopping"))
+const Fridge                = lazy(() => import("./pages/Fridge"))
+const Friends               = lazy(() => import("./pages/Friends"))
+const Discover              = lazy(() => import("./pages/Discover"))
+const Nutrition             = lazy(() => import("./pages/Nutrition"))
+const Suggestions           = lazy(() => import("./pages/Suggestions"))
+const Legal                 = lazy(() => import("./components/Legal"))
+const Settings              = lazy(() => import("./pages/Settings"))
+const Profile               = lazy(() => import("./pages/Profile"))
+const ResetPassword         = lazy(() => import("./pages/ResetPassword"))
+const ResetPasswordConfirm  = lazy(() => import("./pages/ResetPasswordConfirm"))
+const OnboardingTour        = lazy(() => import("./components/OnboardingTour"))
 
 // ── Route racine : redirige les utilisateurs connectés vers /calendar ──
 function RootRoute() {
@@ -104,36 +108,38 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Analytics />
         <SpeedInsights />
 
-        <Routes>
-          <Route path="/legal" element={<Legal />} />
-          <Route path="/" element={<RootRoute />} />
-          <Route path="/home" element={<Navigate to="/calendar" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/reset-password/confirm" element={<ResetPasswordConfirm />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route element={<PrivateRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/calendar" element={<Calendar />} />
-              <Route path="/recipes" element={<Recipes />} />
-              <Route path="/recipes/:id" element={<RecipeDetail />} />
-              <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
-              <Route path="/shopping" element={<Shopping />} />
-              <Route path="/fridge" element={<Fridge />} />
-              <Route path="/friends" element={<Friends />} />
-              <Route path="/discover" element={<Discover />} />
-              <Route path="/nutrition" element={<Nutrition />} />
-              <Route path="/suggestions" element={<Suggestions />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/:userId" element={<Profile />} />
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/legal" element={<Legal />} />
+            <Route path="/" element={<RootRoute />} />
+            <Route path="/home" element={<Navigate to="/calendar" />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/reset-password/confirm" element={<ResetPasswordConfirm />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route element={<PrivateRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/recipes" element={<Recipes />} />
+                <Route path="/recipes/:id" element={<RecipeDetail />} />
+                <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
+                <Route path="/shopping" element={<Shopping />} />
+                <Route path="/fridge" element={<Fridge />} />
+                <Route path="/friends" element={<Friends />} />
+                <Route path="/discover" element={<Discover />} />
+                <Route path="/nutrition" element={<Nutrition />} />
+                <Route path="/suggestions" element={<Suggestions />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
+          </Routes>
 
-        {/* Onboarding par dessus tout, sans bloquer le rendu */}
-        <OnboardingManager />
+          {/* Onboarding par dessus tout, sans bloquer le rendu */}
+          <OnboardingManager />
+        </Suspense>
 
       </BrowserRouter>
     </ProfileProvider>

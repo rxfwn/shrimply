@@ -159,8 +159,42 @@ export default function Recipes() {
       if (authError || !user) return
       const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
       if (error) return
-      if (data) setRecipes(data)
+      if (data) {
+        setRecipes(data)
+        recomputeMissingPrices(data)
+      }
     } catch {}
+  }
+
+  const recomputeMissingPrices = async (allRecipes) => {
+    const missing = allRecipes.filter(r => r.estimated_total == null)
+    if (missing.length === 0) return
+    const ids = missing.map(r => r.id)
+    const { data: allIngs } = await supabase.from("ingredients").select("*").in("recipe_id", ids)
+    if (!allIngs?.length) return
+    const ingsByRecipe = {}
+    allIngs.forEach(i => { if (!ingsByRecipe[i.recipe_id]) ingsByRecipe[i.recipe_id] = []; ingsByRecipe[i.recipe_id].push(i) })
+    const updates = await Promise.allSettled(missing.map(async r => {
+      const ings = ingsByRecipe[r.id]
+      if (!ings?.length) return null
+      try {
+        const { total, details } = await computeCostDetails(
+          ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+          r.servings || null
+        )
+        const hasAnyMatch = details?.some(d => d.found)
+        if (!hasAnyMatch) return null
+        await supabase.from("recipes").update({ estimated_total: total }).eq("id", r.id)
+        return { id: r.id, total }
+      } catch { return null }
+    }))
+    const computed = updates.map(u => u.status === "fulfilled" ? u.value : null).filter(Boolean)
+    if (computed.length > 0) {
+      setRecipes(prev => prev.map(r => {
+        const found = computed.find(c => c.id === r.id)
+        return found ? { ...r, estimated_total: found.total } : r
+      }))
+    }
   }
 
   useEffect(() => {

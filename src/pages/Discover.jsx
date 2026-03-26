@@ -173,6 +173,7 @@ export default function Discover() {
       primary_tag: recipe.primary_tag || null,
       is_public: false, photo_url: recipe.photo_url || null,
       imported_from: recipe.id,
+      estimated_total: recipe.estimated_total ?? null,
     }).select().single()
     if (error) { console.error("[import] erreur création recette:", error); return }
     console.log("[import] nouvelle recette créée:", newRecipe?.id)

@@ -1,6 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react"
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/react"
+import { useState, useEffect, lazy, Suspense } from "react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { ThemeProvider } from "./context/ThemeContext"
@@ -105,8 +103,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <ThemeProvider>
     <ProfileProvider>
       <BrowserRouter>
-        <Analytics />
-        <SpeedInsights />
 
         <Suspense fallback={null}>
           <Routes>

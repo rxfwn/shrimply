@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:www.googleapis.com)",
-      "Bash(curl -s \"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https://shrimply.app&strategy=mobile\")"
+      "Bash(curl -s \"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https://shrimply.app&strategy=mobile\")",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

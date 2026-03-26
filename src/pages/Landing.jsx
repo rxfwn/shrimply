@@ -86,8 +86,6 @@ export default function Landing() {
       .recipe-card img.recipe-photo { transition: transform .4s; }
       .recipe-card:hover img.recipe-photo { transform: scale(1.06); }
 
-      /* Sections hors-écran — rendu différé pour économiser le main thread */
-      .pain-section, .cta-band, .cta-final, .faq-section { content-visibility: auto; contain-intrinsic-size: 0 600px; }
 
       /* ── MOBILE (défaut) ── */
       .l-nav { padding: 10px 16px !important; }

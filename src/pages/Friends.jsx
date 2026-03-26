@@ -111,24 +111,24 @@ export default function Friends() {
         <h2 style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
           rechercher des utilisateurs
         </h2>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <input
-            style={{ flex: 1, borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
+            style={{ width: "100%", borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }}
             placeholder="rechercher par pseudo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
-            onFocus={e => e.target.style.borderColor = "#f3501e"}
+            onFocus={e => e.target.style.borderColor = "#8b5cf6"}
             onBlur={e => e.target.style.borderColor = "var(--input-border)"}
           />
           <button onClick={handleSearch} disabled={loading}
-            style={{ ...btnBase, padding: "10px 16px", backgroundColor: "#f3501e", color: "#ffffff", opacity: loading ? 0.5 : 1, whiteSpace: "nowrap" }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "scale(1.03)" }}
+            style={{ ...btnBase, width: "100%", padding: "10px 16px", backgroundColor: "#8b5cf6", color: "#ffffff", opacity: loading ? 0.5 : 1 }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = "scale(1.02)" }}
             onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-            onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
-            onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}
+            onMouseDown={e => e.currentTarget.style.transform = "scale(0.97)"}
+            onMouseUp={e => e.currentTarget.style.transform = "scale(1.02)"}
           >
-            {loading ? "..." : "chercher"}
+            {loading ? "recherche..." : "chercher"}
           </button>
         </div>
 

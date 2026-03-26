@@ -191,7 +191,7 @@ function MonthDayCell({ date, meals, onRemove, isToday, isDay }) {
   const dateStr = formatDate(date)
   const getMealForType = (type) => meals.find(m => m.meal_type === type)
   return (
-    <div style={{ height: 110, backgroundColor: isDay ? "#FFFFFF" : "#2d2d2d", borderRadius: 10, border: isToday ? "1.5px solid #d57bff" : `1.5px solid ${isDay ? "rgba(0,0,0,0.07)" : "transparent"}`, display: "flex", flexDirection: "column", padding: "4px 5px 5px", gap: 3, overflow: "hidden" }}>
+    <div style={{ height: 110, backgroundColor: isDay ? "#F5F0E8" : "#2d2d2d", borderRadius: 10, border: isToday ? "1.5px solid #d57bff" : `1.5px solid ${isDay ? "rgba(0,0,0,0.07)" : "transparent"}`, display: "flex", flexDirection: "column", padding: "4px 5px 5px", gap: 3, overflow: "hidden" }}>
       <div style={{ flexShrink: 0 }}>
         <div style={{ fontSize: 10, fontWeight: 700, width: 18, height: 18, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", backgroundColor: isToday ? "#d57bff" : "transparent", color: isToday ? "#ffffff" : isDay ? "rgba(0,0,0,0.45)" : "rgba(255,255,255,0.45)" }}>{date.getDate()}</div>
       </div>
@@ -227,7 +227,7 @@ function MobileMonthDayCell({ date, meals, onRemove, isToday, handleMobileTap, i
   const dayName = DAY_NAMES[dayOfWeek === 0 ? 6 : dayOfWeek - 1]
   const getMealForType = (type) => meals.find(m => m.meal_type === type)
   return (
-    <div style={{ height: 105, backgroundColor: isDay ? "#FFFFFF" : "#2d2d2d", borderRadius: 10, border: isToday ? "1.5px solid #d57bff" : `1.5px solid ${isDay ? "rgba(0,0,0,0.07)" : "transparent"}`, display: "flex", flexDirection: "column", padding: "4px 7px 5px", gap: 4, overflow: "hidden" }}>
+    <div style={{ height: 105, backgroundColor: isDay ? "#F5F0E8" : "#2d2d2d", borderRadius: 10, border: isToday ? "1.5px solid #d57bff" : `1.5px solid ${isDay ? "rgba(0,0,0,0.07)" : "transparent"}`, display: "flex", flexDirection: "column", padding: "4px 7px 5px", gap: 4, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 1, flexShrink: 0 }}>
         <span style={{ paddingTop: 5, fontSize: 14, color: isDay ? "#111111" : "#ffffff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.07em", lineHeight: "9px" }}>{date.getDate()}</span>
         <span className="text-light" style={{ paddingLeft: 3, fontSize: 13, fontWeight: 700, color: isDay ? "#111111" : "#ffffff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.07em", lineHeight: "9px" }}>{dayName}</span>

@@ -101,7 +101,7 @@ export default function Landing() {
       .feature-pill { min-width: unset !important; width: 100% !important; }
       .recipes-row { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
       .how-cols { flex-direction: column !important; gap: 20px !important; }
-      .how-phone { display: flex !important; justify-content: center !important; width: 100% !important; margin-left: 0 !important; }
+      .how-phone { display: none !important; }
       .how-phone img { width: 180px !important; height: auto !important; }
       .pain-g { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
       .pain-g .card-hover { padding: 14px !important; }
@@ -116,6 +116,12 @@ export default function Landing() {
       .cta-btns { flex-direction: column !important; align-items: stretch !important; }
       .cta-btn-main { width: 100% !important; text-align: center; }
       .stat-blocks { flex-wrap: wrap !important; gap: 8px !important; }
+
+      /* ── MOBILE ONLY (<600px) ── */
+      @media (max-width: 599px) {
+        .features-pills > *:last-child { grid-column: 1 / -1; width: auto !important; margin: 0 auto; }
+        .sub-feat > *:last-child { grid-column: 1 / -1; width: auto !important; margin: 0 auto; }
+      }
 
       /* ── TRÈS PETIT ÉCRAN (<380px) ── */
       @media (max-width: 379px) {
@@ -197,11 +203,11 @@ export default function Landing() {
   ]
 
   const featurePills = [
-    { icon: "book.webp",     label: "Recettes",     desc: "14 catégories, ton carnet rangé",  bg: "#f3501e", text: "#fff"    },
-    { icon: "calendar.webp", label: "Planning",     desc: "Glisse, bouclé en 5 min",          bg: "#cfff79", text: "#1a3d1a" },
-    { icon: "cart.webp",     label: "Courses auto", desc: "Générée, sync mobile",             bg: "#111111", text: "#fff"    },
-    { icon: "spark.webp",    label: "Découvrir",    desc: "Explore la communauté",            bg: "#d57bff", text: "#130b2d" },
-    { icon: "friends.webp",  label: "Partage",      desc: "Importe & partage en un clic",     bg: "#FFF4C7", text: "#7a5200" },
+    { icon: "book.webp",     label: "Recettes",     desc: "14 catégories, ton carnet rangé",  bg: "#f3501e", text: "#fff",    tilt: "-1.5deg" },
+    { icon: "calendar.webp", label: "Planning",     desc: "Glisse, bouclé en 5 min",          bg: "#cfff79", text: "#1a3d1a", tilt: "1deg"    },
+    { icon: "cart.webp",     label: "Courses auto", desc: "Générée, sync mobile",             bg: "#111111", text: "#fff",    tilt: "-1deg"   },
+    { icon: "spark.webp",    label: "Découvrir",    desc: "Explore la communauté",            bg: "#d57bff", text: "#130b2d", tilt: "1.5deg"  },
+    { icon: "friends.webp",  label: "Partage",      desc: "Importe & partage en un clic",     bg: "#FFF4C7", text: "#7a5200", tilt: "0deg"    },
   ]
 
   const painPoints = [
@@ -247,11 +253,7 @@ export default function Landing() {
         ══════════════════════════════════════════ */}
         <div className="hero-mobile" style={{ background: "#111111", paddingTop: 58 }}>
           {/* ... contenu mobile inchangé ... */}
-          <div style={{ padding: "28px 20px 0" }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(243,80,30,0.15)", border: "1px solid rgba(243,80,30,0.3)", borderRadius: 100, padding: "5px 12px", marginBottom: 16 }}>
-              <div style={{ width: 6, height: 6, background: "#f3501e", borderRadius: "50%" }} />
-              <span style={{ ...inst, fontSize: 10, fontWeight: 600, color: "#f3501e", letterSpacing: "0.06em", textTransform: "uppercase" }}>planification intelligente</span>
-            </div>
+          <div style={{ padding: "28px 20px 0", textAlign: "center" }}>
             <h1 className="fade1" style={{ ...syne, fontSize: 36, fontWeight: 800, lineHeight: 1.05, letterSpacing: "-.05em", color: "#ffffff", marginBottom: 14 }}>
               ne réfléchis plus<br />
               à <span style={{ color: "#f3501e" }}>quoi manger.</span>
@@ -260,43 +262,23 @@ export default function Landing() {
               repas planifiés, courses générées.<br />
               <strong style={{ color: "rgba(255,255,255,0.85)" }}>5 minutes par semaine.</strong>
             </p>
-            <div className="fade3 stat-blocks" style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
+            <div className="fade3 stat-blocks" style={{ display: "flex", gap: 8, marginBottom: 28, justifyContent: "center" }}>
               {statBlocks.map(g => (
-                <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "8px 14px", display: "flex", alignItems: "baseline", gap: 5, flex: "1 1 auto", minWidth: 80 }}>
-                  <span style={{ ...syne, fontSize: 20, fontWeight: 800, color: g.textN, letterSpacing: "-.04em" }}>{g.n}</span>
-                  <span style={{ ...inst, fontSize: 10, color: g.textL, fontWeight: 500 }}>{g.l}</span>
+                <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "7px 12px", display: "flex", alignItems: "baseline", gap: 4 }}>
+                  <span style={{ ...syne, fontSize: 18, fontWeight: 800, color: g.textN, letterSpacing: "-.04em" }}>{g.n}</span>
+                  <span style={{ ...inst, fontSize: 9, color: g.textL, fontWeight: 500 }}>{g.l}</span>
                 </div>
               ))}
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", position: "relative" }}>
-              <div style={{ width: 200, position: "relative" }}>
-                <div style={{ position: "absolute", top: 20, left: "10%", right: "10%", bottom: 0, background: "rgba(243,80,30,0.2)", filter: "blur(30px)", borderRadius: "50%", zIndex: 0 }} />
-                <div style={{ background: "#1a1a1a", borderRadius: 32, border: "3px solid #2a2a2a", padding: "12px 8px", position: "relative", zIndex: 1 }}>
-                  <div style={{ width: 60, height: 8, background: "#2a2a2a", borderRadius: 4, margin: "0 auto 8px" }} />
-                  <div style={{ background: "#f2ede4", borderRadius: 20, overflow: "hidden", padding: "10px 10px 12px" }}>
-                    <div style={{ ...inst, fontSize: 9, fontWeight: 700, color: "#111", marginBottom: 8, letterSpacing: "-.02em" }}>semaine du 24 mars</div>
-                    {[
-                      { bg: "#cfff79", label: "Bowl Buddha" },
-                      { bg: "#9be7ff", label: "Saumon teriyaki" },
-                      { bg: "#f3501e", label: "Poulet citron" },
-                      { bg: "#ffb9e1", label: "Tarte tatin" },
-                      { bg: "#cfff79", label: "Risotto" },
-                      { bg: "#E49300", label: "Ramen maison" },
-                      { bg: "#d57bff", label: "Wrap végé" },
-                    ].map((m, i) => (
-                      <div key={i} style={{ background: m.bg, borderRadius: 6, padding: "4px 7px", marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
-                        <div style={{ width: 6, height: 6, background: "rgba(0,0,0,0.18)", borderRadius: "50%", flexShrink: 0 }} />
-                        <span style={{ ...inst, fontSize: 8, fontWeight: 600, color: "rgba(0,0,0,0.55)", overflow: "hidden", whiteSpace: "nowrap" }}>{m.label}</span>
-                      </div>
-                    ))}
-                    <div style={{ background: "#111", borderRadius: 8, padding: "6px 8px", marginTop: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ ...inst, fontSize: 8, fontWeight: 700, color: "#fff" }}>liste générée ✓</span>
-                      <span style={{ ...inst, fontSize: 8, color: "#f3501e", fontWeight: 700 }}>23 items</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <div style={{ position: "absolute", top: 20, left: "20%", right: "20%", bottom: 0, background: "rgba(243,80,30,0.25)", filter: "blur(40px)", borderRadius: "50%", zIndex: 0 }} />
+              <img
+                src="/IMG_6506-left.webp"
+                alt="App Shrimply"
+                fetchPriority="high"
+                style={{ width: "62%", maxWidth: 220, height: "auto", display: "block", borderRadius: 28, position: "relative", zIndex: 1 }}
+              />
             </div>
           </div>
 
@@ -411,7 +393,7 @@ export default function Landing() {
           </div>
           <div className="features-pills" style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {featurePills.map(f => (
-              <div key={f.label} className="feature-pill" style={{ background: f.bg, borderRadius: 20, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 6px 24px rgba(0,0,0,.1)" }}>
+              <div key={f.label} className="feature-pill" style={{ background: f.bg, borderRadius: 20, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, boxShadow: "0 6px 24px rgba(0,0,0,.1)", transform: `rotate(${f.tilt})` }}>
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(255,255,255,.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Icon src={f.icon} size={22} />
                 </div>
@@ -446,7 +428,7 @@ export default function Landing() {
                   <h3 style={{ ...syne, fontSize: 12, fontWeight: 800, letterSpacing: "-.03em", lineHeight: 1.25, marginBottom: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.title}</h3>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, opacity: 0.7, marginBottom: 6, ...inst }}>
                     {r.time && <span>⏱ {r.time}min</span>}
-                    {r.rating && <span style={{ color: "#E49300" }}>★ {r.rating}</span>}
+                    {r.rating && <span style={{ color: r.primaryTag.cardText }}>★ {r.rating}</span>}
                   </div>
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: "auto" }}>
                     {r.tagDefs.slice(0, 2).map(t => (
@@ -521,8 +503,8 @@ export default function Landing() {
             </div>
             <div className="pain-g" style={{ display: "grid", gap: 12 }}>
               {painPoints.map(p => (
-                <div key={p.icon} className="card-hover" style={{ padding: "18px 20px", display: "flex", gap: 14, alignItems: "flex-start", borderRadius: 18, background: p.bg, border: `1.5px solid ${p.border}`, boxShadow: "0 4px 16px rgba(0,0,0,.07)" }}>
-                  <Icon src={p.icon} size={28} style={{ marginTop: 2, flexShrink: 0 }} />
+                <div key={p.icon} className="card-hover" style={{ padding: "18px 20px", display: "flex", gap: 14, alignItems: "center", borderRadius: 18, background: p.bg, border: `1.5px solid ${p.border}`, boxShadow: "0 4px 16px rgba(0,0,0,.07)" }}>
+                  <Icon src={p.icon} size={28} style={{ flexShrink: 0 }} />
                   <p style={{ ...inst, fontSize: 13, color: p.textC, lineHeight: 1.7, fontWeight: 500 }}>{p.text}</p>
                 </div>
               ))}

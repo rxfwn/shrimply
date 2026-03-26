@@ -19,6 +19,7 @@ const ROADMAP = [
   { icon: "replace.webp", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
   { icon: "broccoli.webp", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
   { icon: "map.webp", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
+  { icon: "drink.webp", title: "Recettes de boissons & cocktails", desc: "Une catégorie dédiée aux boissons, smoothies, cocktails et jus maison." },
 ]
 
 const btnBase = {
@@ -117,8 +118,8 @@ export default function Suggestions() {
           </h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {ROADMAP.map((item, i) => (
-              <div key={i} style={{ backgroundColor: surface, borderRadius: 12, padding: "14px 16px", border: surfaceBorder, display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <img src={`/icons/${item.icon}`} alt="" style={{ width: 24, height: 24, flexShrink: 0, marginTop: 2 }} onError={e => e.target.style.display = "none"} />
+              <div key={i} style={{ backgroundColor: surface, borderRadius: 12, padding: "14px 16px", border: surfaceBorder, display: "flex", alignItems: "center", gap: 12 }}>
+                <img src={`/icons/${item.icon}`} alt="" style={{ width: 24, height: 24, flexShrink: 0, objectFit: "contain" }} onError={e => e.target.style.display = "none"} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: textPrimary }}>{item.title}</h3>
                   <p style={{ margin: 0, fontSize: 12, color: textMuted }}>{item.desc}</p>

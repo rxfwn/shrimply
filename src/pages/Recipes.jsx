@@ -268,6 +268,26 @@ export default function Recipes() {
       else if (perServing >= ECONOMIC_THRESHOLD) autoTags.splice(autoTags.indexOf("economique"), 1)
     }
 
+    // Tag rapide automatique (≤ 20 min)
+    if (parseInt(prepTime) > 0 && parseInt(prepTime) <= 20) {
+      if (!autoTags.includes("rapide")) autoTags.push("rapide")
+    } else {
+      const idx = autoTags.indexOf("rapide")
+      if (idx !== -1) autoTags.splice(idx, 1)
+    }
+
+    // Tag sans gluten automatique (aucun ingrédient contenant du gluten)
+    const GLUTEN_KEYWORDS = ["farine", "blé", "ble", "pain", "pâtes", "pates", "semoule", "orge", "seigle", "avoine", "couscous", "chapelure", "brioche", "panure", "croûton", "crouton", "filo", "brick", "biscuit", "pita", "naan", "tortilla", "vermicelle", "gnocchi", "tagliatelle", "lasagne", "ravioli"]
+    const hasGluten = validIngredients.some(ing =>
+      GLUTEN_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw))
+    )
+    if (!hasGluten) {
+      if (!autoTags.includes("sansgluten")) autoTags.push("sansgluten")
+    } else {
+      const idx = autoTags.indexOf("sansgluten")
+      if (idx !== -1) autoTags.splice(idx, 1)
+    }
+
     const { data: recipe, error } = await supabase
       .from("recipes")
       .insert({
@@ -710,11 +730,17 @@ export default function Recipes() {
                     <div style={{ padding: "8px 12px 12px", color: textColor }}>
                       <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.name}</h3>
                       {recipe.duplicated_from && <p style={{ margin: "0 0 4px", fontSize: 10, fontStyle: "italic", opacity: 0.7 }}>📋 copie</p>}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 8 }}>
-                        {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
-                        {recipe.servings && <span>🍽 {recipe.servings}p</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, marginBottom: 8, flexWrap: "wrap", color: textColor }}>
+                        {recipe.prep_time && <span style={{ opacity: 0.75 }}>⏱ {recipe.prep_time}min</span>}
+                        {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
+                        {recipe.estimated_total != null && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: actionBg, color: bg }}>
+                            <img src="/icons/money.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                            {recipe.estimated_total.toFixed(2)}€
+                          </span>
+                        )}
                         {recipe.rating > 0 && (
-                          <span style={{ display: "flex", alignItems: "center", gap: 3, backgroundColor: actionBg, color: primaryTagInfo?.pillText || textColor, padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: actionBg, color: bg }}>
                             ★ {Number(recipe.rating).toFixed(1)}
                           </span>
                         )}

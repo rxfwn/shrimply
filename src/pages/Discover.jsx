@@ -58,6 +58,10 @@ export default function Discover() {
 
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 20
   const [success, setSuccess] = useState("")
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
@@ -70,32 +74,37 @@ export default function Discover() {
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
   const [tagTooltip, setTagTooltip] = useState(null) // { tags, x, y }
 
-  useEffect(() => { fetchRecipes() }, [])
+  useEffect(() => { fetchRecipes(0) }, [])
 
-  const fetchRecipes = async () => {
+  const fetchRecipes = async (pageIndex, append = false) => {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) { setLoading(false); return }
- 
+
+      const from = pageIndex * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
       const { data } = await supabase
         .from("recipes")
         .select("id, name, photo_url, user_id, primary_tag, tags, rating, prep_time, servings, estimated_total, imported_from, description")
         .eq("is_public", true)
         .neq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(40)
+        .range(from, to)
 
-      if (!data) { setLoading(false); return }
+      if (!data) { setLoading(false); setLoadingMore(false); return }
+
+      setHasMore(data.length === PAGE_SIZE)
 
       const userIds = [...new Set(data.map(r => r.user_id))]
-
-      const profilesRes = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url, is_official")
-        .in("id", userIds)
- 
       const profileMap = {}
-      profilesRes.data?.forEach(p => { profileMap[p.id] = p })
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_url, is_official")
+          .in("id", userIds)
+        profilesData?.forEach(p => { profileMap[p.id] = p })
+      }
 
       const recipesWithData = data.map(r => ({
         ...r,
@@ -103,9 +112,21 @@ export default function Discover() {
         estimatedTotal: r.estimated_total ?? null,
       }))
 
-      setRecipes(recipesWithData)
+      if (append) {
+        setRecipes(prev => [...prev, ...recipesWithData])
+      } else {
+        setRecipes(recipesWithData)
+      }
       setLoading(false)
-    } catch (e) { console.error("fetchRecipes error:", e); setLoading(false) }
+      setLoadingMore(false)
+    } catch (e) { console.error("fetchRecipes error:", e); setLoading(false); setLoadingMore(false) }
+  }
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1
+    setPage(nextPage)
+    setLoadingMore(true)
+    fetchRecipes(nextPage, true)
   }
 
   const checkBannedWords = async (textsToCheck) => {
@@ -525,7 +546,7 @@ export default function Discover() {
             return (
               <div key={recipe.id}
                 onClick={() => openPreview(recipe)}
-                style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "visible", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", position: "relative" }}
+                style={{ backgroundColor: bg, border: `2px solid ${border}`, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", display: "flex", flexDirection: "column", position: "relative" }}
                 onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)" }}
                 onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
               >
@@ -539,7 +560,7 @@ export default function Discover() {
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5, flexWrap: "nowrap", overflow: "hidden" }}>
                     <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: actionBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {recipe.profiles?.avatar_url
-                        ? <img src={recipe.profiles.avatar_url} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <img src={recipe.profiles.avatar_url} alt="avatar" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ fontSize: 9 }}>👤</span>}
                     </div>
                     <span style={{ fontSize: 10, color: textColor, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
@@ -555,14 +576,14 @@ export default function Discover() {
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 7, flexWrap: "wrap", fontSize: 11, color: textColor }}>
                     {recipe.prep_time && <span style={{ opacity: 0.75 }}>⏱ {recipe.prep_time}min</span>}
                     {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
-                    {recipe.estimatedTotal !== null && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
+                    {recipe.estimatedTotal != null && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: actionBg, color: bg }}>
                         <img src="/icons/money.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                         {recipe.estimatedTotal.toFixed(2)}€
                       </span>
                     )}
                     {recipe.rating > 0 && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, padding: "2px 7px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: bg }}>
                         ★ {recipe.rating},0
                       </span>
                     )}
@@ -602,6 +623,20 @@ export default function Discover() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {!loading && hasMore && filteredRecipes.length > 0 && !search && filter === "all" && (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+          <button
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            style={{ ...btnBase, padding: "10px 28px", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 13, opacity: loadingMore ? 0.5 : 1 }}
+            onMouseEnter={e => { if (!loadingMore) e.currentTarget.style.transform = "scale(1.02)" }}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >
+            {loadingMore ? "chargement..." : "charger plus"}
+          </button>
         </div>
       )}
     </div>

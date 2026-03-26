@@ -358,9 +358,13 @@ const handleEstimate = async () => {
         .budget-chip { display: flex; align-items: center; gap: 6px; background: ${isDay ? "#E8E1D5" : "rgba(255,255,255,0.1)"}; border-radius: 40px; padding: 5px 12px; }
         @media (max-width: 640px) {
           .hero-card { height: auto; flex-direction: column; }
-          .hero-photo { width: 100%; height: 220px; }
-          .hero-placeholder { width: 100%; height: 160px; }
-          .budget-bar { flex-wrap: wrap; border-radius: 12px; }
+          .hero-photo { width: 100%; height: 200px; }
+          .hero-placeholder { width: 100%; height: 130px; }
+          .hero-right { padding: 12px 14px !important; }
+          .budget-bar { flex-wrap: wrap; border-radius: 12px; padding: 8px 10px; row-gap: 6px; }
+          .budget-chip { padding: 4px 8px; }
+          .budget-chip span:first-child { font-size: 12px !important; }
+          .budget-calc-btn { width: 100%; justify-content: center; border-radius: 8px !important; }
         }
       `}</style>
 
@@ -440,6 +444,7 @@ const handleEstimate = async () => {
               <div style={{ flex: 1 }} />
 
               <button onClick={handleEstimate} disabled={!canEstimate}
+                className="budget-calc-btn"
                 style={{ ...S.btn, padding: "7px 16px", fontSize: 12, backgroundColor: btnBg, color: btnColor, cursor: canEstimate ? "pointer" : "not-allowed", opacity: estimating ? 0.6 : 1, borderRadius: 40, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
                 onMouseEnter={e => { if (canEstimate) e.currentTarget.style.transform = "scale(1.04)" }}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}

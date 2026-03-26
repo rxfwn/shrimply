@@ -58,6 +58,8 @@ export default function Settings() {
   const [success, setSuccess] = useState("")
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteInput, setDeleteInput] = useState("")
+  const [isPublic, setIsPublic] = useState(true)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   // ── Changement d'email ──
   const [showEmailModal, setShowEmailModal] = useState(false)
@@ -81,6 +83,7 @@ export default function Settings() {
       setUsername(profile.username || "")
       setAvatarUrl(profile.avatar_url || "")
       setSelectedPrefs(profile.preferences || [])
+      setIsPublic(profile.is_public ?? true)
     }
   }, [profile])
 
@@ -106,7 +109,7 @@ export default function Settings() {
 
   const handleSave = async () => {
     setSaving(true)
-    await supabase.from("profiles").upsert({ id: user.id, username, avatar_url: avatarUrl, preferences: selectedPrefs })
+    await supabase.from("profiles").upsert({ id: user.id, username, avatar_url: avatarUrl, preferences: selectedPrefs, is_public: isPublic })
     await refreshProfile()
     setSaving(false)
     showToast("✅ profil sauvegardé !")
@@ -114,7 +117,26 @@ export default function Settings() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    navigate("/login")
+    navigate("/")
+  }
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
+        body: JSON.stringify({ user_id: user.id }),
+      })
+      const { url, error } = await res.json()
+      if (error) { showToast("❌ " + error); return }
+      window.location.href = url
+    } catch {
+      showToast("❌ erreur lors de la redirection")
+    } finally {
+      setPortalLoading(false)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -122,7 +144,7 @@ export default function Settings() {
     await supabase.from("recipes").delete().eq("user_id", user.id)
     await supabase.from("profiles").delete().eq("id", user.id)
     await supabase.auth.signOut()
-    navigate("/login")
+    navigate("/")
   }
 
   const handleRelaunchTour = async () => {
@@ -331,10 +353,45 @@ export default function Settings() {
           />
         </SectionComp>
 
+        {/* ── ABONNEMENT (Premium uniquement) ── */}
+        {profile?.is_premium && (
+          <SectionComp title="abonnement" icon="spark">
+            <RowComp
+              label="gérer mon abonnement"
+              sub="modifier, annuler ou voir les factures"
+              onClick={handleManageSubscription}
+              noBorder
+              right={
+                portalLoading
+                  ? <span style={{ fontSize: 11, color: "var(--text-faint)", fontWeight: 600 }}>chargement...</span>
+                  : <span style={{ fontSize: 20, color: "var(--text-faint)" }}>›</span>
+              }
+            />
+          </SectionComp>
+        )}
+
         {/* ── CONFIDENTIALITÉ ── */}
         <SectionComp title="confidentialité">
-          <RowComp label="profil public" sub="tes recettes publiques sont visibles par tous"
-            right={<span style={{ fontSize: 11, color: "var(--text-faint)", fontWeight: 600 }}>toujours actif</span>}
+          <RowComp
+            label="profil public"
+            sub={isPublic ? "tes recettes publiques sont visibles par tous" : "ton profil est privé, recettes non visibles"}
+            right={
+              <button
+                onClick={() => setIsPublic(p => !p)}
+                style={{
+                  width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                  backgroundColor: isPublic ? "#f3501e" : "var(--bg-card-2)",
+                  position: "relative", transition: "background-color 0.2s", flexShrink: 0,
+                }}
+              >
+                <span style={{
+                  position: "absolute", top: 3, left: isPublic ? 23 : 3,
+                  width: 18, height: 18, borderRadius: "50%",
+                  backgroundColor: "#ffffff", transition: "left 0.2s",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                }} />
+              </button>
+            }
           />
           <RowComp label="voir mes recettes publiées" onClick={() => navigate("/profile")} />
           <RowComp label="mentions légales & CGU" sub="mentions légales, conditions d'utilisation, confidentialité"

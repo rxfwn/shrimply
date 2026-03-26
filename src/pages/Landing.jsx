@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 // import { supabase } from "../supabase" // Décommenter si utilisé plus tard
 
@@ -46,6 +46,10 @@ const Icon = ({ src, size = 28, style = {} }) => (
 export default function Landing() {
   const navigate = useNavigate()
   const [openFaq, setOpenFaq] = useState(null)
+
+  useEffect(() => {
+    document.getElementById("lcp-shell")?.remove()
+  }, [])
 
   // Le CSS est placé ici en tant que string pour être injecté de façon synchrone dans le JSX
   // et éviter le "Flash of Unstyled Content" (CLS) causé par le useEffect précédent.

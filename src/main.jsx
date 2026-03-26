@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react"
 import ReactDOM from "react-dom/client"
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ProfileProvider } from "./context/ProfileContext"
 import PrivateRoute from "./components/PrivateRoute"
@@ -32,18 +32,15 @@ const ResetPassword         = lazy(() => import("./pages/ResetPassword"))
 const ResetPasswordConfirm  = lazy(() => import("./pages/ResetPasswordConfirm"))
 const OnboardingTour        = lazy(() => import("./components/OnboardingTour"))
 
-// ── Route racine : redirige les utilisateurs connectés vers /calendar ──
+// ── Route racine : affiche la landing immédiatement, redirige si connecté ──
 function RootRoute() {
-  const [session, setSession] = useState(undefined)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/calendar", { replace: true })
+    })
   }, [])
-
-  // Pendant la vérification, ne rien afficher (évite le flash de la landing)
-  if (session === undefined) return null
-
-  if (session) return <Navigate to="/calendar" replace />
 
   return <Landing />
 }

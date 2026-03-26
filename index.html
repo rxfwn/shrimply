@@ -40,6 +40,18 @@
     <style>
       body { margin: 0; padding: 0; background: #f2ede4; }
       #root { min-height: 100vh; }
+      /* LCP shell — peint avant React, retiré après le premier rendu */
+      #lcp-shell {
+        position: fixed; inset: 0; background: #f2ede4; z-index: 999;
+        display: flex; flex-direction: column; align-items: center; padding-top: 120px;
+        pointer-events: none;
+      }
+      #lcp-shell img {
+        width: 62%; max-width: 220px; height: auto;
+        border-radius: 28px 28px 0 0; object-fit: cover; object-position: top;
+        max-height: 190px;
+      }
+      @media (min-width: 900px) { #lcp-shell { display: none; } }
     </style>
 
     <!-- Google Tag Manager — chargé après le rendu initial -->
@@ -57,6 +69,11 @@
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WFFX7DHC"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <!-- LCP shell : image hero peinte immédiatement avant React -->
+    <div id="lcp-shell">
+      <img src="/IMG_6506-mobile.webp" fetchpriority="high" alt="App Shrimply" width="440" height="734" />
+    </div>
 
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

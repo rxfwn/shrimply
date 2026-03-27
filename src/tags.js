@@ -143,7 +143,7 @@ export const TAGS = [
     cardBg:   "#130b2d",
     cardText: "#d57bff",
     cardBorder: "#d57bff",
-    actionBg: "#130b2d", 
+    actionBg: "#d57bff",
   },
   { key: "sansfour",
     label: "sans-four",

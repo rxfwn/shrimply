@@ -102,6 +102,8 @@ CORRESPONDANCES PAR TYPE DE PRODUIT :
 - Bouillon cube → "piece", qty 1, prix 0.15-0.30€
 - Sucre, fécule, levure → "g", 500g, prix 0.80-2.50€
 - Pain, viennoiseries → "piece", qty 1, prix 0.15-1.50€
+- Tortillas, wraps, chapatis (unité individuelle) → "piece", qty 1, prix 0.20-0.35€
+- Naan, pita, galette → "piece", qty 1, prix 0.30-0.60€
 
 Ingrédients :
 ${ingredientsList}

@@ -54,7 +54,6 @@ export default function RecipeEdit() {
   const [showUnsavedPopup, setShowUnsavedPopup] = useState(false)
   const initialData = useRef(null)
   const initialEstimatedTotal = useRef(null)
-
   const isDirty = () => {
     if (!initialData.current) return false
     const current = JSON.stringify({ name, description, prepTime: String(prepTime), servings: String(servings), primaryTag, selectedTags, ingredients, steps, photoUrl })

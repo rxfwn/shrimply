@@ -163,6 +163,8 @@ export default function RecipeDetail() {
   const navigate = useNavigate()
   const { isDay } = useTheme()
 
+  const ADMIN_ID = "defac7ee-a2d1-4765-a3d1-3e002bb3569e"
+  const [currentUserId, setCurrentUserId] = useState(null)
   const [recipe, setRecipe] = useState(null)
   const [ingredients, setIngredients] = useState([])
   const [steps, setSteps] = useState([])
@@ -190,6 +192,9 @@ export default function RecipeDetail() {
   }
 
   useEffect(() => { fetchRecipe() }, [id])
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id ?? null))
+  }, [])
   useEffect(() => {
     if (cooldown > 0) { const t = setTimeout(() => setCooldown(c => c - 1), 1000); return () => clearTimeout(t) }
   }, [cooldown])
@@ -265,6 +270,43 @@ const handleEstimate = async () => {
     estimatingRef.current = false; setEstimating(false)
   }
 }
+
+  const handleForceRecalculate = async () => {
+    if (estimatingRef.current) return
+    estimatingRef.current = true; setEstimating(true); setApiError("")
+    const PIECE_UNITS = ["pièce", "paquet", "boîte", "sachet", "botte"]
+    const keysToDelete = ingredients.filter(i => i.name?.trim()).flatMap(ing => {
+      const base = ing.name.toLowerCase().trim()
+      const u = (ing.unit || "").toLowerCase().trim()
+      return PIECE_UNITS.includes(u) ? [base, `${base}||${u}`] : [base]
+    })
+    try {
+      await supabase.from("ingredient_prices").delete().in("name", keysToDelete)
+      const result = await computeCostDetails(ingredients, recipe.servings)
+      setCostDetails(result)
+      await Promise.all(result.details.map(detail => {
+        const ing = ingredients.find(i => i.name.toLowerCase() === detail.name.toLowerCase())
+        if (!ing?.id) return Promise.resolve()
+        return supabase.from("ingredients").update({ estimated_price: detail.found ? detail.estimated_price : null }).eq("id", ing.id)
+      }))
+      const ECONOMIC_THRESHOLD = 3
+      if (recipe?.servings > 0) {
+        const perServing = result.total / recipe.servings
+        const currentTags = recipe.tags || []
+        const newTags = [...currentTags]
+        if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !newTags.includes("economique")) newTags.push("economique")
+        else if (perServing >= ECONOMIC_THRESHOLD) { const idx = newTags.indexOf("economique"); if (idx !== -1) newTags.splice(idx, 1) }
+        await supabase.from("recipes").update({ estimated_total: result.total, tags: newTags }).eq("id", id)
+        setRecipe(r => ({ ...r, tags: newTags, estimated_total: result.total }))
+      } else {
+        await supabase.from("recipes").update({ estimated_total: result.total }).eq("id", id)
+      }
+    } catch (error) {
+      setApiError(error.message)
+    } finally {
+      estimatingRef.current = false; setEstimating(false)
+    }
+  }
 
   const handleDelete = async () => {
     setDeleting(true); setShowDeleteModal(false)
@@ -452,6 +494,13 @@ const handleEstimate = async () => {
                 <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
                 {btnLabel}
               </button>
+              {currentUserId === ADMIN_ID && (
+                <button onClick={handleForceRecalculate} disabled={estimating} title="Forcer le recalcul (vide le cache)"
+                  style={{ ...S.btn, padding: "7px 10px", fontSize: 14, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 40, opacity: estimating ? 0.5 : 1 }}
+                  onMouseEnter={e => { if (!estimating) e.currentTarget.style.transform = "scale(1.08)" }}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >{estimating ? "⏳" : "🔄"}</button>
+              )}
             </div>
             {apiError && <p style={{ fontSize: 10, color: "#f87171", margin: "5px 0 0", fontStyle: "italic", fontFamily: "Poppins, sans-serif" }}>⚠️ {apiError}</p>}
           </div>

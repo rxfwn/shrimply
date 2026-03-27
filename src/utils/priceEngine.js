@@ -33,10 +33,23 @@ const UNIT_CONVERSIONS = {
   "sachet":     { unit: "piece", factor: 1  },  // 1 sachet = 1 pièce
 }
 
+// Unités "en pièce" — on différencie dans le cache pour éviter
+// qu'un prix de "paquet" de tortillas soit utilisé pour des "pièces" individuelles
+const PIECE_TYPE_UNITS = ["pièce", "paquet", "boîte", "sachet", "botte"]
+
+// Clé de cache : nom seul pour les unités en masse/volume,
+// nom + unité pour les unités "pièce" (pièce ≠ paquet)
+function getCacheKey(name, originalUnit) {
+  const u = (originalUnit || "").toLowerCase().trim()
+  if (PIECE_TYPE_UNITS.includes(u)) return `${name.toLowerCase()}||${u}`
+  return name.toLowerCase()
+}
+
 function normalizeIngredientUnit(ing) {
-  const conv = UNIT_CONVERSIONS[(ing.unit || "").toLowerCase().trim()]
-  if (conv) return { ...ing, quantity: (parseFloat(ing.quantity) || 1) * conv.factor, unit: conv.unit }
-  return ing
+  const originalUnit = (ing.unit || "").toLowerCase().trim()
+  const conv = UNIT_CONVERSIONS[originalUnit]
+  if (conv) return { ...ing, quantity: (parseFloat(ing.quantity) || 1) * conv.factor, unit: conv.unit, original_unit: originalUnit }
+  return { ...ing, original_unit: originalUnit }
 }
 
 // Convertit le prix normalisé (€/kg, €/L, €/pièce) en coût réel selon la quantité utilisée
@@ -81,27 +94,29 @@ export async function computeCostDetails(ingredientsData, servings) {
     const toProcess = ingredientsData.filter(i => !shouldSkipIngredient(i.name, i.unit));
 
     // ── 1. Chercher les prix en cache (ingredient_prices) ──────────────────────
-    const names = toProcess.map(i => i.name);
+    // Clé composite (nom||unité) pour pièce/paquet afin d'éviter les confusions
+    const cacheKeys = toProcess.map(i => getCacheKey(i.name, i.unit));
     const { data: cached } = await supabase
       .from("ingredient_prices")
       .select("name, price, unit")
-      .in("name", names);
+      .in("name", cacheKeys);
 
     const cacheMap = {};
     (cached || []).forEach(c => { cacheMap[c.name.toLowerCase()] = c; });
 
     // ── 2. Séparer les ingrédients : en cache vs à envoyer à l'API ────────────
-    const needApi = toProcess.filter(i => !cacheMap[i.name.toLowerCase()]);
+    const needApi = toProcess.filter(i => !cacheMap[getCacheKey(i.name, i.unit)]);
     const priceMap = {};
 
     // Appliquer les prix en cache
     toProcess.forEach(ing => {
-      const cached = cacheMap[ing.name.toLowerCase()];
-      if (!cached) return;
+      const key = getCacheKey(ing.name, ing.unit);
+      const entry = cacheMap[key];
+      if (!entry) return;
       const normIng = normalizeIngredientUnit(ing);
-      const price = computeIngredientCost(cached.price, cached.unit, normIng.quantity, normIng.unit);
+      const price = computeIngredientCost(entry.price, entry.unit, normIng.quantity, normIng.unit);
       priceMap[ing.name.toLowerCase()] = Number(price.toFixed(2));
-      console.log(`[cache] ✅ ${ing.name} → ${priceMap[ing.name.toLowerCase()]}€`);
+      console.log(`[cache] ✅ ${ing.name} (${ing.unit}) → ${priceMap[ing.name.toLowerCase()]}€`);
     });
 
     // ── 3. Appeler l'API uniquement pour les ingrédients inconnus ─────────────
@@ -136,8 +151,9 @@ export async function computeCostDetails(ingredientsData, servings) {
         if (apiResult) {
           const price = computeIngredientCost(apiResult.price, apiResult.unit, normIng.quantity, normIng.unit);
           priceMap[needApi[idx].name.toLowerCase()] = Number(price.toFixed(2));
-          // Sauvegarder le prix normalisé (par kg/L/pièce) dans le cache, pas le prix calculé
-          toCache.push({ name: needApi[idx].name, price: apiResult.price, unit: apiResult.unit });
+          // Clé composite pour distinguer "pièce" vs "paquet" dans le cache
+          const ck = getCacheKey(needApi[idx].name, needApi[idx].unit);
+          toCache.push({ name: ck, price: apiResult.price, unit: apiResult.unit });
         }
       });
 

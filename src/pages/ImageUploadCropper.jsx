@@ -125,7 +125,7 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
             <img ref={imgRef} src={imageSrc} onLoad={onImageLoad} style={{ display: "none" }} alt="" />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={handleReset} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#130b2d", color: "#d57bf" }}>annuler</button>
+            <button onClick={handleReset} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#130b2d", color: "#d57bff" }}>annuler</button>
             <button onClick={handleConfirm} style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "#d57bff", color: "#130b2d" }}>valider la photo</button>
           </div>
         </div>
@@ -145,7 +145,7 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
       {/* DONE */}
       {stage === "done" && savedUrl && (
         <div style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
-          <img src={savedUrl} alt="photo du plat" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+          <img src={savedUrl} alt="photo du plat" style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
           <button onClick={handleReset}
             style={{ position: "absolute", top: 10, right: 10, backgroundColor: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 14, transition: "background 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.8)"}

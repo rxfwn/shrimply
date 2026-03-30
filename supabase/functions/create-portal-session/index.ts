@@ -25,15 +25,34 @@ Deno.serve(async (req) => {
     .single()
 
   if (!profile?.stripe_customer_id) {
+    console.error("[portal] pas de stripe_customer_id pour user_id:", user_id)
     return new Response(JSON.stringify({ error: "Aucun abonnement trouvé" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
     })
   }
 
-  const session = await stripe.billingPortal.sessions.create({
-    customer: profile.stripe_customer_id,
-    return_url: "https://www.shrimply.app/settings",
-  })
+  console.log("[portal] customer_id trouvé:", profile.stripe_customer_id?.slice(0, 8) + "...")
+
+  let session
+  try {
+    session = await stripe.billingPortal.sessions.create({
+      customer: profile.stripe_customer_id,
+      return_url: "https://www.shrimply.app/settings",
+    })
+    console.log("[portal] session créée:", JSON.stringify(session))
+  } catch (e) {
+    console.error("[portal] Stripe error:", e.message)
+    return new Response(JSON.stringify({ error: e.message || "Erreur Stripe" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    })
+  }
+
+  if (!session?.url) {
+    console.error("[portal] session.url manquant:", JSON.stringify(session))
+    return new Response(JSON.stringify({ error: "Stripe n'a pas retourné d'URL" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
+    })
+  }
 
   return new Response(JSON.stringify({ url: session.url }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" }

@@ -86,7 +86,11 @@ CORRESPONDANCES PAR TYPE DE PRODUIT :
 - Tête d'ail (ail entier) → "piece", qty 1, prix 0.60-1.20€
 - Gousse d'ail, gousses d'ail → "piece", qty 1, prix 0.05-0.10€ (une seule gousse, pas une tête)
 - Gingembre frais → "piece", qty 1, prix 0.80€
-- Épices sèches (curcuma, paprika, cumin, cannelle...) → "g", 40-50g, prix 1-3€
+- Feuille de laurier, feuilles de laurier (séchées, entières) → "piece", qty 1, prix 0.05-0.10€
+- Bâton de cannelle, bâtons de cannelle → "piece", qty 1, prix 0.30-0.60€
+- Clou de girofle, clous de girofle → "piece", qty 1, prix 0.05-0.15€
+- Cardamome (gousse entière), étoile de badiane, anis étoilé → "piece", qty 1, prix 0.10-0.25€
+- Épices sèches EN POUDRE (curcuma, paprika, cumin, cannelle en poudre, curry, garam masala...) → "g", 40-50g, prix 1-3€
 - Huiles (tournesol, olive, sésame, coco...) → "ml", 750ml, prix 2-7€
 - Condiments liquides (sauce soja, vinaigre, nuoc-mâm, worcestershire...) → "ml", 150ml, prix 1.50-3.50€
 - Condiments solides (moutarde, pesto, tahini, miso...) → "g", 200g, prix 1.50-4€

@@ -158,6 +158,51 @@ function CopyToast({ visible }) {
   )
 }
 
+function playTimerEndSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const beep = (freq, start, duration) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.value = freq
+      osc.type = "sine"
+      gain.gain.setValueAtTime(0, ctx.currentTime + start)
+      gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + start + 0.01)
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + duration)
+      osc.start(ctx.currentTime + start)
+      osc.stop(ctx.currentTime + start + duration)
+    }
+    beep(880, 0,    0.18)
+    beep(880, 0.22, 0.18)
+    beep(1100, 0.44, 0.35)
+  } catch {}
+}
+
+function parseStepDuration(text) {
+  const t = (text || "").toLowerCase()
+  let hours = 0, minutes = 0
+  const hm = t.match(/(\d+)\s*h(?:eure)?s?\s*(\d+)?\s*(?:min(?:ute)?s?)?/)
+  if (hm) {
+    hours = parseInt(hm[1])
+    if (hm[2]) minutes = parseInt(hm[2])
+  } else {
+    const m = t.match(/(\d+)(?:-\d+)?\s*min(?:ute)?s?/)
+    if (m) minutes = parseInt(m[1])
+  }
+  const total = hours * 3600 + minutes * 60
+  return total >= 60 ? total : null
+}
+
+function formatTime(s) {
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`
+}
+
 export default function RecipeDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -179,6 +224,43 @@ export default function RecipeDetail() {
   const estimatingRef = useRef(false)
   const [copied, setCopied] = useState(false)
   const [currentServings, setCurrentServings] = useState(null)
+  const [recalculatingIngredient, setRecalculatingIngredient] = useState(null)
+  const [editingPriceIngredient, setEditingPriceIngredient] = useState(null)
+  const [manualPriceValue, setManualPriceValue] = useState("")
+  const [timers, setTimers] = useState({})
+  const timerIntervals = useRef({})
+
+  useEffect(() => () => { Object.values(timerIntervals.current).forEach(clearInterval) }, [])
+
+  const startTimer = (i, total) => {
+    if (timerIntervals.current[i]) return
+    setTimers(prev => ({ ...prev, [i]: { total, remaining: prev[i]?.remaining ?? total, running: true, done: false } }))
+    timerIntervals.current[i] = setInterval(() => {
+      setTimers(prev => {
+        const cur = prev[i]
+        if (!cur || cur.remaining <= 1) {
+          clearInterval(timerIntervals.current[i])
+          delete timerIntervals.current[i]
+          playTimerEndSound()
+          if (navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300])
+          return { ...prev, [i]: { ...cur, remaining: 0, running: false, done: true } }
+        }
+        return { ...prev, [i]: { ...cur, remaining: cur.remaining - 1 } }
+      })
+    }, 1000)
+  }
+
+  const pauseTimer = (i) => {
+    clearInterval(timerIntervals.current[i])
+    delete timerIntervals.current[i]
+    setTimers(prev => ({ ...prev, [i]: { ...prev[i], running: false } }))
+  }
+
+  const resetTimer = (i, total) => {
+    clearInterval(timerIntervals.current[i])
+    delete timerIntervals.current[i]
+    setTimers(prev => ({ ...prev, [i]: { total, remaining: total, running: false, done: false } }))
+  }
 
   const handleShare = async () => {
     const url = window.location.href
@@ -306,6 +388,57 @@ const handleEstimate = async () => {
     } finally {
       estimatingRef.current = false; setEstimating(false)
     }
+  }
+
+  const handleRecalculateIngredient = async (ingName, ingUnit) => {
+    setRecalculatingIngredient(ingName)
+    const PIECE_UNITS = ["pièce", "paquet", "boîte", "sachet", "botte"]
+    const u = (ingUnit || "").toLowerCase().trim()
+    const base = ingName.toLowerCase().trim()
+    const keysToDelete = PIECE_UNITS.includes(u) ? [base, `${base}||${u}`] : [base]
+    try {
+      await supabase.from("ingredient_prices").delete().in("name", keysToDelete)
+      const origIng = ingredients.find(i => i.name.toLowerCase() === base)
+      if (!origIng) return
+      const result = await computeCostDetails([origIng], recipe.servings)
+      const detail = result.details[0]
+      if (!detail) return
+      await supabase.from("ingredients").update({ estimated_price: detail.found ? detail.estimated_price : null }).eq("id", origIng.id)
+      setCostDetails(prev => {
+        if (!prev) return prev
+        const newDetails = prev.details.map(d =>
+          d.name.toLowerCase() === base ? { ...d, estimated_price: detail.estimated_price, found: detail.found } : d
+        )
+        const newTotal = newDetails.reduce((s, d) => s + (d.found ? d.estimated_price : 0), 0)
+        return { ...prev, details: newDetails, total: Number(newTotal.toFixed(2)), per_serving: recipe.servings > 0 ? Number((newTotal / recipe.servings).toFixed(2)) : newTotal }
+      })
+      await supabase.from("recipes").update({ estimated_total: result.total }).eq("id", id)
+    } catch (e) { console.error("Erreur recalcul ingrédient:", e)
+    } finally { setRecalculatingIngredient(null) }
+  }
+
+  const handleSaveManualPrice = async (ingName, ingUnit) => {
+    const price = parseFloat(manualPriceValue.replace(",", "."))
+    if (isNaN(price) || price < 0) { setEditingPriceIngredient(null); return }
+    const base = ingName.toLowerCase().trim()
+    const PIECE_UNITS = ["pièce", "paquet", "boîte", "sachet", "botte"]
+    const u = (ingUnit || "").toLowerCase().trim()
+    const ck = PIECE_UNITS.includes(u) ? `${base}||${u}` : base
+    try {
+      await supabase.from("ingredient_prices").upsert({ name: ck, price, unit: "piece" }, { onConflict: "name" })
+      const origIng = ingredients.find(i => i.name.toLowerCase() === base)
+      if (origIng?.id) await supabase.from("ingredients").update({ estimated_price: price }).eq("id", origIng.id)
+      setCostDetails(prev => {
+        if (!prev) return prev
+        const newDetails = prev.details.map(d =>
+          d.name.toLowerCase() === base ? { ...d, estimated_price: price, found: true } : d
+        )
+        const newTotal = newDetails.reduce((s, d) => s + (d.found ? d.estimated_price : 0), 0)
+        return { ...prev, details: newDetails, total: Number(newTotal.toFixed(2)), per_serving: recipe.servings > 0 ? Number((newTotal / recipe.servings).toFixed(2)) : newTotal }
+      })
+      await supabase.from("recipes").update({ estimated_total: (costDetails?.total ?? 0) - (costDetails?.details.find(d => d.name.toLowerCase() === base)?.estimated_price ?? 0) + price }).eq("id", id)
+    } catch (e) { console.error("Erreur prix manuel:", e) }
+    setEditingPriceIngredient(null)
   }
 
   const handleDelete = async () => {
@@ -499,7 +632,7 @@ const handleEstimate = async () => {
                   style={{ ...S.btn, padding: "7px 10px", fontSize: 14, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 40, opacity: estimating ? 0.5 : 1 }}
                   onMouseEnter={e => { if (!estimating) e.currentTarget.style.transform = "scale(1.08)" }}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                >{estimating ? "⏳" : "🔄"}</button>
+                >{estimating ? "⏳" : <img src="/icons/replace.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}</button>
               )}
             </div>
             {apiError && <p style={{ fontSize: 10, color: "#f87171", margin: "5px 0 0", fontStyle: "italic", fontFamily: "Poppins, sans-serif" }}>⚠️ {apiError}</p>}
@@ -534,6 +667,41 @@ const handleEstimate = async () => {
                     {formatQuantity(item.quantity)} {item.unit}
                   </span>
                   {item.found && <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E" }}>{item.estimated_price.toFixed(2)}€</span>}
+                  {currentUserId === ADMIN_ID && !shouldSkipIngredient(item.name, item.unit) && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      {editingPriceIngredient === item.name ? (
+                        <input
+                          autoFocus
+                          type="text"
+                          value={manualPriceValue}
+                          onChange={e => setManualPriceValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") { const orig = ingredients.find(i => i.name.toLowerCase() === item.name.toLowerCase()); if (orig) handleSaveManualPrice(orig.name, orig.unit) }
+                            if (e.key === "Escape") setEditingPriceIngredient(null)
+                          }}
+                          onBlur={() => { const orig = ingredients.find(i => i.name.toLowerCase() === item.name.toLowerCase()); if (orig) handleSaveManualPrice(orig.name, orig.unit) }}
+                          placeholder="0.00"
+                          style={{ width: 52, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", border: "1.5px solid #CE80FF", borderRadius: 6, padding: "1px 4px", background: "var(--bg-card-2)", color: "var(--text-main)", outline: "none" }}
+                        />
+                      ) : (
+                        <button
+                          onClick={e => { e.stopPropagation(); setManualPriceValue(item.found ? item.estimated_price.toFixed(2) : ""); setEditingPriceIngredient(item.name) }}
+                          title={`Saisir prix manuellement`}
+                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, opacity: 0.4, padding: "0 2px", lineHeight: 1, transition: "opacity 0.15s" }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                          onMouseLeave={e => e.currentTarget.style.opacity = "0.4"}
+                        ><img src="/icons/pencil.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} /></button>
+                      )}
+                      <button
+                        onClick={e => { e.stopPropagation(); const orig = ingredients.find(i => i.name.toLowerCase() === item.name.toLowerCase()); if (orig) handleRecalculateIngredient(orig.name, orig.unit) }}
+                        disabled={recalculatingIngredient === item.name}
+                        title={`Recalculer ${item.name}`}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, opacity: recalculatingIngredient === item.name ? 0.5 : 0.4, padding: "0 2px", lineHeight: 1, transition: "opacity 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                        onMouseLeave={e => { if (recalculatingIngredient !== item.name) e.currentTarget.style.opacity = "0.4" }}
+                      >{recalculatingIngredient === item.name ? "⏳" : <img src="/icons/replace.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />}</button>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -546,17 +714,49 @@ const handleEstimate = async () => {
             <span style={{ fontSize: 11, fontWeight: 700, color: isDay ? "#111111" : "var(--text-faint)", textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "Poppins, sans-serif" }}>préparation</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {steps.map((step, i) => (
-              <div key={i} onClick={() => setCheckedSteps(prev => ({ ...prev, [i]: !prev[i] }))}
-                style={{ display: "flex", gap: 12, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}>
-                <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1, backgroundColor: checkedSteps[i] ? "#22C55E" : "var(--bg-card-2)", color: checkedSteps[i] ? "#fff" : "var(--text-muted)", transition: "all 0.2s" }}>
-                  {checkedSteps[i] ? "✓" : i + 1}
+            {steps.map((step, i) => {
+              const duration = parseStepDuration(step.description)
+              const timer = timers[i]
+              return (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div onClick={() => setCheckedSteps(prev => ({ ...prev, [i]: !prev[i] }))}
+                    style={{ display: "flex", gap: 12, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}>
+                    <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1, backgroundColor: checkedSteps[i] ? "#22C55E" : "var(--bg-card-2)", color: checkedSteps[i] ? "#fff" : "var(--text-muted)", transition: "all 0.2s" }}>
+                      {checkedSteps[i] ? "✓" : i + 1}
+                    </div>
+                    <div style={{ flex: 1, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                      <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>
+                        {step.description}
+                      </p>
+                      {duration && !timer && (
+                        <button onClick={e => { e.stopPropagation(); startTimer(i, duration) }}
+                          style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em", backgroundColor: "rgba(243,80,30,0.08)", color: "#f3501e", border: "1.5px solid rgba(243,80,30,0.25)", cursor: "pointer", marginTop: 2, whiteSpace: "nowrap" }}>
+                          ⏱ {formatTime(duration)}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {timer && (
+                    <div style={{ marginLeft: 36, display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderRadius: 12, backgroundColor: timer.done ? "rgba(34,197,94,0.08)" : timer.running ? "rgba(243,80,30,0.07)" : "var(--bg-card-2)", border: `1.5px solid ${timer.done ? "rgba(34,197,94,0.35)" : timer.running ? "rgba(243,80,30,0.25)" : "var(--border)"}`, transition: "all 0.3s" }}>
+                      <span style={{ fontSize: 15, fontWeight: 900, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", color: timer.done ? "#22C55E" : "#f3501e", minWidth: 44 }}>
+                        {formatTime(timer.remaining)}
+                      </span>
+                      {timer.done
+                        ? <span style={{ fontSize: 12, fontWeight: 700, color: "#22C55E", fontFamily: "Poppins, sans-serif" }}>terminé !</span>
+                        : <button onClick={e => { e.stopPropagation(); timer.running ? pauseTimer(i) : startTimer(i, timer.total) }}
+                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: "2px 4px", color: "#f3501e" }}>
+                            {timer.running ? "⏸" : "▶"}
+                          </button>
+                      }
+                      <button onClick={e => { e.stopPropagation(); resetTimer(i, timer.total) }}
+                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, padding: "2px 4px", color: "var(--text-muted)", marginLeft: "auto", fontWeight: 700 }}>
+                        ↺
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>
-                  {step.description}
-                </p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>

@@ -142,6 +142,17 @@ export default function RecipeEdit() {
       else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
     }
 
+    // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
+    const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
+    const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()
+    const usesFour = FOUR_KEYWORDS.some(kw => allText.includes(kw))
+    if (!usesFour) {
+      if (!autoTags.includes("sansfour")) autoTags.push("sansfour")
+    } else {
+      const idx = autoTags.indexOf("sansfour")
+      if (idx !== -1) autoTags.splice(idx, 1)
+    }
+
     await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: autoTags, photo_url: photoUrl || null, estimated_total: estimatedTotal }).eq("id", id)
     await supabase.from("ingredients").delete().eq("recipe_id", id)
     if (validIngredients.length > 0) {
@@ -239,10 +250,13 @@ export default function RecipeEdit() {
           onMouseEnter={e => e.currentTarget.style.color = "var(--text-main)"}
           onMouseLeave={e => e.currentTarget.style.color = "var(--text-muted)"}
         >← retour</button>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em" }}>✏️ modifier la recette</h1>
+        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)", letterSpacing: "-0.05em", display: "flex", alignItems: "center", gap: 8 }}>
+          <img src="/icons/pencil.webp" alt="" style={{ width: 20, height: 20 }} onError={e => e.target.style.display = "none"} />
+          modifier la recette
+        </h1>
       </div>
 
-      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 20, maxWidth: 780, margin: "0 auto" }}>
+      <div style={{ backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 16, padding: 24, paddingBottom: 100, display: "flex", flexDirection: "column", gap: 20, maxWidth: 780, margin: "0 auto" }}>
 
         <ImageUploadCropper onImageSaved={(url) => setPhotoUrl(url || "")} existingUrl={photoUrl || null} recipeId={id} />
 
@@ -380,7 +394,7 @@ export default function RecipeEdit() {
               onMouseEnter={e => { if (name && !saving) e.currentTarget.style.transform = "scale(1.02)" }}
               onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
-              {saving ? "vérification..." : "💾 sauvegarder"}
+              {saving ? "vérification..." : <><img src="/icons/save.webp" alt="" style={{ width: 14, height: 14, verticalAlign: "middle", marginRight: 6 }} onError={e => e.target.style.display = "none"} />sauvegarder</>}
             </button>
           </div>
         </div>

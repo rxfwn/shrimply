@@ -131,9 +131,10 @@ export default function Settings() {
       })
       const { url, error } = await res.json()
       if (error) { showToast("❌ " + error); return }
+      if (!url) { showToast("❌ URL de redirection manquante"); return }
       window.location.href = url
-    } catch {
-      showToast("❌ erreur lors de la redirection")
+    } catch (e) {
+      showToast("❌ " + (e?.message || "erreur lors de la redirection"))
     } finally {
       setPortalLoading(false)
     }
@@ -221,14 +222,22 @@ export default function Settings() {
     <div style={{ backgroundColor: "var(--bg-main)", minHeight: "100vh", paddingBottom: 48 }}>
       <div style={{ padding: "24px", maxWidth: 560, margin: "0 auto", fontFamily: "Poppins, sans-serif" }}>
 
-        {success && (
-          <div style={{
-            position: "fixed", top: 16, right: 16, zIndex: 100,
-            backgroundColor: success.startsWith("❌") ? "#f87171" : "#34d399",
-            color: success.startsWith("❌") ? "#ffffff" : "#064e3b",
-            padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700,
-          }}>{success}</div>
-        )}
+        {success && (() => {
+          const isErr = success.startsWith("❌")
+          const msg = isErr ? success.slice(2).trim() : success
+          return (
+            <div style={{
+              position: "fixed", top: 16, right: 16, zIndex: 100,
+              backgroundColor: isErr ? "#f87171" : "#34d399",
+              color: isErr ? "#ffffff" : "#064e3b",
+              padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              {isErr && <img src="/icons/cross.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />}
+              {msg}
+            </div>
+          )
+        })()}
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
           <img src="/icons/settings.webp" alt="" style={{ width: 22, height: 22 }} onError={e => e.target.style.display = "none"} />
@@ -444,7 +453,7 @@ export default function Settings() {
                     onKeyDown={e => e.key === "Enter" && handleEmailChange()} />
                 </div>
                 {emailConfirm && newEmail === emailConfirm && <p style={{ fontSize: 11, color: "#34d399", margin: "-4px 0 0 2px", fontWeight: 500 }}>✅ les emails correspondent</p>}
-                {emailConfirm && newEmail !== emailConfirm && <p style={{ fontSize: 11, color: "#fca5a5", margin: "-4px 0 0 2px", fontWeight: 500 }}>❌ les emails ne correspondent pas</p>}
+                {emailConfirm && newEmail !== emailConfirm && <p style={{ fontSize: 11, color: "#fca5a5", margin: "-4px 0 0 2px", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}><img src="/icons/cross.webp" alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />les emails ne correspondent pas</p>}
                 <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                   <button onClick={() => { setShowEmailModal(false); setNewEmail(""); setEmailConfirm("") }}
                     style={{ ...btnBase, flex: 1, padding: "11px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)" }}
@@ -527,7 +536,7 @@ export default function Settings() {
                     </button>
                   </div>
                   {passwordMatch && <p style={{ fontSize: 11, color: "#34d399", margin: "4px 0 0 2px", fontWeight: 500 }}>✅ les mots de passe correspondent</p>}
-                  {passwordMismatch && <p style={{ fontSize: 11, color: "#fca5a5", margin: "4px 0 0 2px", fontWeight: 500 }}>❌ les mots de passe ne correspondent pas</p>}
+                  {passwordMismatch && <p style={{ fontSize: 11, color: "#fca5a5", margin: "4px 0 0 2px", fontWeight: 500, display: "flex", alignItems: "center", gap: 4 }}><img src="/icons/cross.webp" alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />les mots de passe ne correspondent pas</p>}
                 </div>
 
                 <div style={{ display: "flex", gap: 10, marginTop: 4 }}>

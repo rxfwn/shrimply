@@ -322,6 +322,17 @@ export default function Recipes() {
       if (idx !== -1) autoTags.splice(idx, 1)
     }
 
+    // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
+    const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
+    const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()
+    const usesFour = FOUR_KEYWORDS.some(kw => allText.includes(kw))
+    if (!usesFour) {
+      if (!autoTags.includes("sansfour")) autoTags.push("sansfour")
+    } else {
+      const idx = autoTags.indexOf("sansfour")
+      if (idx !== -1) autoTags.splice(idx, 1)
+    }
+
     const { data: recipe, error } = await supabase
       .from("recipes")
       .insert({

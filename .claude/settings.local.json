@@ -4,7 +4,13 @@
       "WebFetch(domain:www.googleapis.com)",
       "Bash(curl -s \"https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https://shrimply.app&strategy=mobile\")",
       "Bash(npm uninstall:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: serve Google verification file as static asset, not SPA fallback *)",
+      "Bash(git push *)",
+      "Read(//tmp/**)",
+      "Bash(curl -sI http://localhost:4173/sitemap.xml)",
+      "Bash(curl -sI http://localhost:4173/robots.txt)"
     ]
   }
 }

@@ -119,6 +119,7 @@ export default function Layout() {
         {navItem("/discover",    "spark",    "découvrir",               "nav-discover")}
         {navItem("/nutrition",   "chart",    "bilan nutrition")}
         {navItem("/suggestions", "rainbow",  "améliorations à venir")}
+        {navItem("/blog",        "memo",     "blog",                    "nav-blog")}
       </nav>
 
       {/* Bottom */}

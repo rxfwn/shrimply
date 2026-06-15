@@ -81,6 +81,9 @@ export default function Landing() {
       .btn-ghost-light { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.35); }
       .btn-ghost-light:hover { background: rgba(255,255,255,.1); }
 
+      .nav-link { color: rgba(255,255,255,.88); font-weight: 600; border-radius: 8px; transition: color .15s, background-color .15s; }
+      .nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
+
       .card-hover { transition: transform .2s, box-shadow .2s; }
       .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,.12) !important; }
       .faq-row { transition: background .18s; cursor: pointer; }
@@ -243,8 +246,8 @@ export default function Landing() {
           </span>
         </button>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={() => navigate("/blog")}
-            style={{ ...inst, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,.75)", padding: "8px 4px" }}>
+          <button onClick={() => navigate("/blog")} className="nav-link"
+            style={{ ...inst, background: "none", border: "none", cursor: "pointer", fontSize: 13, padding: "8px 10px" }}>
             blog
           </button>
           <button className="btn btn-orange" onClick={() => navigate("/register")} style={btnO({ padding: "9px 16px", fontSize: 13 })}>

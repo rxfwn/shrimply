@@ -116,13 +116,13 @@ export default function Layout() {
         {navItem("/calendar",    "calendar", "calendrier",              "nav-calendar")}
         {navItem("/recipes",     "book",     "mes recettes",            "nav-recipes")}
         {navItem("/glaces",      "icecream", "glaces")}
-        {navItem("/boissons",    "drink",    "boissons & cocktails")}
+        {navItem("/boissons",    "drink",    "boissons")}
         {navItem("/shopping",    "kart",     "courses",                 "nav-shopping")}
         {navItem("/fridge",      "ice",      "mon frigo")}
         {navItem("/friends",     "friends",  "amis")}
         {navItem("/discover",    "spark",    "découvrir",               "nav-discover")}
         {navItem("/nutrition",   "chart",    "bilan nutrition")}
-        {navItem("/suggestions", "rainbow",  "améliorations à venir")}
+        {navItem("/suggestions", "rainbow",  "roadmap")}
         {navItem("/app/blog",    "memo",     "blog",                    "nav-blog")}
       </nav>
 

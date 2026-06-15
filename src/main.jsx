@@ -98,6 +98,13 @@ function OnboardingManager() {
   )
 }
 
+// Après un déploiement, les anciens chunks hashés (lazy import) disparaissent du CDN.
+// Si l'onglet était resté ouvert, ce hash 404 et le rewrite catch-all renvoie index.html
+// (mauvais MIME type) → on recharge la page pour récupérer le bundle à jour.
+window.addEventListener("vite:preloadError", () => {
+  window.location.reload()
+})
+
 const rootEl = document.getElementById("root")
 
 const app = (

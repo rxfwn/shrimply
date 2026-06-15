@@ -29,9 +29,13 @@ export default function ImageUploadCropper({ onImageSaved, existingUrl, recipeId
     const safe = result?.safeSearchAnnotation
     if (safe?.adult === "LIKELY" || safe?.adult === "VERY_LIKELY") return { isFood: false, reason: "image inappropriée" }
     const labels = result?.labelAnnotations?.map(l => l.description.toLowerCase()) || []
-    const foodKeywords = ["food", "dish", "cuisine", "meal", "ingredient", "recipe", "cooking"]
+    const foodKeywords = [
+      "food", "dish", "cuisine", "meal", "ingredient", "recipe", "cooking",
+      "dessert", "frozen dessert", "ice cream", "gelato", "sorbet", "sundae", "milkshake",
+      "drink", "beverage", "cocktail", "alcoholic beverage", "non-alcoholic beverage", "juice", "smoothie",
+    ]
     const isFood = labels.some(label => foodKeywords.some(k => label.includes(k)))
-    return { isFood, reason: isFood ? "OK" : "l'IA ne reconnaît pas de plat alimentaire ici." }
+    return { isFood, reason: isFood ? "OK" : "l'IA ne reconnaît pas de plat, glace ou boisson ici." }
   }
 
   const handleFileChange = (e) => {

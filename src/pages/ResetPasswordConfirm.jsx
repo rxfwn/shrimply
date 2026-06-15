@@ -10,14 +10,22 @@ export default function ResetPasswordConfirm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  // Si Supabase renvoie une erreur dans le hash (#error=...&error_code=otp_expired...),
+  // le lien est déjà invalide : pas besoin d'attendre la vérification de session
+  const [linkErrorCode] = useState(() => {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1))
+    return hashParams.get("error") ? (hashParams.get("error_code") || "access_denied") : null
+  })
   const [sessionReady, setSessionReady] = useState(false)
-  const [checking, setChecking] = useState(true)
+  const [checking, setChecking] = useState(!linkErrorCode)
   const navigate = useNavigate()
 
   const passwordMatch = confirmPassword && password === confirmPassword
   const passwordMismatch = confirmPassword && password !== confirmPassword
 
   useEffect(() => {
+    if (linkErrorCode) return
+
     // 1. Écoute l'event PASSWORD_RECOVERY émis par Supabase quand il lit le hash de l'URL
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY" && session) {
@@ -38,7 +46,7 @@ export default function ResetPasswordConfirm() {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [linkErrorCode])
 
   const handleConfirm = async () => {
     if (password !== confirmPassword) { setError("Les mots de passe ne correspondent pas"); return }
@@ -119,9 +127,13 @@ export default function ResetPasswordConfirm() {
           ) : !sessionReady ? (
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "40px", marginBottom: "16px" }}>⚠️</div>
-              <p style={{ color: "#fca5a5", fontWeight: 700, fontSize: "15px", margin: "0 0 8px 0" }}>Lien invalide ou expiré</p>
+              <p style={{ color: "#fca5a5", fontWeight: 700, fontSize: "15px", margin: "0 0 8px 0" }}>
+                {linkErrorCode === "otp_expired" ? "Lien expiré ou déjà utilisé" : "Lien invalide ou expiré"}
+              </p>
               <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "13px", fontWeight: 500, margin: "0 0 24px 0" }}>
-                Ce lien n'est plus valide. Refais une demande de réinitialisation.
+                {linkErrorCode === "otp_expired"
+                  ? "Ce lien de réinitialisation a déjà été utilisé ou a expiré. Demande un nouveau lien et clique-le une seule fois."
+                  : "Ce lien n'est plus valide. Refais une demande de réinitialisation."}
               </p>
               <button onClick={() => navigate("/reset-password")} style={{ ...btnBaseStyle, background: "#f3501e", color: "#ffffff" }}>
                 refaire la demande

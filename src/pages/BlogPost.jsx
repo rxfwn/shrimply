@@ -27,17 +27,18 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
 }
 
-export default function BlogPost() {
+export default function BlogPost({ embedded = false }) {
   const { slug } = useParams()
   const navigate = useNavigate()
   const post = getPostBySlug(slug)
+  const blogHome = embedded ? "/app/blog" : "/blog"
 
   useEffect(() => {
     document.getElementById("lcp-shell")?.remove()
   }, [])
 
   if (!post) {
-    return <Navigate to="/blog" replace />
+    return <Navigate to={blogHome} replace />
   }
 
   const html = marked.parse(getPostContent(slug))
@@ -47,30 +48,32 @@ export default function BlogPost() {
       <style dangerouslySetInnerHTML={{ __html: cssStyles }} />
 
       {/* ── NAV ── */}
-      <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 28px",
-        background: "#111111", backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,.08)",
-      }}>
-        <button onClick={() => navigate("/")}
-          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/icons/shrim.webp" alt="" width="22" height="22" loading="eager" />
-          <span style={{ ...syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>
-            Shrim<span style={{ color: R }}>ply</span>
-          </span>
-        </button>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="btn btn-orange" onClick={() => navigate("/register")}
-            style={{ padding: "9px 16px", fontSize: 13, borderRadius: 100, fontWeight: 600, background: "#f3501e", color: "#fff", border: "none", cursor: "pointer" }}>
-            essayer gratuitement
+      {!embedded && (
+        <nav style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 28px",
+          background: "#111111", backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255,255,255,.08)",
+        }}>
+          <button onClick={() => navigate("/")}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/icons/shrim.webp" alt="" width="22" height="22" loading="eager" />
+            <span style={{ ...syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>
+              Shrim<span style={{ color: R }}>ply</span>
+            </span>
           </button>
-        </div>
-      </nav>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="btn btn-orange" onClick={() => navigate("/register")}
+              style={{ padding: "9px 16px", fontSize: 13, borderRadius: 100, fontWeight: 600, background: "#f3501e", color: "#fff", border: "none", cursor: "pointer" }}>
+              essayer gratuitement
+            </button>
+          </div>
+        </nav>
+      )}
 
-      <article style={{ maxWidth: 680, margin: "0 auto", padding: "120px 20px 60px" }}>
-        <Link to="/blog" className="blog-back" style={{ ...inst, fontSize: 13, fontWeight: 600, color: R, textDecoration: "none" }}>
+      <article style={{ maxWidth: 680, margin: "0 auto", padding: embedded ? "32px 20px 60px" : "120px 20px 60px" }}>
+        <Link to={blogHome} className="blog-back" style={{ ...inst, fontSize: 13, fontWeight: 600, color: R, textDecoration: "none" }}>
           ← Retour au blog
         </Link>
 
@@ -85,25 +88,29 @@ export default function BlogPost() {
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: html }} />
 
         {/* ── CTA ── */}
-        <div style={{ background: "#111111", borderRadius: 24, padding: "40px 28px", marginTop: 48, textAlign: "center" }}>
-          <h2 style={{ ...syne, fontWeight: 800, fontSize: 22, color: "#fff", letterSpacing: "-.02em", marginBottom: 10 }}>
-            prêt à arrêter de te demander "on mange quoi ce soir ?"
-          </h2>
-          <p style={{ ...inst, fontSize: 14, color: "rgba(255,255,255,.6)", marginBottom: 20 }}>
-            gratuit · sans carte bancaire · 30 secondes
-          </p>
-          <button className="btn btn-orange" onClick={() => navigate("/register")}
-            style={{ padding: "14px 32px", borderRadius: 100, fontSize: 15, fontWeight: 600, background: "#f3501e", color: "#fff", border: "none", cursor: "pointer" }}>
-            essayer Shrimply gratuitement
-          </button>
-        </div>
+        {!embedded && (
+          <div style={{ background: "#111111", borderRadius: 24, padding: "40px 28px", marginTop: 48, textAlign: "center" }}>
+            <h2 style={{ ...syne, fontWeight: 800, fontSize: 22, color: "#fff", letterSpacing: "-.02em", marginBottom: 10 }}>
+              prêt à arrêter de te demander "on mange quoi ce soir ?"
+            </h2>
+            <p style={{ ...inst, fontSize: 14, color: "rgba(255,255,255,.6)", marginBottom: 20 }}>
+              gratuit · sans carte bancaire · 30 secondes
+            </p>
+            <button className="btn btn-orange" onClick={() => navigate("/register")}
+              style={{ padding: "14px 32px", borderRadius: 100, fontSize: 15, fontWeight: 600, background: "#f3501e", color: "#fff", border: "none", cursor: "pointer" }}>
+              essayer Shrimply gratuitement
+            </button>
+          </div>
+        )}
       </article>
 
-      <footer style={{ padding: "32px 20px", textAlign: "center", borderTop: "1px solid rgba(17,17,17,.06)" }}>
-        <Link to="/" className="blog-back" style={{ ...inst, fontSize: 13, color: "rgba(17,17,17,.45)", textDecoration: "none" }}>
-          ← Retour à l'accueil
-        </Link>
-      </footer>
+      {!embedded && (
+        <footer style={{ padding: "32px 20px", textAlign: "center", borderTop: "1px solid rgba(17,17,17,.06)" }}>
+          <Link to="/" className="blog-back" style={{ ...inst, fontSize: 13, color: "rgba(17,17,17,.45)", textDecoration: "none" }}>
+            ← Retour à l'accueil
+          </Link>
+        </footer>
+      )}
     </div>
   )
 }

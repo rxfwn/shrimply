@@ -165,9 +165,139 @@ export const TAGS = [
     cardBg:   "#E49300",
     cardText: "#FFF4C7",
     cardBorder: "#FFF4C7",
-    actionBg: "#FFF4C7", 
+    actionBg: "#FFF4C7",
   },
 ]
+
+// ─────────────────────────────────────────────────────────────────
+// Tags spécifiques à la catégorie "glaces"
+// ─────────────────────────────────────────────────────────────────
+export const GLACE_TAGS = [
+  { key: "lactee",
+    label: "avec lait",
+    value: "lactee",
+    icon: "milk",
+    pillBg:   "#fef3c7",
+    pillText: "#92400e",
+    cardBg:   "#92400e",
+    cardText: "#fef3c7",
+    cardBorder: "#fde68a",
+    actionBg: "#fef3c7",
+  },
+  { key: "vegetale",
+    label: "sans lait",
+    value: "vegetale",
+    icon: "herb",
+    pillBg:   "#bbf7d0",
+    pillText: "#14532d",
+    cardBg:   "#14532d",
+    cardText: "#bbf7d0",
+    cardBorder: "#86efac",
+    actionBg: "#bbf7d0",
+  },
+  { key: "proteinee",
+    label: "protéinée",
+    value: "proteinee",
+    icon: "biceps",
+    pillBg:   "#d57bff",
+    pillText: "#130b2d",
+    cardBg:   "#130b2d",
+    cardText: "#d57bff",
+    cardBorder: "#d57bff",
+    actionBg: "#d57bff",
+  },
+  { key: "fruitee",
+    label: "aux fruits",
+    value: "fruitee",
+    icon: "fruit",
+    pillBg:   "#bae6fd",
+    pillText: "#0c4a6e",
+    cardBg:   "#0c4a6e",
+    cardText: "#bae6fd",
+    cardBorder: "#7dd3fc",
+    actionBg: "#bae6fd",
+  },
+]
+
+// ─────────────────────────────────────────────────────────────────
+// Tags spécifiques à la catégorie "boissons & cocktails"
+// ─────────────────────────────────────────────────────────────────
+export const BOISSON_TAGS = [
+  { key: "alcoolise",
+    label: "alcoolisé",
+    value: "alcoolise",
+    icon: "wine",
+    pillBg:   "#fde68a",
+    pillText: "#92400e",
+    cardBg:   "#92400e",
+    cardText: "#fde68a",
+    cardBorder: "#fde68a",
+    actionBg: "#fde68a",
+  },
+  { key: "sansalcool",
+    label: "sans alcool",
+    value: "sansalcool",
+    icon: "leaf",
+    pillBg:   "#bbf7d0",
+    pillText: "#14532d",
+    cardBg:   "#14532d",
+    cardText: "#bbf7d0",
+    cardBorder: "#86efac",
+    actionBg: "#bbf7d0",
+  },
+  { key: "sanssucre",
+    label: "sans sucre",
+    value: "sanssucre",
+    icon: "sugar",
+    pillBg:   "#e9d5ff",
+    pillText: "#581c87",
+    cardBg:   "#581c87",
+    cardText: "#e9d5ff",
+    cardBorder: "#d8b4fe",
+    actionBg: "#e9d5ff",
+  },
+  { key: "fruite",
+    label: "fruité",
+    value: "fruite",
+    icon: "fruit",
+    pillBg:   "#fecaca",
+    pillText: "#7f1d1d",
+    cardBg:   "#7f1d1d",
+    cardText: "#fecaca",
+    cardBorder: "#fda4af",
+    actionBg: "#fecaca",
+  },
+  { key: "petillant",
+    label: "pétillant",
+    value: "petillant",
+    icon: "bubbles",
+    pillBg:   "#cffafe",
+    pillText: "#164e63",
+    cardBg:   "#164e63",
+    cardText: "#cffafe",
+    cardBorder: "#67e8f9",
+    actionBg: "#cffafe",
+  },
+]
+
+// Tous les tags, toutes catégories confondues (pour les lookups d'affichage)
+export const ALL_TAGS = [...TAGS, ...GLACE_TAGS, ...BOISSON_TAGS]
+
+// ─────────────────────────────────────────────────────────────────
+// Catégories de recettes : chacune a son propre jeu de tags
+// ─────────────────────────────────────────────────────────────────
+export const CATEGORIES = {
+  recette: { key: "recette", label: "mes recettes",            itemLabel: "recette", icon: "book",     path: "/recipes",  tags: TAGS },
+  glace:   { key: "glace",   label: "mes glaces",              itemLabel: "glace",   icon: "icecream", path: "/glaces",   tags: GLACE_TAGS },
+  boisson: { key: "boisson", label: "mes boissons & cocktails", itemLabel: "boisson", icon: "drink",    path: "/boissons", tags: BOISSON_TAGS },
+}
+
+// Détermine la catégorie d'une recette à partir de son tag principal
+export function getRecipeCategory(primaryTag) {
+  if (GLACE_TAGS.some(t => t.key === primaryTag)) return "glace"
+  if (BOISSON_TAGS.some(t => t.key === primaryTag)) return "boisson"
+  return "recette"
+}
 
 // Couleur de carte par défaut si aucun tag principal
 export const DEFAULT_CARD_BG   = "#2d2d2d"

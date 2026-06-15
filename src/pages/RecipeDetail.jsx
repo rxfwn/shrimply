@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
-import { TAGS } from "../tags"
+import { ALL_TAGS, CATEGORIES, getRecipeCategory } from "../tags"
 import { computeCostDetails, shouldSkipIngredient } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
 
@@ -495,7 +495,7 @@ const handleEstimate = async () => {
   const canEstimate = !estimating && cooldown === 0 && !allPricesFound
 
   const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
-  const validTags = allTagValues.filter(tv => TAGS.some(t => t.value === tv))
+  const validTags = allTagValues.filter(tv => ALL_TAGS.some(t => t.value === tv))
 
   const ActionBtn = ({ onClick, disabled, imgSrc, alt, danger }) => (
     <button onClick={onClick} disabled={disabled}
@@ -543,7 +543,7 @@ const handleEstimate = async () => {
         }
       `}</style>
 
-      <button onClick={() => navigate("/recipes")}
+      <button onClick={() => navigate(CATEGORIES[getRecipeCategory(recipe.primary_tag)].path)}
         style={{ ...S.btn, backgroundColor: "#1a1033", color: "#CE80FF", fontSize: 13, padding: "10px 20px", marginBottom: 14, display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 12 }}
         onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
         onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -581,7 +581,7 @@ const handleEstimate = async () => {
                 </span>
               )}
               {validTags.map(tv => {
-                const ti = TAGS.find(t => t.value === tv)
+                const ti = ALL_TAGS.find(t => t.value === tv)
                 return (
                   <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
                     <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />

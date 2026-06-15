@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { useDraggable, useDroppable } from "@dnd-kit/core"
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
@@ -68,13 +68,13 @@ function useIsMobile() {
 
 function getRecipeCardBg(recipe) {
   if (!recipe) return null
-  const tag = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+  const tag = ALL_TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
   return tag?.cardBg || null
 }
 
 function getRecipeCardBorder(recipe) {
   if (!recipe) return DEFAULT_CARD_BORDER
-  const tag = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+  const tag = ALL_TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
   return tag?.cardBorder || DEFAULT_CARD_BORDER
 }
 
@@ -170,7 +170,7 @@ function MonthMealSlot({ dateStr, mealType, meal, onRemove, isDay }) {
   const cardBg = meal ? (getRecipeCardBg(meal.recipes) || "var(--bg-card)") : null
   const cardBorder = meal ? getRecipeCardBorder(meal.recipes) : null
   const textColor = cardBg ? getTextColor(cardBg) : "var(--text-main)"
-  const tagInfo = meal ? TAGS.find(t => t.value === meal.recipes?.primary_tag || t.key === meal.recipes?.primary_tag) : null
+  const tagInfo = meal ? ALL_TAGS.find(t => t.value === meal.recipes?.primary_tag || t.key === meal.recipes?.primary_tag) : null
 
   return (
     <div ref={setNodeRef} style={{ flex: 1, minHeight: 0, backgroundColor: meal ? cardBg : isOver ? "rgba(243,80,30,0.12)" : isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.03)", border: meal ? `1px solid ${cardBorder || "var(--border)"}` : isOver ? "1px solid #d57bff" : "1px solid transparent", borderRadius: 5, display: "flex", alignItems: "center", padding: "0 5px", gap: 3, overflow: "hidden", transition: "all 0.15s" }}>
@@ -252,7 +252,7 @@ function MobileRecipeModal({ recipes, onSelect, onClose, isDay }) {
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {filtered.map(recipe => {
-            const tagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+            const tagInfo = ALL_TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
             const cardBg = tagInfo?.cardBg || (isDay ? "var(--bg-card-2)" : "#2d2d2d")
             const cardBorder = tagInfo?.cardBorder || "var(--border)"
             const textColor = tagInfo ? getTextColor(tagInfo.cardBg) : "var(--text-main)"

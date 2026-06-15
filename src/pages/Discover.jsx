@@ -1,4 +1,4 @@
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { TAGS, ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
@@ -332,7 +332,7 @@ export default function Discover() {
                         </span>
                       )}
                       {[...new Set([previewRecipe.primary_tag, ...(previewRecipe.tags || [])])].filter(Boolean).slice(0, 3).map(tv => {
-                        const ti = TAGS.find(t => t.value === tv)
+                        const ti = ALL_TAGS.find(t => t.value === tv)
                         return ti ? (
                           <span key={tv} style={{ ...S.pill, backgroundColor: ti.pillBg, color: ti.pillText }}>
                             <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 11, height: 11 }} onError={e => e.target.style.display = "none"} />
@@ -534,7 +534,7 @@ export default function Discover() {
       ) : (
         <div className="recipes-grid">
           {filteredRecipes.map(recipe => {
-            const primaryTag = TAGS.find(t => t.value === recipe.primary_tag)
+            const primaryTag = ALL_TAGS.find(t => t.value === recipe.primary_tag)
             const bg = primaryTag?.cardBg || DEFAULT_CARD_BG
             const border = primaryTag?.cardBorder || DEFAULT_CARD_BORDER
             const textColor = primaryTag?.cardText || getTextColor(bg)
@@ -542,7 +542,7 @@ export default function Discover() {
             const actionText = getTextColor(actionBg) === "#111111" ? "#111111" : "#ffffff"
 
             const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
-            const validTags = allTagValues.map(tv => TAGS.find(t => t.value === tv)).filter(Boolean)
+            const validTags = allTagValues.map(tv => ALL_TAGS.find(t => t.value === tv)).filter(Boolean)
 
             return (
               <div key={recipe.id}

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { computeCostDetails } from "../utils/priceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 
 function getTextColor(hex) {
@@ -44,6 +44,8 @@ export default function RecipeEdit() {
   const [servings, setServings] = useState("")
   const [primaryTag, setPrimaryTag] = useState("")
   const [selectedTags, setSelectedTags] = useState([])
+  const [category, setCategory] = useState("recette")
+  const [categoryTags, setCategoryTags] = useState(CATEGORIES.recette.tags)
   const [ingredients, setIngredients] = useState([])
   const [steps, setSteps] = useState([])
   const [photoUrl, setPhotoUrl] = useState("")
@@ -72,6 +74,8 @@ export default function RecipeEdit() {
       setName(recipe.name); setDescription(recipe.description || ""); setPrepTime(recipe.prep_time || ""); setServings(recipe.servings || "")
       setPrimaryTag(recipe.primary_tag || ""); setSelectedTags(recipe.tags || []); setPhotoUrl(recipe.photo_url || "")
       setIngredients(ings); setSteps(stps)
+      const recipeCategory = getRecipeCategory(recipe.primary_tag || "")
+      setCategory(recipeCategory); setCategoryTags(CATEGORIES[recipeCategory].tags)
       initialData.current = JSON.stringify({ name: recipe.name, description: recipe.description || "", prepTime: String(recipe.prep_time || ""), servings: String(recipe.servings || ""), primaryTag: recipe.primary_tag || "", selectedTags: recipe.tags || [], ingredients: ings, steps: stps, photoUrl: recipe.photo_url || "" })
       initialEstimatedTotal.current = recipe.estimated_total ?? null
     }
@@ -133,24 +137,27 @@ export default function RecipeEdit() {
       }
     }
 
-    // Tag économique automatique (< 3€/personne)
-    const ECONOMIC_THRESHOLD = 3
     const autoTags = [...selectedTags]
-    if (estimatedTotal !== null && parseInt(servings) > 0) {
-      const perServing = estimatedTotal / parseInt(servings)
-      if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
-      else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
-    }
 
-    // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
-    const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
-    const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()
-    const usesFour = FOUR_KEYWORDS.some(kw => allText.includes(kw))
-    if (!usesFour) {
-      if (!autoTags.includes("sansfour")) autoTags.push("sansfour")
-    } else {
-      const idx = autoTags.indexOf("sansfour")
-      if (idx !== -1) autoTags.splice(idx, 1)
+    if (category === "recette") {
+      // Tag économique automatique (< 3€/personne)
+      const ECONOMIC_THRESHOLD = 3
+      if (estimatedTotal !== null && parseInt(servings) > 0) {
+        const perServing = estimatedTotal / parseInt(servings)
+        if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
+        else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
+      }
+
+      // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
+      const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
+      const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()
+      const usesFour = FOUR_KEYWORDS.some(kw => allText.includes(kw))
+      if (!usesFour) {
+        if (!autoTags.includes("sansfour")) autoTags.push("sansfour")
+      } else {
+        const idx = autoTags.indexOf("sansfour")
+        if (idx !== -1) autoTags.splice(idx, 1)
+      }
     }
 
     await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: autoTags, photo_url: photoUrl || null, estimated_total: estimatedTotal }).eq("id", id)
@@ -174,7 +181,7 @@ export default function RecipeEdit() {
     setTimeout(() => { setSuccess(false); if (thenNavigate) navigate(`/recipes/${id}`) }, 1500)
   }
 
-  const primaryTagInfo = TAGS.find(t => t.value === primaryTag)
+  const primaryTagInfo = categoryTags.find(t => t.value === primaryTag)
   const cardBg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
   const cardBorder = primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER
   const cardText = getTextColor(cardBg)
@@ -289,7 +296,7 @@ export default function RecipeEdit() {
             tag principal <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-            {TAGS.map(tag => {
+            {categoryTags.map(tag => {
               const isMain = primaryTag === tag.value
               return (
                 <button key={tag.value} onClick={() => setPrimaryTag(isMain ? "" : tag.value)}
@@ -314,7 +321,7 @@ export default function RecipeEdit() {
             tags secondaires <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— optionnels</span>
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {TAGS.filter(tag => tag.value !== primaryTag).map(tag => (
+            {categoryTags.filter(tag => tag.value !== primaryTag).map(tag => (
               <TagPill key={tag.value} tag={tag} active={selectedTags.includes(tag.value)} anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.value)} />
             ))}
           </div>

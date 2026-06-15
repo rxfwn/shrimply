@@ -19,7 +19,6 @@ const ROADMAP = [
   { icon: "replace.webp", title: "Substituts d'ingrédients", desc: "L'IA propose des alternatives si un ingrédient manque." },
   { icon: "broccoli.webp", title: "Recettes avec les ingrédients du frigo", desc: "Trouver des recettes faisables avec ce que tu as déjà." },
   { icon: "map.webp", title: "Voir les drive / magasins proches", desc: "Trouver où acheter les ingrédients près de chez soi." },
-  { icon: "drink.webp", title: "Recettes de boissons & cocktails", desc: "Une catégorie dédiée aux boissons, smoothies, cocktails et jus maison." },
 ]
 
 const btnBase = {

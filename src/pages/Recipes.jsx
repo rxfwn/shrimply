@@ -1,4 +1,4 @@
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
@@ -85,9 +85,11 @@ function DraftToast({ type, visible }) {
   )
 }
 
-export default function Recipes() {
+export default function Recipes({ category = "recette" }) {
   const navigate = useNavigate()
   const { isPremium } = usePremium()
+  const catInfo = CATEGORIES[category]
+  const categoryTags = catInfo.tags
   const ingredientRefs = useRef([])
   const stepRefs = useRef([])
   const dragItem = useRef(null)
@@ -293,44 +295,47 @@ export default function Recipes() {
       }
     }
 
-    // Tag économique automatique (< 3€/personne)
-    const ECONOMIC_THRESHOLD = 3
     const autoTags = [...selectedTags]
-    if (estimatedTotal !== null && parseInt(servings) > 0) {
-      const perServing = estimatedTotal / parseInt(servings)
-      if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
-      else if (perServing >= ECONOMIC_THRESHOLD) autoTags.splice(autoTags.indexOf("economique"), 1)
-    }
 
-    // Tag rapide automatique (≤ 20 min)
-    if (parseInt(prepTime) > 0 && parseInt(prepTime) <= 20) {
-      if (!autoTags.includes("rapide")) autoTags.push("rapide")
-    } else {
-      const idx = autoTags.indexOf("rapide")
-      if (idx !== -1) autoTags.splice(idx, 1)
-    }
+    if (category === "recette") {
+      // Tag économique automatique (< 3€/personne)
+      const ECONOMIC_THRESHOLD = 3
+      if (estimatedTotal !== null && parseInt(servings) > 0) {
+        const perServing = estimatedTotal / parseInt(servings)
+        if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
+        else if (perServing >= ECONOMIC_THRESHOLD) autoTags.splice(autoTags.indexOf("economique"), 1)
+      }
 
-    // Tag sans gluten automatique (aucun ingrédient contenant du gluten)
-    const GLUTEN_KEYWORDS = ["farine", "blé", "ble", "pain", "pâtes", "pates", "semoule", "orge", "seigle", "avoine", "couscous", "chapelure", "brioche", "panure", "croûton", "crouton", "filo", "brick", "biscuit", "pita", "naan", "tortilla", "vermicelle", "gnocchi", "tagliatelle", "lasagne", "ravioli"]
-    const hasGluten = validIngredients.some(ing =>
-      GLUTEN_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw))
-    )
-    if (!hasGluten) {
-      if (!autoTags.includes("sansgluten")) autoTags.push("sansgluten")
-    } else {
-      const idx = autoTags.indexOf("sansgluten")
-      if (idx !== -1) autoTags.splice(idx, 1)
-    }
+      // Tag rapide automatique (≤ 20 min)
+      if (parseInt(prepTime) > 0 && parseInt(prepTime) <= 20) {
+        if (!autoTags.includes("rapide")) autoTags.push("rapide")
+      } else {
+        const idx = autoTags.indexOf("rapide")
+        if (idx !== -1) autoTags.splice(idx, 1)
+      }
 
-    // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
-    const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
-    const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()
-    const usesFour = FOUR_KEYWORDS.some(kw => allText.includes(kw))
-    if (!usesFour) {
-      if (!autoTags.includes("sansfour")) autoTags.push("sansfour")
-    } else {
-      const idx = autoTags.indexOf("sansfour")
-      if (idx !== -1) autoTags.splice(idx, 1)
+      // Tag sans gluten automatique (aucun ingrédient contenant du gluten)
+      const GLUTEN_KEYWORDS = ["farine", "blé", "ble", "pain", "pâtes", "pates", "semoule", "orge", "seigle", "avoine", "couscous", "chapelure", "brioche", "panure", "croûton", "crouton", "filo", "brick", "biscuit", "pita", "naan", "tortilla", "vermicelle", "gnocchi", "tagliatelle", "lasagne", "ravioli"]
+      const hasGluten = validIngredients.some(ing =>
+        GLUTEN_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw))
+      )
+      if (!hasGluten) {
+        if (!autoTags.includes("sansgluten")) autoTags.push("sansgluten")
+      } else {
+        const idx = autoTags.indexOf("sansgluten")
+        if (idx !== -1) autoTags.splice(idx, 1)
+      }
+
+      // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
+      const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
+      const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()
+      const usesFour = FOUR_KEYWORDS.some(kw => allText.includes(kw))
+      if (!usesFour) {
+        if (!autoTags.includes("sansfour")) autoTags.push("sansfour")
+      } else {
+        const idx = autoTags.indexOf("sansfour")
+        if (idx !== -1) autoTags.splice(idx, 1)
+      }
     }
 
     const { data: recipe, error } = await supabase
@@ -387,10 +392,12 @@ export default function Recipes() {
 
   const resetForm = () => { setShowForm(false); setErrors({}); hasShownDraftPopup.current=false; setPhotoUrl(""); setRecipeColor("") }
 
-  const filtered = recipes.filter(r => {
+  const categoryRecipes = recipes.filter(r => getRecipeCategory(r.primary_tag) === category)
+
+  const filtered = categoryRecipes.filter(r => {
   const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
-  const matchFilter = activeFilter === "all" || activeFilter === "" || 
-    r.primary_tag === activeFilter || 
+  const matchFilter = activeFilter === "all" || activeFilter === "" ||
+    r.primary_tag === activeFilter ||
     (r.tags && r.tags.includes(activeFilter))
   return matchSearch && matchFilter
   })
@@ -462,7 +469,7 @@ export default function Recipes() {
       {tagPopup && (
         <div style={{ position: "fixed", left: tagPopup.x, top: tagPopup.y - 6, transform: "translateX(-50%) translateY(-100%)", zIndex: 9999, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5, boxShadow: "0 4px 20px rgba(0,0,0,0.35)", minWidth: 120, pointerEvents: "none" }}>
           {tagPopup.tags.map(tv => {
-            const ti = TAGS.find(t => t.value === tv)
+            const ti = categoryTags.find(t => t.value === tv)
             return ti ? (
               <span key={tv} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText, whiteSpace: "nowrap" }}>
                 <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />
@@ -478,7 +485,7 @@ export default function Recipes() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
             <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 10 }}>
               <img src="/icons/pencil.webp" alt="" style={{ width: 24, height: 24 }} />
-              nouvelle recette
+              nouvelle {catInfo.itemLabel}
             </h1>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               {localStorage.getItem(DRAFT_KEY) && (
@@ -544,7 +551,7 @@ export default function Recipes() {
                 border: errors.primaryTag ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid transparent",
                 transition: "border-color 0.15s",
               }}>
-                {TAGS.map(tag => {
+                {categoryTags.map(tag => {
                   const isMain = primaryTag === tag.key
                   return (
                     <button key={tag.key}
@@ -568,7 +575,7 @@ export default function Recipes() {
                 })}
               </div>
               {primaryTag && (() => {
-                const t = TAGS.find(t => t.value === primaryTag)
+                const t = categoryTags.find(t => t.value === primaryTag)
                 return t ? (
                   <div style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, backgroundColor: t.cardBg, color: getTextColor(t.cardBg), fontSize: 11, fontWeight: 700 }}>
                     <img src={`/icons/${t.icon}.webp`} alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
@@ -584,7 +591,7 @@ export default function Recipes() {
                 tags secondaires <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— optionnels</span>
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {TAGS.filter(tag => tag.key !== primaryTag).map(tag => (
+                {categoryTags.filter(tag => tag.key !== primaryTag).map(tag => (
                   <TagPill key={tag.key} tag={tag} active={selectedTags.includes(tag.key)}
                     anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.key)} />
                 ))}
@@ -693,8 +700,8 @@ export default function Recipes() {
         <div style={{ maxWidth: 1200 }}>
           <div style={{ marginBottom: 20 }}>
             <h1 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "var(--text-main)", display: "flex", alignItems: "center", gap: 8 }}>
-              <img src="/icons/book.webp" alt="" style={{ width: 24, height: 24 }} />
-              mes recettes
+              <img src={`/icons/${catInfo.icon}.webp`} alt="" style={{ width: 24, height: 24 }} onError={e => e.target.style.display="none"} />
+              {catInfo.label}
               {!isPremium && (
                 <span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-faint)", marginLeft: 4 }}>
                   ({recipes.length}/5)
@@ -720,7 +727,7 @@ export default function Recipes() {
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                 onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
               >
-                {!isPremium && recipes.length >= 5 ? "🔒 nouvelle recette" : "+ nouvelle recette"}
+                {!isPremium && recipes.length >= 5 ? `🔒 nouvelle ${catInfo.itemLabel}` : `+ nouvelle ${catInfo.itemLabel}`}
               </button>
             </div>
 
@@ -735,10 +742,10 @@ export default function Recipes() {
                 <div key={cls} className={cls}>
                   <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
                     style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
-                    <img src="/icons/book.webp" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
+                    <img src={`/icons/${catInfo.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                     toutes
                   </button>
-                  {TAGS.map(tag => (
+                  {categoryTags.map(tag => (
                     <div key={tag.key} style={{ flexShrink: 0 }}>
                       <TagPill tag={tag} active={activeFilter === tag.key} anyActive={activeFilter !== ""}
                         onClick={() => setActiveFilter(activeFilter === tag.key ? "" : tag.key)} />
@@ -749,14 +756,14 @@ export default function Recipes() {
             </div>
           </div>
 
-          {recipes.length === 0 ? (
-            <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette — ajoutes-en une !</div>
+          {categoryRecipes.length === 0 ? (
+            <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune {catInfo.itemLabel} — ajoutes-en une !</div>
           ) : filtered.length === 0 ? (
-            <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune recette ne correspond.</div>
+            <div style={{ color: "var(--text-faint)", fontSize: 13, textAlign: "center", marginTop: 40 }}>aucune {catInfo.itemLabel} ne correspond.</div>
           ) : (
             <div className="recipes-grid">
               {filtered.map(recipe => {
-                const primaryTagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag || t.label === recipe.primary_tag)
+                const primaryTagInfo = categoryTags.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag || t.label === recipe.primary_tag)
                 const bg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
                 const border = primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER
                 const textColor = primaryTagInfo?.cardText || getTextColor(bg)
@@ -792,12 +799,12 @@ export default function Recipes() {
                       </div>
                       {(() => {
                         const allT = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
-                        const validT = allT.filter(tv => TAGS.some(t => t.value === tv))
+                        const validT = allT.filter(tv => categoryTags.some(t => t.value === tv))
                         if (validT.length === 0) return null
                         return (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                             {validT.slice(0, 2).map(tv => {
-                              const ti = TAGS.find(t => t.value === tv)
+                              const ti = categoryTags.find(t => t.value === tv)
                               return (
                                 <span key={tv} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: ti.pillBg, color: ti.pillText }}>
                                   <img src={`/icons/${ti.icon}.webp`} alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display="none"} />

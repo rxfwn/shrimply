@@ -18,7 +18,7 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
 }
 
-export default function BlogList() {
+export default function BlogList({ embedded = false }) {
   const navigate = useNavigate()
   const posts = getAllPosts()
 
@@ -31,29 +31,31 @@ export default function BlogList() {
       <style dangerouslySetInnerHTML={{ __html: cssStyles }} />
 
       {/* ── NAV ── */}
-      <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 28px",
-        background: "#111111", backdropFilter: "blur(20px)",
-        borderBottom: "1px solid rgba(255,255,255,.08)",
-      }}>
-        <button onClick={() => navigate("/")}
-          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-          <img src="/icons/shrim.webp" alt="" width="22" height="22" loading="eager" />
-          <span style={{ ...syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>
-            Shrim<span style={{ color: R }}>ply</span>
-          </span>
-        </button>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="btn btn-orange" onClick={() => navigate("/register")}
-            style={{ padding: "9px 16px", fontSize: 13, borderRadius: 100, fontWeight: 600, background: "#f3501e", color: "#fff", border: "none", cursor: "pointer" }}>
-            essayer gratuitement
+      {!embedded && (
+        <nav style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 28px",
+          background: "#111111", backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255,255,255,.08)",
+        }}>
+          <button onClick={() => navigate("/")}
+            style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/icons/shrim.webp" alt="" width="22" height="22" loading="eager" />
+            <span style={{ ...syne, fontSize: 17, fontWeight: 700, color: "#fff" }}>
+              Shrim<span style={{ color: R }}>ply</span>
+            </span>
           </button>
-        </div>
-      </nav>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button className="btn btn-orange" onClick={() => navigate("/register")}
+              style={{ padding: "9px 16px", fontSize: 13, borderRadius: 100, fontWeight: 600, background: "#f3501e", color: "#fff", border: "none", cursor: "pointer" }}>
+              essayer gratuitement
+            </button>
+          </div>
+        </nav>
+      )}
 
-      <main style={{ maxWidth: 760, margin: "0 auto", padding: "120px 20px 80px" }}>
+      <main style={{ maxWidth: 760, margin: "0 auto", padding: embedded ? "32px 20px 80px" : "120px 20px 80px" }}>
         <span style={{ ...inst, fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(17,17,17,.4)", marginBottom: 12, display: "block" }}>
           Blog Shrimply
         </span>
@@ -67,7 +69,7 @@ export default function BlogList() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           {posts.map(post => (
-            <Link key={post.slug} to={`/blog/${post.slug}`} className="blog-card">
+            <Link key={post.slug} to={`${embedded ? "/app/blog" : "/blog"}/${post.slug}`} className="blog-card">
               <article style={{ background: "#fff", borderRadius: 20, padding: 28, border: "1px solid rgba(17,17,17,.06)" }}>
                 <time dateTime={post.date} style={{ ...inst, fontSize: 12, color: "rgba(17,17,17,.4)", fontWeight: 500 }}>
                   {formatDate(post.date)}
@@ -87,11 +89,13 @@ export default function BlogList() {
         </div>
       </main>
 
-      <footer style={{ padding: "32px 20px", textAlign: "center", borderTop: "1px solid rgba(17,17,17,.06)" }}>
-        <Link to="/" className="blog-back" style={{ ...inst, fontSize: 13, color: "rgba(17,17,17,.45)", textDecoration: "none" }}>
-          ← Retour à l'accueil
-        </Link>
-      </footer>
+      {!embedded && (
+        <footer style={{ padding: "32px 20px", textAlign: "center", borderTop: "1px solid rgba(17,17,17,.06)" }}>
+          <Link to="/" className="blog-back" style={{ ...inst, fontSize: 13, color: "rgba(17,17,17,.45)", textDecoration: "none" }}>
+            ← Retour à l'accueil
+          </Link>
+        </footer>
+      )}
     </div>
   )
 }

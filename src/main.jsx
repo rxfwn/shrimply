@@ -127,15 +127,19 @@ const app = (
             <Route element={<PrivateRoute />}>
               <Route element={<Layout />}>
                 <Route path="/calendar" element={<Calendar />} />
-                <Route path="/recipes" element={<Recipes />} />
+                <Route path="/recipes" element={<Recipes category="recette" />} />
                 <Route path="/recipes/:id" element={<RecipeDetail />} />
                 <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
+                <Route path="/glaces" element={<Recipes category="glace" />} />
+                <Route path="/boissons" element={<Recipes category="boisson" />} />
                 <Route path="/shopping" element={<Shopping />} />
                 <Route path="/fridge" element={<Fridge />} />
                 <Route path="/friends" element={<Friends />} />
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/nutrition" element={<Nutrition />} />
                 <Route path="/suggestions" element={<Suggestions />} />
+                <Route path="/app/blog" element={<BlogList embedded />} />
+                <Route path="/app/blog/:slug" element={<BlogPost embedded />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/profile/:userId" element={<Profile />} />

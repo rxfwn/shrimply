@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import UpgradePopup from "../components/Upgradepopup"
 import { useNavigate, useParams } from "react-router-dom"
 import { supabase } from "../supabase"
-import { TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { TAGS, ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
 
@@ -266,7 +266,7 @@ export default function Profile() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 3 }}>
             {displayedRecipes.map(recipe => {
-              const primaryTagInfo = TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
+              const primaryTagInfo = ALL_TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
               const bg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
               return (
                 <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)}

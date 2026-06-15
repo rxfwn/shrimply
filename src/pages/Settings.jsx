@@ -129,9 +129,11 @@ export default function Settings() {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
         body: JSON.stringify({ user_id: user.id }),
       })
-      const { url, error } = await res.json()
+      const body = await res.json()
+      console.log("[portal] status:", res.status, "body:", JSON.stringify(body))
+      const { url, error } = body
       if (error) { showToast("❌ " + error); return }
-      if (!url) { showToast("❌ URL de redirection manquante"); return }
+      if (!url) { showToast("❌ HTTP " + res.status + " — " + JSON.stringify(body)); return }
       window.location.href = url
     } catch (e) {
       showToast("❌ " + (e?.message || "erreur lors de la redirection"))

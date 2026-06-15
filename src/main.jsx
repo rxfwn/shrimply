@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react"
-import ReactDOM from "react-dom/client"
+import { createRoot, hydrateRoot } from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom"
 import { ThemeProvider } from "./context/ThemeContext"
 import { ProfileProvider } from "./context/ProfileContext"
@@ -96,7 +96,9 @@ function OnboardingManager() {
   )
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+const rootEl = document.getElementById("root")
+
+const app = (
   <ThemeProvider>
     <ProfileProvider>
       <BrowserRouter>
@@ -138,3 +140,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </ProfileProvider>
   </ThemeProvider>
 )
+
+// Hydrate la landing pré-rendue (SSR) pour "/" — sinon createRoot classique
+const isLanding    = window.location.pathname === "/"
+const hasPrerender = rootEl.childElementCount > 0
+if (isLanding && hasPrerender) {
+  hydrateRoot(rootEl, app)
+} else {
+  createRoot(rootEl).render(app)
+}

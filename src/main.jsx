@@ -7,10 +7,12 @@ import PrivateRoute from "./components/PrivateRoute"
 import { supabase } from "./supabase"
 import "./index.css"
 
-// Pages chargées immédiatement (premier rendu critique)
+// Pages chargées immédiatement (premier rendu critique + cohérence avec le pré-rendu SSR)
 import Landing from "./pages/Landing"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
+import BlogList from "./pages/BlogList"
+import BlogPost from "./pages/BlogPost"
 
 // Pages chargées à la demande (lazy)
 const AuthCallback          = lazy(() => import("./pages/AuthCallback"))
@@ -107,6 +109,8 @@ const app = (
           <Routes>
             <Route path="/legal" element={<Legal />} />
             <Route path="/" element={<RootRoute />} />
+            <Route path="/blog" element={<BlogList />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/home" element={<Navigate to="/calendar" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -141,10 +145,11 @@ const app = (
   </ThemeProvider>
 )
 
-// Hydrate la landing pré-rendue (SSR) pour "/" — sinon createRoot classique
-const isLanding    = window.location.pathname === "/"
+// Hydrate les pages pré-rendues (SSR) pour "/", "/blog" et "/blog/:slug" — sinon createRoot classique
+const path = window.location.pathname
+const isPrerenderedRoute = path === "/" || path === "/blog" || /^\/blog\/[^/]+$/.test(path)
 const hasPrerender = rootEl.childElementCount > 0
-if (isLanding && hasPrerender) {
+if (isPrerenderedRoute && hasPrerender) {
   hydrateRoot(rootEl, app)
 } else {
   createRoot(rootEl).render(app)

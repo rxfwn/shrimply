@@ -243,6 +243,10 @@ export default function Landing() {
           </span>
         </button>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button onClick={() => navigate("/blog")}
+            style={{ ...inst, background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,.75)", padding: "8px 4px" }}>
+            blog
+          </button>
           <button className="btn btn-orange" onClick={() => navigate("/register")} style={btnO({ padding: "9px 16px", fontSize: 13 })}>
             <span className="nav-short">essayer</span>
             <span className="nav-long">essayer gratuitement</span>

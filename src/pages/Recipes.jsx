@@ -6,6 +6,8 @@ import { computeCostDetails } from "../utils/priceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
+import { detectCocktailIngs } from "../components/CocktailIngredientPicker"
+import CocktailNameInput from "../components/CocktailNameInput"
 
 const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce","selon goût"]
 
@@ -296,6 +298,9 @@ export default function Recipes({ category = "recette" }) {
     }
 
     const autoTags = [...selectedTags]
+    if (category === "boisson") {
+      detectCocktailIngs(validIngredients).forEach(k => { if (!autoTags.includes(k)) autoTags.push(k) })
+    }
 
     if (category === "recette") {
       // Tag économique automatique (< 3€/personne)
@@ -606,9 +611,16 @@ export default function Recipes({ category = "recette" }) {
                 {ingredients.map((ing, i) => (
                   <div key={i} className="ingredient-row">
                     <div className="ing-name">
-                      <input ref={el => ingredientRefs.current[i]=el} style={inputStyle(false)} placeholder="ingrédient *" value={ing.name} spellCheck="true"
-                        onChange={e => updateIngredient(i,"name",e.target.value)}
-                        onKeyDown={e => { if(e.key==="Enter"){e.preventDefault();if(i===ingredients.length-1)addIngredient();else ingredientRefs.current[i+1]?.focus()} }} />
+                      {category === "boisson" ? (
+                        <CocktailNameInput
+                          value={ing.name}
+                          onChange={v => updateIngredient(i, "name", v)}
+                        />
+                      ) : (
+                        <input ref={el => ingredientRefs.current[i]=el} style={inputStyle(false)} placeholder="ingrédient *" value={ing.name} spellCheck="true"
+                          onChange={e => updateIngredient(i,"name",e.target.value)}
+                          onKeyDown={e => { if(e.key==="Enter"){e.preventDefault();if(i===ingredients.length-1)addIngredient();else ingredientRefs.current[i+1]?.focus()} }} />
+                      )}
                     </div>
                     <div className="ing-qty">
                       <input style={inputStyle(errors[`ing_${i}_quantity`])} placeholder="qté *"
@@ -729,6 +741,17 @@ export default function Recipes({ category = "recette" }) {
               >
                 {!isPremium && recipes.length >= 5 ? `🔒 nouvelle ${catInfo.itemLabel}` : `+ nouvelle ${catInfo.itemLabel}`}
               </button>
+              {category === "boisson" && (
+                <button
+                  onClick={() => navigate("/cocktail-finder")}
+                  style={{ ...btnBase, padding: "9px 16px", backgroundColor: "#CFFF79", color: "#091718", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  <img src="/icons/loupe.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display = "none"} />
+                  cocktail finder
+                </button>
+              )}
             </div>
 
             <div style={{ paddingBottom: 8 }}>

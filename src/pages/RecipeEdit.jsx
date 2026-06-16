@@ -4,6 +4,8 @@ import { supabase } from "../supabase"
 import { computeCostDetails } from "../utils/priceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
 import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { detectCocktailIngs } from "../components/CocktailIngredientPicker"
+import CocktailNameInput from "../components/CocktailNameInput"
 import { useTheme } from "../context/ThemeContext"
 
 function getTextColor(hex) {
@@ -72,11 +74,14 @@ export default function RecipeEdit() {
       const ings = ingredientsData?.map(i => ({ ...i })) || [{ name: "", quantity: "", unit: "" }]
       const stps = stepsData?.map(s => ({ ...s })) || [{ description: "" }]
       setName(recipe.name); setDescription(recipe.description || ""); setPrepTime(recipe.prep_time || ""); setServings(recipe.servings || "")
-      setPrimaryTag(recipe.primary_tag || ""); setSelectedTags(recipe.tags || []); setPhotoUrl(recipe.photo_url || "")
-      setIngredients(ings); setSteps(stps)
       const recipeCategory = getRecipeCategory(recipe.primary_tag || "")
-      setCategory(recipeCategory); setCategoryTags(CATEGORIES[recipeCategory].tags)
-      initialData.current = JSON.stringify({ name: recipe.name, description: recipe.description || "", prepTime: String(recipe.prep_time || ""), servings: String(recipe.servings || ""), primaryTag: recipe.primary_tag || "", selectedTags: recipe.tags || [], ingredients: ings, steps: stps, photoUrl: recipe.photo_url || "" })
+      const catTags = CATEGORIES[recipeCategory].tags
+      const categoryTagKeys = new Set(catTags.map(t => t.key))
+      const cleanTags = (recipe.tags || []).filter(t => categoryTagKeys.has(t))
+      setPrimaryTag(recipe.primary_tag || ""); setSelectedTags(cleanTags); setPhotoUrl(recipe.photo_url || "")
+      setIngredients(ings); setSteps(stps)
+      setCategory(recipeCategory); setCategoryTags(catTags)
+      initialData.current = JSON.stringify({ name: recipe.name, description: recipe.description || "", prepTime: String(recipe.prep_time || ""), servings: String(recipe.servings || ""), primaryTag: recipe.primary_tag || "", selectedTags: cleanTags, ingredients: ings, steps: stps, photoUrl: recipe.photo_url || "" })
       initialEstimatedTotal.current = recipe.estimated_total ?? null
     }
     setLoading(false)
@@ -138,6 +143,9 @@ export default function RecipeEdit() {
     }
 
     const autoTags = [...selectedTags]
+    if (category === "boisson") {
+      detectCocktailIngs(validIngredients).forEach(k => { if (!autoTags.includes(k)) autoTags.push(k) })
+    }
 
     if (category === "recette") {
       // Tag économique automatique (< 3€/personne)
@@ -334,10 +342,17 @@ export default function RecipeEdit() {
             {ingredients.map((ing, i) => (
               <div key={i} className="ingredient-row">
                 <div className="ing-name">
-                  <input ref={el => ingredientNameRefs.current[i] = el}
-                    style={{ width: "100%", borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
-                    placeholder="ingrédient" value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)}
-                    onKeyDown={e => handleIngredientKeyDown(e, i)} />
+                  {category === "boisson" ? (
+                    <CocktailNameInput
+                      value={ing.name}
+                      onChange={v => updateIngredient(i, "name", v)}
+                    />
+                  ) : (
+                    <input ref={el => ingredientNameRefs.current[i] = el}
+                      style={{ width: "100%", borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}
+                      placeholder="ingrédient" value={ing.name} onChange={e => updateIngredient(i, "name", e.target.value)}
+                      onKeyDown={e => handleIngredientKeyDown(e, i)} />
+                  )}
                 </div>
                 <div className="ing-qty">
                   <input style={{ width: "100%", borderRadius: 10, padding: "10px 10px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, boxSizing: "border-box" }}

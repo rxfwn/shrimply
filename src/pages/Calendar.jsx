@@ -394,6 +394,118 @@ export default function Calendar() {
   const monthLabel = `${MONTH_NAMES[currentMonth]} ${currentYear}`
   const monthDays = getMonthDays(currentYear, currentMonth)
 
+  const handlePrint = () => {
+    const origin = window.location.origin
+    const hexToRgba = (hex, alpha) => {
+      if (!hex || !hex.startsWith("#")) return hex
+      const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16)
+      return `rgba(${r},${g},${b},${alpha})`
+    }
+    const getTagInfo = (recipe) => ALL_TAGS.find(t => t.value === recipe?.primary_tag || t.key === recipe?.primary_tag)
+    const mealCard = (recipe) => {
+      const cardBg = getRecipeCardBg(recipe) || DEFAULT_CARD_BG
+      const cardBorder = getRecipeCardBorder(recipe)
+      const tagInfo = getTagInfo(recipe)
+      const icon = tagInfo ? `<img class="icon" src="${origin}/icons/${tagInfo.icon}.webp" onerror="this.style.display='none'" />` : ""
+      return { bg: hexToRgba(cardBg, 0.12), border: hexToRgba(cardBorder, 0.40), color: "#111111", icon }
+    }
+
+    let title, bodyHtml
+    if (view === "week") {
+      title = `mon planning — semaine du ${weekLabel}`
+
+      const headHtml = days.map((d, i) => `
+        <div class="day-head" style="background:${hexToRgba(DAY_COLORS[i], 0.12)};color:#111111;border:1.5px solid ${hexToRgba(DAY_COLORS[i], 0.35)}">
+          ${DAY_NAMES[i]}<div class="num">${d.getDate()}</div>
+        </div>`).join("")
+
+      const rowsHtml = MEAL_TYPES.map(mealType => {
+        const label = `<div class="meal-label"><img src="${origin}${MEAL_ICONS[mealType]}" onerror="this.style.display='none'" />${mealType}</div>`
+        const cells = days.map(d => {
+          const recipe = getMeal(d, mealType)?.recipes
+          if (!recipe) return `<div class="cell empty"></div>`
+          const { bg, border, color, icon } = mealCard(recipe)
+          return `<div class="cell" style="background:${bg};color:${color};border-color:${border}">
+            ${icon}
+            <div class="name">${recipe.name}</div>
+            ${recipe.prep_time ? `<div class="time">⏱ ${recipe.prep_time} min</div>` : ""}
+          </div>`
+        }).join("")
+        return `${label}${cells}`
+      }).join("")
+
+      bodyHtml = `<div class="week-grid"><div></div>${headHtml}${rowsHtml}</div>`
+    } else {
+      const weeks = []
+      for (let i = 0; i < monthDays.length; i += 7) weeks.push(monthDays.slice(i, i + 7))
+      title = `mon planning — ${monthLabel}`
+
+      const headHtml = DAY_NAMES.map((d, i) => `<div class="month-head" style="background:${hexToRgba(DAY_COLORS[i], 0.12)};color:#111111;border:1.5px solid ${hexToRgba(DAY_COLORS[i], 0.35)}">${d.slice(0, 3)}</div>`).join("")
+
+      const cellsHtml = weeks.map(week => week.map(day => {
+        if (!day) return `<div class="month-cell empty"></div>`
+        const isToday = formatDate(day) === today
+        const pills = MEAL_TYPES.map(type => {
+          const recipe = getMeal(day, type)?.recipes
+          if (!recipe) return ""
+          const { bg, border, color, icon } = mealCard(recipe)
+          return `<div class="meal-pill" style="background:${bg};color:${color};border-color:${border}">${icon}<span>${recipe.name}</span></div>`
+        }).join("")
+        return `<div class="month-cell ${isToday ? "today" : ""}"><div class="day-num ${isToday ? "today" : ""}">${day.getDate()}</div>${pills}</div>`
+      }).join("")).join("")
+
+      bodyHtml = `<div class="month-grid">${headHtml}${cellsHtml}</div>`
+    }
+
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8" /><title>${title}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+      <style>
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @page { size: landscape; margin: 12mm; }
+        body { font-family: 'Poppins', sans-serif; margin: 0; padding: 24px; color: #111111; background: #ffffff; }
+        .brand { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+        .brand img { width: 18px; height: 18px; }
+        .brand .accent { color: #f3501e; }
+        h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.04em; margin: 0 0 18px; text-transform: capitalize; display: flex; align-items: center; gap: 8px; }
+        h1 img { width: 22px; height: 22px; }
+        .week-grid { display: grid; grid-template-columns: 64px repeat(7, 1fr); gap: 6px; }
+        .day-head { border-radius: 10px; padding: 8px 4px; text-align: center; font-weight: 700; font-size: 11px; letter-spacing: -0.03em; text-transform: capitalize; }
+        .day-head .num { font-size: 15px; margin-top: 2px; }
+        .meal-label { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #999999; padding: 0 4px; text-transform: capitalize; }
+        .meal-label img { width: 14px; height: 14px; }
+        .cell { border-radius: 10px; padding: 8px; min-height: 64px; display: flex; flex-direction: column; justify-content: center; gap: 4px; border: 1.5px solid transparent; }
+        .cell.empty { background: #f7f7f7; border: 1.5px dashed #e0e0e0; }
+        .cell .icon { width: 13px; height: 13px; opacity: 0.85; }
+        .cell .name { font-size: 11px; font-weight: 700; line-height: 1.3; letter-spacing: -0.02em; }
+        .cell .time { font-size: 10px; opacity: 0.65; font-weight: 600; }
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .month-head { text-align: center; font-size: 10px; font-weight: 700; padding: 6px 0; border-radius: 8px; text-transform: capitalize; }
+        .month-cell { border-radius: 10px; background: #f7f7f7; border: 1.5px solid #eeeeee; padding: 6px; min-height: 92px; display: flex; flex-direction: column; gap: 3px; }
+        .month-cell.today { border: 1.5px solid rgba(213,123,255,0.5); }
+        .month-cell.empty { background: transparent; border: none; }
+        .day-num { font-size: 11px; font-weight: 700; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #777777; margin-bottom: 2px; }
+        .day-num.today { background: rgba(213,123,255,0.20); color: #8833cc; }
+        .meal-pill { display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; padding: 3px 6px; border-radius: 6px; border: 1px solid transparent; letter-spacing: -0.02em; }
+        .meal-pill img { width: 9px; height: 9px; flex-shrink: 0; }
+        .meal-pill span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      </style></head><body>
+      <div class="brand"><img src="${origin}/icons/shrim.webp" onerror="this.style.display='none'" /><span>Shrim<span class="accent">ply</span></span></div>
+      <h1><img src="${origin}/icons/calendar.webp" onerror="this.style.display='none'" />${title}</h1>
+      ${bodyHtml}
+      </body></html>`
+
+    const win = window.open("", "_blank")
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    let printed = false
+    const doPrint = () => { if (printed) return; printed = true; win.print(); win.close() }
+    win.onload = doPrint
+    setTimeout(doPrint, 1000)
+  }
+
   const toggleBtnStyle = (active) => ({
     padding: "6px 16px", borderRadius: 6, fontSize: 12, border: "none", cursor: "pointer",
     fontFamily: "Poppins, sans-serif", fontWeight: 700, letterSpacing: "-0.05em",
@@ -444,7 +556,7 @@ export default function Calendar() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
 
             {/* Titre + toggle vue */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <img src="/icons/calendar.webp" alt="" style={{ width: 22, height: 22 }} />
               <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>mon planning</h1>
               <div style={{ display: "flex", backgroundColor: "var(--bg-card-2)", borderRadius: 10, padding: 3, gap: 2 }}>
@@ -454,6 +566,12 @@ export default function Calendar() {
                   {!isPremium && <img src="/icons/lock.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />}
                 </button>
               </div>
+              <button onClick={handlePrint} title="imprimer le planning" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 10, border: "none", cursor: "pointer", backgroundColor: "var(--bg-card-2)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "-0.05em", transition: "transform 0.2s ease" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"} onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}>
+                <img src="/icons/printer.webp" alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display = "none"} />
+                imprimer
+              </button>
             </div>
 
             {/* Navigation date — flèches collées à la date */}

@@ -27,6 +27,7 @@ const Friends               = lazy(() => import("./pages/Friends"))
 const Discover              = lazy(() => import("./pages/Discover"))
 const Nutrition             = lazy(() => import("./pages/Nutrition"))
 const Suggestions           = lazy(() => import("./pages/Suggestions"))
+const CocktailFinder        = lazy(() => import("./pages/CocktailFinder"))
 const Legal                 = lazy(() => import("./components/Legal"))
 const Settings              = lazy(() => import("./pages/Settings"))
 const Profile               = lazy(() => import("./pages/Profile"))
@@ -132,6 +133,7 @@ const app = (
                 <Route path="/recipes/:id/edit" element={<RecipeEdit />} />
                 <Route path="/glaces" element={<Recipes category="glace" />} />
                 <Route path="/boissons" element={<Recipes category="boisson" />} />
+                <Route path="/cocktail-finder" element={<CocktailFinder />} />
                 <Route path="/shopping" element={<Shopping />} />
                 <Route path="/fridge" element={<Fridge />} />
                 <Route path="/friends" element={<Friends />} />

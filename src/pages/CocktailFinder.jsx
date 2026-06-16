@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
-import { COCKTAIL_INGREDIENTS, COCKTAIL_INGREDIENT_CATEGORIES, BOISSON_TAGS, ALL_TAGS } from "../tags"
+import { COCKTAIL_INGREDIENTS, COCKTAIL_INGREDIENT_CATEGORIES, ALL_TAGS, getRecipeCategory } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 
 const COCKTAIL_KEYS = new Set(COCKTAIL_INGREDIENTS.map(i => i.key))
@@ -28,10 +28,9 @@ export default function CocktailFinder() {
   const fetchRecipes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase.from("recipes")
-      .select("id, name, primary_tag, tags, photo_url, prep_time, notes")
+      .select("id, name, primary_tag, tags, photo_url, prep_time")
       .eq("user_id", user.id)
-      .in("primary_tag", BOISSON_TAGS.map(t => t.key))
-    setRecipes(data || [])
+    setRecipes((data || []).filter(r => getRecipeCategory(r.primary_tag) === "boisson"))
     setLoading(false)
   }
 
@@ -283,10 +282,16 @@ export default function CocktailFinder() {
                 return (
                   <div key={recipe.id}
                     onClick={() => navigate(`/recipes/${recipe.id}`)}
-                    style={{ backgroundColor: surface, borderRadius: 14, border: `1.5px solid ${canMake ? (tagInfo?.cardBorder || "#CFFF79") : border}`, padding: "13px 13px 10px", cursor: "pointer", transition: "transform 0.12s, box-shadow 0.12s", display: "flex", flexDirection: "column", gap: 7 }}
+                    style={{ backgroundColor: surface, borderRadius: 14, border: `1.5px solid ${canMake ? (tagInfo?.cardBorder || "#CFFF79") : border}`, overflow: "hidden", cursor: "pointer", transition: "transform 0.12s, box-shadow 0.12s", display: "flex", flexDirection: "column" }}
                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)" }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none" }}
                   >
+                    {/* Barre de couleur top (même que les cartes recette) */}
+                    {tagInfo && (
+                      <div style={{ height: 4, backgroundColor: tagInfo.cardBg, flexShrink: 0 }} />
+                    )}
+
+                    <div style={{ padding: "11px 13px 10px", display: "flex", flexDirection: "column", gap: 7, flex: 1 }}>
                     {/* Top row: tag badge + score */}
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6 }}>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, flex: 1 }}>
@@ -346,6 +351,7 @@ export default function CocktailFinder() {
                         })}
                       </div>
                     )}
+                    </div>{/* fin padding wrapper */}
                   </div>
                 )
               })}

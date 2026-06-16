@@ -14,7 +14,7 @@ export default function CocktailFinder() {
   const [loading, setLoading] = useState(true)
   const [searchIng, setSearchIng] = useState("")
   const [openCats, setOpenCats] = useState(() =>
-    Object.fromEntries(Object.keys(COCKTAIL_INGREDIENT_CATEGORIES).map(k => [k, true]))
+    Object.fromEntries(Object.keys(COCKTAIL_INGREDIENT_CATEGORIES).map(k => [k, false]))
   )
 
   const fetchRecipes = async () => {

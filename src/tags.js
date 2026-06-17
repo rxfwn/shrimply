@@ -167,6 +167,17 @@ export const TAGS = [
     cardBorder: "#FFF4C7",
     actionBg: "#FFF4C7",
   },
+  { key: "bebe",
+    label: "bébé",
+    value: "bebe",
+    icon: "baby",
+    pillBg:   "#fce7f3",
+    pillText: "#9d174d",
+    cardBg:   "#9d174d",
+    cardText: "#fce7f3",
+    cardBorder: "#fbcfe8",
+    actionBg: "#fce7f3",
+  },
 ]
 
 // ─────────────────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ export default function BlogList({ embedded = false }) {
     let meta = document.querySelector('meta[name="description"]')
     const prevDesc = meta?.getAttribute("content") ?? ""
     if (!meta) { meta = document.createElement("meta"); meta.name = "description"; document.head.appendChild(meta) }
-    meta.content = "Des conseils simples et concrets pour planifier tes repas, organiser tes courses, et arrêter de te demander "on mange quoi ce soir ?"."
+    meta.content = "Des conseils simples et concrets pour planifier tes repas, organiser tes courses, et arrêter de te demander “on mange quoi ce soir ?”."
     return () => { document.title = prev; meta.content = prevDesc }
   }, [])
 

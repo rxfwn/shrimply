@@ -347,87 +347,97 @@ export default function CocktailFinder() {
                 const haveCount  = recipe.recipeIngs.length - recipe.missingCount
                 const totalCount = recipe.recipeIngs.length
                 const isExpanded = expanded.has(recipe.id)
-                const hasSelection  = selected.length > 0
-                const haveNone      = hasSelection && totalCount > 0 && haveCount === 0
-                const haveOne       = hasSelection && haveCount === 1 && !canMake
-                const cardBorderColor = hasSelection
-                  ? (canMake ? "#CFFF79" : haveOne ? "#9BE7FF" : border)
-                  : border
-                const cardBgTint = hasSelection && canMake
-                  ? "rgba(207,255,121,0.07)"
-                  : hasSelection && haveOne
-                    ? "rgba(155,231,255,0.07)"
-                    : surface
-                const cardOpacity = haveNone ? 0.38 : 1
+                const hasSelection = selected.length > 0
+                const haveNone   = hasSelection && totalCount > 0 && haveCount === 0
+                const cardBg     = tagInfo?.cardBg || surface
+                const cardText   = tagInfo?.cardText || textMain
+                const cardBorder = hasSelection
+                  ? (canMake ? "#CFFF79" : haveCount === 1 && !canMake ? "#9BE7FF" : (tagInfo?.cardBorder || border))
+                  : (tagInfo?.cardBorder || border)
 
                 return (
                   <div key={recipe.id} className="cf-card"
-                    style={{ border: `1.5px solid ${cardBorderColor}`, backgroundColor: cardBgTint, opacity: cardOpacity }}
-                    onClick={() => toggleExpand(recipe.id)}
+                    style={{ border: `1.5px solid ${cardBorder}`, backgroundColor: cardBg, opacity: haveNone ? 0.38 : 1 }}
                   >
-                    {/* Ligne principale — photo carrée + info */}
+                    {/* Ligne principale — photo full-height + contenu */}
                     <div style={{ display: "flex", alignItems: "stretch" }}>
-                      {/* Photo */}
-                      <div style={{ width: 56, height: 56, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: tagInfo?.cardBg || (isDay ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)") }}>
+
+                      {/* Photo — prend toute la hauteur de la carte */}
+                      <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: tagInfo?.cardBg || (isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.06)") }}>
                         {recipe.photo_url
                           ? <img src={recipe.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                          : tagInfo && <div style={{ width: "100%", height: "100%", backgroundColor: tagInfo.cardBg, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5 }} />
+                          : <div style={{ width: "100%", height: "100%", background: `linear-gradient(160deg, ${cardText}18 0%, transparent 80%)` }} />
                         }
                       </div>
 
                       {/* Contenu */}
-                      <div style={{ flex: 1, padding: "6px 10px 7px", display: "flex", flexDirection: "column", justifyContent: "flex-start", minWidth: 0, gap: 3 }}>
-                        {/* Tag + score sur la même ligne */}
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
-                          {tagInfo ? (
-                            <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 7px", borderRadius: 8, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.04em", textTransform: "uppercase", flexShrink: 0, lineHeight: 1.4 }}>
+                      <div style={{ flex: 1, padding: "10px 12px 10px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+
+                        {/* Ligne 1 : tag pill + manquants + score */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          {tagInfo && (
+                            <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 8, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1.5, flexShrink: 0 }}>
                               {tagInfo.label}
                             </span>
-                          ) : <span />}
-                          {totalCount > 0 && (
-                            <ScoreCircle have={haveCount} total={totalCount} isDay={isDay} textMuted={textMuted} />
                           )}
+                          {hasSelection && totalCount > 0 && recipe.missingCount > 0 && (
+                            <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 8px", borderRadius: 8, backgroundColor: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.6)", letterSpacing: "-0.02em", flexShrink: 0 }}>
+                              {recipe.missingCount} manquant{recipe.missingCount > 1 ? "s" : ""}
+                            </span>
+                          )}
+                          {canMake && (
+                            <span style={{ fontSize: 9, fontWeight: 700, color: "#4ade80", letterSpacing: "-0.02em" }}>✓ faisable</span>
+                          )}
+                          <div style={{ flex: 1 }} />
+                          {totalCount > 0 && <ScoreCircle have={haveCount} total={totalCount} isDay={false} textMuted="rgba(255,255,255,0.38)" />}
                         </div>
-                        {/* Nom — collé sous le tag */}
-                        <div style={{ fontSize: 12, fontWeight: 700, color: textMain, letterSpacing: "-0.04em", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {recipe.name}
-                        </div>
-                        {/* Ingrédients manquants — résumé compact */}
-                        {selected.length > 0 && recipe.missingCount > 0 && (
-                          <div style={{ fontSize: 9, color: textMuted, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            manque : {recipe.missing.map(k => COCKTAIL_INGREDIENTS.find(i => i.key === k)?.label || k).join(", ")}
+
+                        {/* Ligne 2 : nom + flèche */}
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: cardText, letterSpacing: "-0.045em", lineHeight: 1.25, flex: 1 }}>
+                            {recipe.name}
                           </div>
-                        )}
-                        {canMake && (
-                          <div style={{ fontSize: 9, fontWeight: 700, color: "#16a34a" }}>✓ faisable</div>
-                        )}
+                          <button
+                            onClick={e => { e.stopPropagation(); toggleExpand(recipe.id) }}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: cardText, opacity: 0.55, fontSize: 13, lineHeight: 1, flexShrink: 0, marginTop: 1, transition: "opacity 0.15s" }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                            onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}
+                          >
+                            {isExpanded ? "∧" : "∨"}
+                          </button>
+                        </div>
+
                       </div>
                     </div>
 
-                    {/* Panneau déplié — ingrédients + lien recette */}
+                    {/* Panneau déplié — liste ingrédients */}
                     {isExpanded && (
-                      <div style={{ borderTop: `1px solid ${border}`, padding: "9px 10px", display: "flex", flexDirection: "column", gap: 7 }}
+                      <div style={{ borderTop: `1px solid ${cardText}22`, padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 5 }}
                         onClick={e => e.stopPropagation()}
                       >
-                        {totalCount > 0 ? (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                            {recipe.recipeIngs.map(k => {
-                              const ing      = COCKTAIL_INGREDIENTS.find(i => i.key === k)
-                              const cat      = COCKTAIL_INGREDIENT_CATEGORIES[ing?.category]
-                              const isMissing = recipe.missing.includes(k)
-                              return (
-                                <span key={k} style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 8, backgroundColor: isMissing ? "transparent" : (cat?.bg || "rgba(0,0,0,0.06)"), color: isMissing ? textMuted : (cat?.color || textMuted), opacity: isMissing ? 0.4 : 1, textDecoration: isMissing ? "line-through" : "none", border: isMissing ? `1px dashed ${border}` : "none" }}>
-                                  {ing?.label || k}
+                        {totalCount > 0 ? recipe.recipeIngs.map(k => {
+                          const ing = COCKTAIL_INGREDIENTS.find(i => i.key === k)
+                          const isMissing = recipe.missing.includes(k)
+                          return (
+                            <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 500, color: cardText, opacity: isMissing ? 0.38 : 0.9, textDecoration: isMissing ? "line-through" : "none", letterSpacing: "-0.03em" }}>
+                                — {ing?.label || k}
+                              </span>
+                              {isMissing && (
+                                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 20, backgroundColor: "rgba(251,113,133,0.2)", color: "#fb7185", flexShrink: 0, letterSpacing: "-0.01em" }}>
+                                  manquant
                                 </span>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: 9, color: textMuted, fontStyle: "italic" }}>ingrédients non renseignés</span>
+                              )}
+                            </div>
+                          )
+                        }) : (
+                          <span style={{ fontSize: 10, color: cardText, opacity: 0.4, fontStyle: "italic" }}>ingrédients non renseignés</span>
                         )}
                         <button
                           onClick={() => navigate(`/recipes/${recipe.id}`)}
-                          style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 10, color: "#d57bff", letterSpacing: "-0.03em", padding: 0 }}
+                          style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 10, color: cardText, opacity: 0.7, letterSpacing: "-0.03em", padding: 0, marginTop: 4 }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                          onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}
                         >voir la recette →</button>
                       </div>
                     )}

@@ -427,6 +427,7 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "fernet",            label: "Fernet-Branca",         category: "amers" },
   // Sirops
   { key: "sirop_sucre",       label: "Sirop de sucre",        category: "sirop" },
+  { key: "canadou",           label: "Canadou",               category: "sirop" },
   { key: "sirop_agave",       label: "Sirop d'agave",         category: "sirop" },
   { key: "grenadine",         label: "Grenadine",             category: "sirop" },
   { key: "sirop_orgeat",      label: "Sirop d'orgeat",        category: "sirop" },

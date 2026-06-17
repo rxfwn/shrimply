@@ -1,5 +1,6 @@
 import { TAGS, ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
@@ -51,6 +52,7 @@ function formatQuantity(value) {
 export default function Discover() {
   const { isDay } = useTheme()
   const { isPremium } = usePremium()
+  const navigate = useNavigate()
 
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -299,13 +301,16 @@ export default function Discover() {
                       </p>
                     )}
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10, cursor: previewRecipe.user_id ? "pointer" : "default" }}
+                      onClick={e => { if (previewRecipe.user_id) { e.stopPropagation(); navigate(`/profile/${previewRecipe.user_id}`) } }}
+                    >
                       <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: "rgba(243,80,30,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {previewRecipe.profiles?.avatar_url
                           ? <img src={previewRecipe.profiles.avatar_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
                           : <span style={{ fontSize: 9 }}>👤</span>}
                       </div>
-                      <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500 }}>
+                      <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 500, textDecoration: "underline", textUnderlineOffset: 2 }}>
                         {previewRecipe.profiles?.username || "Utilisateur"}
                       </span>
                       {previewRecipe.profiles?.is_official && <OfficialBadge small />}
@@ -549,13 +554,16 @@ export default function Discover() {
                 )}
 
                 <div style={{ padding: "8px 12px 12px", color: textColor, flex: 1, display: "flex", flexDirection: "column" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5, flexWrap: "nowrap", overflow: "hidden" }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5, flexWrap: "nowrap", overflow: "hidden", cursor: recipe.user_id ? "pointer" : "default" }}
+                    onClick={e => { if (recipe.user_id) { e.stopPropagation(); navigate(`/profile/${recipe.user_id}`) } }}
+                  >
                     <div style={{ width: 18, height: 18, borderRadius: "50%", overflow: "hidden", backgroundColor: actionBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       {recipe.profiles?.avatar_url
                         ? <img src={recipe.profiles.avatar_url} alt="avatar" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ fontSize: 9 }}>👤</span>}
                     </div>
-                    <span style={{ fontSize: 10, color: textColor, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                    <span style={{ fontSize: 10, color: textColor, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, textDecoration: "underline", textUnderlineOffset: 2 }}>
                       {recipe.profiles?.username || "Utilisateur"}
                     </span>
                     {recipe.profiles?.is_official && <OfficialBadge small />}

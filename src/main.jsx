@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { ThemeProvider } from "./context/ThemeContext"
 import { ProfileProvider } from "./context/ProfileContext"
 import PrivateRoute from "./components/PrivateRoute"
+import IOSInstallBanner from "./components/IOSInstallBanner"
 import { supabase } from "./supabase"
 import "./index.css"
 
@@ -151,6 +152,7 @@ const app = (
 
           {/* Onboarding par dessus tout, sans bloquer le rendu */}
           <OnboardingManager />
+          <IOSInstallBanner />
         </Suspense>
 
       </BrowserRouter>

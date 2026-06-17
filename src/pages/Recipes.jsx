@@ -1,4 +1,4 @@
-import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { CATEGORIES, GLACE_TAGS, BOISSON_TAGS, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
@@ -123,6 +123,8 @@ export default function Recipes({ category = "recette" }) {
   const [toast, setToast] = useState({ type: "saved", visible: false })
   const [showCancelPopup, setShowCancelPopup] = useState(false)
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState(null)
+  const [showMineOnly, setShowMineOnly] = useState(false)
 
   const showToast = (type) => {
     setToast({ type, visible: true })
@@ -161,11 +163,30 @@ export default function Recipes({ category = "recette" }) {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) return
-      const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
-      if (error) return
-      if (data) {
-        setRecipes(data)
-        recomputeMissingPrices(data)
+      setCurrentUserId(user.id)
+
+      if (category === "recette") {
+        const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
+        if (error) return
+        if (data) { setRecipes(data); recomputeMissingPrices(data) }
+      } else {
+        const targetKeys = (category === "glace" ? GLACE_TAGS : BOISSON_TAGS).map(t => t.key)
+        const [{ data: publicData }, { data: privateData }] = await Promise.all([
+          supabase.from("recipes").select("*").eq("is_public", true).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
+          supabase.from("recipes").select("*").eq("user_id", user.id).eq("is_public", false).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
+        ])
+        const seen = new Set()
+        const merged = [...(publicData || []), ...(privateData || [])].filter(r => {
+          if (seen.has(r.id)) return false; seen.add(r.id); return true
+        })
+        const uids = [...new Set(merged.map(r => r.user_id))]
+        const profileMap = {}
+        if (uids.length > 0) {
+          const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", uids)
+          profiles?.forEach(p => { profileMap[p.id] = p })
+        }
+        setRecipes(merged.map(r => ({ ...r, profiles: profileMap[r.user_id] ?? null })))
+        recomputeMissingPrices(merged.filter(r => r.user_id === user.id))
       }
     } catch {}
   }
@@ -389,7 +410,7 @@ export default function Recipes({ category = "recette" }) {
 
   const togglePublic = async (e, recipe) => {
     e.stopPropagation()
-    if (recipe.imported_from) return
+    if (recipe.imported_from || recipe.user_id !== currentUserId) return
     if (!isPremium) {
       setShowUpgradePopup(true)
       return
@@ -414,11 +435,12 @@ export default function Recipes({ category = "recette" }) {
   const categoryRecipes = recipes.filter(r => getRecipeCategory(r.primary_tag) === category)
 
   const filtered = categoryRecipes.filter(r => {
-  const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
-  const matchFilter = activeFilter === "all" || activeFilter === "" ||
-    r.primary_tag === activeFilter ||
-    (r.tags && r.tags.includes(activeFilter))
-  return matchSearch && matchFilter
+    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
+    const matchFilter = activeFilter === "all" || activeFilter === "" ||
+      r.primary_tag === activeFilter ||
+      (r.tags && r.tags.includes(activeFilter))
+    const matchMine = !showMineOnly || r.user_id === currentUserId
+    return matchSearch && matchFilter && matchMine
   }).sort((a, b) => category === "boisson" ? a.name.localeCompare(b.name, "fr") : 0)
 
   const btnBase = {
@@ -789,15 +811,22 @@ export default function Recipes({ category = "recette" }) {
               `}</style>
               {["filters-recipes", "filters-recipes-mobile"].map(cls => (
                 <div key={cls} className={cls}>
-                  <button onClick={() => setActiveFilter(activeFilter === "all" ? "" : "all")}
-                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" ? 1 : activeFilter !== "" ? 0.35 : 1, transform: activeFilter === "all" ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
+                  <button onClick={() => { setActiveFilter(activeFilter === "all" ? "" : "all"); setShowMineOnly(false) }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" && !showMineOnly ? 1 : (activeFilter !== "" || showMineOnly) ? 0.35 : 1, transform: activeFilter === "all" && !showMineOnly ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
                     <img src={`/icons/${catInfo.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                     toutes
                   </button>
+                  {category !== "recette" && (
+                    <button onClick={() => { setShowMineOnly(!showMineOnly); setActiveFilter("") }}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", flexShrink: 0, transition: "all 0.2s ease", backgroundColor: showMineOnly ? "var(--text-main)" : "var(--bg-card-2)", color: showMineOnly ? "var(--bg-main)" : "var(--text-muted)", transform: showMineOnly ? "scale(1.1)" : "scale(1)", opacity: !showMineOnly && activeFilter !== "" ? 0.35 : 1 }}>
+                      <img src="/icons/lock.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+                      mes {category === "glace" ? "glaces" : "boissons"}
+                    </button>
+                  )}
                   {categoryTags.map(tag => (
                     <div key={tag.key} style={{ flexShrink: 0 }}>
-                      <TagPill tag={tag} active={activeFilter === tag.key} anyActive={activeFilter !== ""}
-                        onClick={() => setActiveFilter(activeFilter === tag.key ? "" : tag.key)} />
+                      <TagPill tag={tag} active={activeFilter === tag.key} anyActive={activeFilter !== "" || showMineOnly}
+                        onClick={() => { setActiveFilter(activeFilter === tag.key ? "" : tag.key); setShowMineOnly(false) }} />
                     </div>
                   ))}
                 </div>
@@ -829,6 +858,18 @@ export default function Recipes({ category = "recette" }) {
                       : <div style={{ width: "100%", aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: bg, fontSize: 40, borderRadius: "13px 13px 0 0" }}>🍽</div>
                     }
                     <div style={{ padding: "8px 12px 12px", color: textColor }}>
+                      {category !== "recette" && recipe.user_id !== currentUserId && recipe.profiles && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
+                          <div style={{ width: 16, height: 16, borderRadius: "50%", overflow: "hidden", backgroundColor: actionBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {recipe.profiles.avatar_url
+                              ? <img src={recipe.profiles.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              : <span style={{ fontSize: 8 }}>👤</span>}
+                          </div>
+                          <span style={{ fontSize: 10, color: textColor, opacity: 0.65, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {recipe.profiles.username || "Utilisateur"}
+                          </span>
+                        </div>
+                      )}
                       <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.name}</h3>
                       {recipe.duplicated_from && <p style={{ margin: "0 0 4px", fontSize: 10, fontStyle: "italic", opacity: 0.7 }}>📋 copie</p>}
                       <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, marginBottom: 8, flexWrap: "wrap", color: textColor }}>
@@ -874,20 +915,22 @@ export default function Recipes({ category = "recette" }) {
                         )
                       })()}
                       <div style={{ display: "flex", gap: 6 }}>
-                        {recipe.imported_from ? (
-                          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: primaryTagInfo?.pillBg || "rgba(0,0,0,0.55)", color: primaryTagInfo?.pillText || "#ffffff", fontFamily: "Poppins, sans-serif", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                          <img src="/icons/globe.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
-                          importée
-                          </span>
-                        ) : (
-                          <button onClick={e => togglePublic(e, recipe)}
-                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center" }}>
-                          <img src={recipe.is_public ? "/icons/planet.webp" : "/icons/lock.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
-                          </button>
+                        {recipe.user_id === currentUserId && (
+                          recipe.imported_from ? (
+                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: primaryTagInfo?.pillBg || "rgba(0,0,0,0.55)", color: primaryTagInfo?.pillText || "#ffffff", fontFamily: "Poppins, sans-serif", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                              <img src="/icons/globe.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
+                              importée
+                            </span>
+                          ) : (
+                            <button onClick={e => togglePublic(e, recipe)}
+                              style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center" }}>
+                              <img src={recipe.is_public ? "/icons/planet.webp" : "/icons/lock.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
+                            </button>
+                          )
                         )}
                         <button onClick={e => handleDuplicate(e, recipe)} disabled={duplicating===recipe.id}
-                        style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1, display: "flex", alignItems: "center" }}>
-                        <img src={duplicating===recipe.id ? "/icons/hourglass.webp" : "/icons/memo.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
+                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1, display: "flex", alignItems: "center" }}>
+                          <img src={duplicating===recipe.id ? "/icons/hourglass.webp" : "/icons/memo.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                         </button>
                       </div>
                     </div>

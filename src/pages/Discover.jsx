@@ -82,11 +82,14 @@ export default function Discover() {
       const from = pageIndex * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
+      const recipeTagFilter = `primary_tag.is.null,primary_tag.in.(${TAGS.map(t => t.key).join(",")})`
+
       const { data } = await supabase
         .from("recipes")
         .select("id, name, photo_url, user_id, primary_tag, tags, rating, prep_time, servings, estimated_total, imported_from, description")
         .eq("is_public", true)
         .neq("user_id", user.id)
+        .or(recipeTagFilter)
         .order("created_at", { ascending: false })
         .range(from, to)
 

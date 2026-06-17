@@ -298,9 +298,9 @@ export const ALL_TAGS = [...TAGS, ...GLACE_TAGS, ...BOISSON_TAGS]
 // Catégories de recettes : chacune a son propre jeu de tags
 // ─────────────────────────────────────────────────────────────────
 export const CATEGORIES = {
-  recette: { key: "recette", label: "mes recettes",            itemLabel: "recette", icon: "book",     path: "/recipes",  tags: TAGS },
-  glace:   { key: "glace",   label: "mes glaces",              itemLabel: "glace",   icon: "icecream", path: "/glaces",   tags: GLACE_TAGS },
-  boisson: { key: "boisson", label: "mes boissons & cocktails", itemLabel: "boisson", icon: "drink",    path: "/boissons", tags: BOISSON_TAGS },
+  recette: { key: "recette", label: "mes recettes",        itemLabel: "recette", icon: "book",     path: "/recipes",  tags: TAGS },
+  glace:   { key: "glace",   label: "glaces",              itemLabel: "glace",   icon: "icecream", path: "/glaces",   tags: GLACE_TAGS },
+  boisson: { key: "boisson", label: "boissons & cocktails", itemLabel: "boisson", icon: "drink",    path: "/boissons", tags: BOISSON_TAGS },
 }
 
 // Détermine la catégorie d'une recette à partir de son tag principal

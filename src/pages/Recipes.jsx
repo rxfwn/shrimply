@@ -50,13 +50,16 @@ function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
   )
 }
 
-function DraftToast({ type, visible }) {
+function DraftToast({ type, visible, msg }) {
   const configs = {
     saved:    { bg: "#5BC8F5", text: "#0a3d52", icon: "/icons/save.webp",  msg: "brouillon sauvegardé" },
     restored: { bg: "#A8E063", text: "#1a3a00", icon: "/icons/memo.webp",  msg: "brouillon restauré"  },
     cleared:  { bg: "#f3501e", text: "#ffffff",  icon: "/icons/trash.webp", msg: "brouillon supprimé"  },
+    added:    { bg: "#4ade80", text: "#052e16",  icon: "/icons/check.webp", msg: "ajoutée !"            },
+    error:    { bg: "#f87171", text: "#ffffff",  icon: "/icons/trash.webp", msg: "erreur"               },
   }
   const c = configs[type] || configs.saved
+  const label = msg || c.msg
   return (
     <>
       <style>{`@keyframes slideBar { from { width: 100% } to { width: 0% } }`}</style>
@@ -73,7 +76,7 @@ function DraftToast({ type, visible }) {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
           <img src={c.icon} alt="" style={{ width: 28, height: 28, objectFit: "contain" }} onError={e => e.target.style.display="none"} />
-          <span style={{ fontSize: 15, fontWeight: 800, color: c.text, letterSpacing: "-0.04em" }}>{c.msg}</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: c.text, letterSpacing: "-0.04em" }}>{label}</span>
         </div>
         <div style={{ width: "100%", height: 5, backgroundColor: "rgba(0,0,0,0.15)", borderRadius: 4, overflow: "hidden", display: "flex", justifyContent: "flex-end" }}>
           {visible && <div style={{ height: "100%", backgroundColor: c.text, borderRadius: 4, opacity: 0.5, animation: "slideBar 2.2s linear forwards", transformOrigin: "right" }} />}
@@ -470,14 +473,8 @@ export default function Recipes({ category = "recette" }) {
         </div>
       )}
 
-      {success && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
-          ✅ {typeof success==="string" ? success : "recette ajoutée !"}
-        </div>
-      )}
-      {dupError && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#f87171", color: "#ffffff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>⚠️ {dupError}</div>
-      )}
+      <DraftToast type="added" visible={!!success} msg={typeof success === "string" ? success : `${catInfo.itemLabel} ajoutée !`} />
+      <DraftToast type="error" visible={!!dupError} msg={dupError} />
 
       {tagPopup && (
         <div style={{ position: "fixed", left: tagPopup.x, top: tagPopup.y - 6, transform: "translateX(-50%) translateY(-100%)", zIndex: 9999, backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5, boxShadow: "0 4px 20px rgba(0,0,0,0.35)", minWidth: 120, pointerEvents: "none" }}>

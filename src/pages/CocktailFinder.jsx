@@ -326,10 +326,10 @@ export default function CocktailFinder() {
 
           {!loading && recipes.length > 0 && selected.length === 0 && !searchCocktail.trim() && filter === "all" && (
             <div style={{ backgroundColor: surface, borderRadius: 12, border: `1px solid ${border}`, padding: "13px 16px", marginBottom: 12, display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 22, flexShrink: 0 }}>👈</span>
+              <img src="/icons/hand.webp" alt="" style={{ width: 22, height: 22, flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: textMain, letterSpacing: "-0.03em", marginBottom: 2 }}>Sélectionne tes ingrédients</div>
-                <div style={{ fontSize: 10, color: textMuted, lineHeight: 1.4 }}>Les cocktails se trient par nombre d'ingrédients manquants.</div>
+                <div style={{ fontSize: 10, color: textMuted, lineHeight: 1.4 }}>Les cocktails s'affichent du plus réalisable au moins réalisable.</div>
               </div>
             </div>
           )}

@@ -8,6 +8,7 @@ import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
 import { detectCocktailIngs } from "../components/CocktailIngredientPicker"
 import CocktailNameInput from "../components/CocktailNameInput"
+import { getTextColor } from "../utils/ui"
 
 const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce","selon goût"]
 
@@ -26,11 +27,6 @@ function handleNumericKeyDown(e) {
   if (!/^\d$/.test(e.key)) e.preventDefault()
 }
 
-function getTextColor(hex) {
-  if (!hex) return "#111111"
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
-}
 
 function TagPill({ tag, active, onClick, size = "md", anyActive = false }) {
   const iconSz = size === "sm" ? 14 : 18
@@ -308,7 +304,7 @@ export default function Recipes({ category = "recette" }) {
       if (estimatedTotal !== null && parseInt(servings) > 0) {
         const perServing = estimatedTotal / parseInt(servings)
         if (perServing > 0 && perServing < ECONOMIC_THRESHOLD && !autoTags.includes("economique")) autoTags.push("economique")
-        else if (perServing >= ECONOMIC_THRESHOLD) autoTags.splice(autoTags.indexOf("economique"), 1)
+        else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
       }
 
       // Tag rapide automatique (≤ 20 min)

@@ -5,6 +5,7 @@ import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@
 import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
+import { getTextColor } from "../utils/ui"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
 
@@ -76,12 +77,6 @@ function getRecipeCardBorder(recipe) {
   if (!recipe) return DEFAULT_CARD_BORDER
   const tag = ALL_TAGS.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag)
   return tag?.cardBorder || DEFAULT_CARD_BORDER
-}
-
-function getTextColor(hex) {
-  if (!hex) return "#111111"
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
 }
 
 function RecipeCard({ recipe, isDay }) {
@@ -294,7 +289,6 @@ export default function Calendar() {
   const [search, setSearch] = useState("")
   const [activeRecipe, setActiveRecipe] = useState(null)
   const [mobileModal, setMobileModal] = useState(null)
-  const [showBalancePopup, setShowBalancePopup] = useState(false)
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
   const [upgradeReason, setUpgradeReason] = useState("")
 
@@ -307,20 +301,24 @@ export default function Calendar() {
   useEffect(() => { fetchData() }, [monday, currentMonth, currentYear, view])
 
   const fetchData = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    let startDate, endDate
-    if (view === "week") {
-      startDate = formatDate(monday)
-      endDate = formatDate(days[6])
-    } else {
-      startDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`
-      const lastDay = new Date(currentYear, currentMonth + 1, 0)
-      endDate = formatDate(lastDay)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      let startDate, endDate
+      if (view === "week") {
+        startDate = formatDate(monday)
+        endDate = formatDate(days[6])
+      } else {
+        startDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`
+        const lastDay = new Date(currentYear, currentMonth + 1, 0)
+        endDate = formatDate(lastDay)
+      }
+      const { data: planData } = await supabase.from("meal_plan").select("*, recipes(name, prep_time, tags, primary_tag, photo_url)").eq("user_id", user.id).gte("date", startDate).lte("date", endDate)
+      const { data: recipesData } = await supabase.from("recipes").select("*").eq("user_id", user.id)
+      if (planData) setMealPlan(planData)
+      if (recipesData) setRecipes(recipesData)
+    } catch (err) {
+      console.error("fetchData error", err)
     }
-    const { data: planData } = await supabase.from("meal_plan").select("*, recipes(name, prep_time, tags, primary_tag, photo_url)").eq("user_id", user.id).gte("date", startDate).lte("date", endDate)
-    const { data: recipesData } = await supabase.from("recipes").select("*").eq("user_id", user.id)
-    if (planData) setMealPlan(planData)
-    if (recipesData) setRecipes(recipesData)
   }
 
   const getMeal = (date, mealType) => mealPlan.find(m => m.date === formatDate(date) && m.meal_type === mealType)
@@ -537,18 +535,6 @@ export default function Calendar() {
         />
       )}
 
-      {/* Popup équilibrer */}
-      {showBalancePopup && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, backgroundColor: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 16, padding: 32, maxWidth: 360, width: "100%", textAlign: "center", border: "1px solid var(--border)" }}>
-            <img src="/icons/salad.webp" alt="" style={{ width: 48, height: 48, marginBottom: 16 }} />
-            <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 700, color: "var(--text-main)" }}>bientôt disponible !</h2>
-            <p className="text-light" style={{ margin: "0 0 24px", fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>la fonctionnalité d'équilibrage automatique de ton planning est en cours de développement</p>
-            <button onClick={() => setShowBalancePopup(false)} style={{ width: "100%", padding: "12px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>ok, j'attends !</button>
-          </div>
-        </div>
-      )}
-
       <div style={{ display: "flex", height: "100%", overflow: "hidden", backgroundColor: "var(--bg-main)", transition: "background-color 0.25s ease" }}>
         <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "12px" : "20px 20px 20px 24px" }}>
 
@@ -595,10 +581,6 @@ export default function Calendar() {
 
             {/* Boutons action */}
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button onClick={() => setShowBalancePopup(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#d57bff", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#130b2d", transition: "transform 0.2s ease" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"} onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}>
-                <img src="/icons/salad.webp" alt="" style={{ width: 16, height: 16 }} />
-                équilibrer
-              </button>
               <button id="btn-go-shopping" onClick={() => navigate("/shopping")} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 14px", borderRadius: 10, backgroundColor: "#cfff79", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", color: "#1a3d1a", transition: "transform 0.2s ease" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"} onMouseUp={e => e.currentTarget.style.transform = "scale(1.03)"}>
                 <img src="/icons/cart.webp" alt="" style={{ width: 16, height: 16 }} />
                 courses

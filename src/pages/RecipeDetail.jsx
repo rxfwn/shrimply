@@ -4,6 +4,7 @@ import { supabase } from "../supabase"
 import { ALL_TAGS, CATEGORIES, getRecipeCategory } from "../tags"
 import { computeCostDetails, shouldSkipIngredient } from "../utils/priceEngine"
 import { useTheme } from "../context/ThemeContext"
+import { safeImageUrl } from "../utils/ui"
 
 const S = {
   btn: { fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "-0.05em", border: "none", cursor: "pointer", borderRadius: 10, transition: "transform 0.15s, opacity 0.15s" },
@@ -208,8 +209,8 @@ export default function RecipeDetail() {
   const navigate = useNavigate()
   const { isDay } = useTheme()
 
-  const ADMIN_ID = "defac7ee-a2d1-4765-a3d1-3e002bb3569e"
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [recipe, setRecipe] = useState(null)
   const [ingredients, setIngredients] = useState([])
   const [steps, setSteps] = useState([])
@@ -275,13 +276,21 @@ export default function RecipeDetail() {
 
   useEffect(() => { fetchRecipe() }, [id])
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id ?? null))
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      const uid = user?.id ?? null
+      setCurrentUserId(uid)
+      if (uid) {
+        const { data: prof } = await supabase.from("profiles").select("is_official").eq("id", uid).maybeSingle()
+        setIsAdmin(prof?.is_official === true)
+      }
+    })
   }, [])
   useEffect(() => {
     if (cooldown > 0) { const t = setTimeout(() => setCooldown(c => c - 1), 1000); return () => clearTimeout(t) }
   }, [cooldown])
 
   const fetchRecipe = async () => {
+    try {
     const { data: recipeData } = await supabase.from("recipes").select("*").eq("id", id).maybeSingle()
     const { data: ingredientsData } = await supabase.from("ingredients").select("*").eq("recipe_id", id)
     const { data: stepsData } = await supabase.from("steps").select("*").eq("recipe_id", id).order("step_number")
@@ -314,6 +323,7 @@ export default function RecipeDetail() {
         }
       }
     }
+    } catch (e) { console.error("fetchRecipe error:", e); setLoading(false) }
   }
 
   const getEstimableIngredients = (list) => list.filter(i => hasValidQuantity(i) && !shouldSkipIngredient(i.name, i.unit))
@@ -627,7 +637,7 @@ const handleEstimate = async () => {
                 <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
                 {btnLabel}
               </button>
-              {currentUserId === ADMIN_ID && (
+              {isAdmin && (
                 <button onClick={handleForceRecalculate} disabled={estimating} title="Forcer le recalcul (vide le cache)"
                   style={{ ...S.btn, padding: "7px 10px", fontSize: 14, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 40, opacity: estimating ? 0.5 : 1 }}
                   onMouseEnter={e => { if (!estimating) e.currentTarget.style.transform = "scale(1.08)" }}
@@ -667,7 +677,7 @@ const handleEstimate = async () => {
                     {formatQuantity(item.quantity)} {item.unit}
                   </span>
                   {item.found && <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E" }}>{item.estimated_price.toFixed(2)}€</span>}
-                  {currentUserId === ADMIN_ID && !shouldSkipIngredient(item.name, item.unit) && (
+                  {isAdmin && !shouldSkipIngredient(item.name, item.unit) && (
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       {editingPriceIngredient === item.name ? (
                         <input

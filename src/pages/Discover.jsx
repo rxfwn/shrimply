@@ -4,12 +4,8 @@ import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
-
-function getTextColor(hex) {
-  if (!hex) return "#111111"
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
-}
+import Toast from "../components/Toast"
+import { getTextColor } from "../utils/ui"
 
 function OfficialBadge({ small = false }) {
   return (
@@ -244,12 +240,7 @@ export default function Discover() {
         </div>
       )}
 
-      {/* Toast */}
-      {success && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
-          ✅ {success}
-        </div>
-      )}
+      <Toast visible={!!success} message={success} duration={3000} />
 
       {/* ── MODAL PREVIEW ── */}
       {previewRecipe && (

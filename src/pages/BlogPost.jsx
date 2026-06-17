@@ -37,6 +37,26 @@ export default function BlogPost({ embedded = false }) {
     document.getElementById("lcp-shell")?.remove()
   }, [])
 
+  useEffect(() => {
+    if (!post) return
+    const prev = document.title
+    document.title = `${post.title} | Shrimply`
+    const setMeta = (sel, attr, val) => {
+      let el = document.querySelector(sel)
+      if (!el) { el = document.createElement("meta"); if (sel.includes("property")) el.setAttribute("property", sel.match(/property="([^"]+)"/)[1]); else el.name = sel.match(/name="([^"]+)"/)[1]; document.head.appendChild(el) }
+      const prevVal = el.getAttribute(attr) ?? ""
+      el.setAttribute(attr, val)
+      return () => el.setAttribute(attr, prevVal)
+    }
+    const restores = [
+      setMeta('meta[name="description"]', "content", post.excerpt),
+      setMeta('meta[property="og:title"]', "content", `${post.title} | Shrimply`),
+      setMeta('meta[property="og:description"]', "content", post.excerpt),
+      setMeta('meta[property="og:type"]', "content", "article"),
+    ]
+    return () => { document.title = prev; restores.forEach(r => r()) }
+  }, [post])
+
   if (!post) {
     return <Navigate to={blogHome} replace />
   }

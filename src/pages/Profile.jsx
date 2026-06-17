@@ -6,13 +6,7 @@ import { supabase } from "../supabase"
 import { TAGS, ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
 import { useTheme } from "../context/ThemeContext"
 import { usePremium } from "../hooks/usePremium"
-
-
-function getTextColor(hex) {
-  if (!hex) return "#111111"
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-  return (0.299*r + 0.587*g + 0.114*b)/255 > 0.55 ? "#111111" : "#ffffff"
-}
+import { getTextColor, safeImageUrl } from "../utils/ui"
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -136,8 +130,8 @@ export default function Profile() {
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
           <div style={{ position: "relative" }}>
             <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", flexShrink: 0, backgroundColor: "var(--bg-card-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {profile?.avatar_url
-                ? <img src={`${profile.avatar_url}?t=${Date.now()}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {safeImageUrl(profile?.avatar_url)
+                ? <img src={`${safeImageUrl(profile.avatar_url)}?t=${Date.now()}`} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <span style={{ fontSize: 32 }}>👤</span>
               }
             </div>

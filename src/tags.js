@@ -315,6 +315,12 @@ export const DEFAULT_CARD_BG   = "#2d2d2d"
 export const DEFAULT_CARD_TEXT   = "#ffffff"
 export const DEFAULT_CARD_BORDER = "#444444"
 
+// Couleur de carte pour les boissons & cocktails (neutre, indépendant du tag)
+export const BOISSON_CARD_BG     = "#EDE8DF"
+export const BOISSON_CARD_BORDER  = "#C8BFB5"
+export const BOISSON_CARD_TEXT    = "#1E1E1E"
+export const BOISSON_CARD_ACTION  = "rgba(0,0,0,0.07)"
+
 // Couleur du bouton "toutes"
 export const FILTER_ALL_BG   = "#fe7c3e"
 export const FILTER_ALL_TEXT = "#510312"
@@ -343,6 +349,9 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "rhum_blanc",        label: "Rhum blanc",            category: "spiritueux" },
   { key: "rhum_ambre",        label: "Rhum ambré",            category: "spiritueux" },
   { key: "rhum_brun",         label: "Rhum brun",             category: "spiritueux" },
+  { key: "rhum_brun_jamaique",label: "Rhum brun jamaïcain",   category: "spiritueux" },
+  { key: "rhum_jamaique_ambre",label: "Rhum jamaïcain ambré", category: "spiritueux" },
+  { key: "rhum_cubain",       label: "Rhum cubain",           category: "spiritueux" },
   { key: "rhum_overproof",    label: "Rhum overproof",        category: "spiritueux" },
   { key: "rhum_epice",        label: "Rhum épicé",            category: "spiritueux" },
   { key: "cachaca",           label: "Cachaça",               category: "spiritueux" },
@@ -353,11 +362,13 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "tequila_reposado",  label: "Tequila reposado",      category: "spiritueux" },
   { key: "mezcal",            label: "Mezcal",                category: "spiritueux" },
   { key: "whisky",            label: "Whisky écossais",       category: "spiritueux" },
+  { key: "scotch",            label: "Scotch",                category: "spiritueux" },
   { key: "irish_whiskey",     label: "Irish Whiskey",         category: "spiritueux" },
   { key: "whisky_japonais",   label: "Whisky japonais",       category: "spiritueux" },
   { key: "bourbon",           label: "Bourbon américain",     category: "spiritueux" },
   { key: "rye",               label: "Rye whiskey",           category: "spiritueux" },
   { key: "cognac",            label: "Cognac",                category: "spiritueux" },
+  { key: "cognac_vsop",       label: "Cognac VSOP",           category: "spiritueux" },
   { key: "calvados",          label: "Calvados",              category: "spiritueux" },
   { key: "pisco",             label: "Pisco",                 category: "spiritueux" },
   { key: "brandy",            label: "Brandy",                category: "spiritueux" },
@@ -399,6 +410,7 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "galliano",          label: "Galliano",              category: "liqueur" },
   { key: "chambord",          label: "Chambord",              category: "liqueur" },
   { key: "pimms",             label: "Pimm's No.1",           category: "liqueur" },
+  { key: "punsch",            label: "Punsch",                category: "liqueur" },
   // Vin & Vermouth
   { key: "champagne",         label: "Champagne",             category: "vin" },
   { key: "prosecco",          label: "Prosecco",              category: "vin" },
@@ -416,6 +428,7 @@ export const COCKTAIL_INGREDIENTS = [
   // Amers & Bitter
   { key: "angostura",         label: "Angostura bitters",     category: "amers" },
   { key: "peychauds",         label: "Peychaud's bitters",    category: "amers" },
+  { key: "peach_bitters",     label: "Peach Bitters",         category: "amers" },
   { key: "orange_bitters",    label: "Orange bitters",        category: "amers" },
   { key: "campari",           label: "Campari",               category: "amers" },
   { key: "aperol",            label: "Aperol",                category: "amers" },
@@ -441,6 +454,7 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "sirop_cannelle",    label: "Sirop de cannelle",     category: "sirop" },
   { key: "sirop_gingembre",   label: "Sirop de gingembre",    category: "sirop" },
   { key: "miel",              label: "Miel",                  category: "sirop" },
+  { key: "sirop_erable",      label: "Sirop d'érable",        category: "sirop" },
   // Jus & Purées
   { key: "jus_citron",        label: "Jus de citron frais",   category: "jus" },
   { key: "jus_citron_vert",   label: "Jus de citron vert",    category: "jus" },
@@ -491,6 +505,8 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "zeste_orange",      label: "Zeste d'orange",        category: "frigo" },
   { key: "tranche_citron",    label: "Tranche de citron",     category: "frigo" },
   { key: "tranche_orange",    label: "Tranche d'orange",      category: "frigo" },
+  { key: "quartier_citron_vert", label: "Quartier de citron vert", category: "frigo" },
+  { key: "tranche_pomme",     label: "Tranche de pomme",      category: "frigo" },
   { key: "cerises_marasquin", label: "Cerises Marasquin",     category: "frigo" },
   { key: "cerises_amarena",   label: "Cerises Amarena",       category: "frigo" },
   { key: "olives",            label: "Olives vertes",         category: "frigo" },

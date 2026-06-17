@@ -342,17 +342,28 @@ export default function CocktailFinder() {
                 const haveCount  = recipe.recipeIngs.length - recipe.missingCount
                 const totalCount = recipe.recipeIngs.length
                 const isExpanded = expanded.has(recipe.id)
-                const cardBorderColor = canMake ? (tagInfo?.cardBorder || "#22c55e") : border
+                const hasSelection  = selected.length > 0
+                const haveNone      = hasSelection && totalCount > 0 && haveCount === 0
+                const haveOne       = hasSelection && haveCount === 1 && !canMake
+                const cardBorderColor = hasSelection
+                  ? (canMake ? "#CFFF79" : haveOne ? "#9BE7FF" : border)
+                  : border
+                const cardBgTint = hasSelection && canMake
+                  ? "rgba(207,255,121,0.07)"
+                  : hasSelection && haveOne
+                    ? "rgba(155,231,255,0.07)"
+                    : surface
+                const cardOpacity = haveNone ? 0.38 : 1
 
                 return (
                   <div key={recipe.id} className="cf-card"
-                    style={{ border: `1.5px solid ${cardBorderColor}` }}
+                    style={{ border: `1.5px solid ${cardBorderColor}`, backgroundColor: cardBgTint, opacity: cardOpacity }}
                     onClick={() => toggleExpand(recipe.id)}
                   >
                     {/* Ligne principale — photo carrée + info */}
-                    <div style={{ display: "flex", alignItems: "stretch", minHeight: 60 }}>
-                      {/* Photo carrée */}
-                      <div style={{ width: 60, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: tagInfo?.cardBg || (isDay ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)") }}>
+                    <div style={{ display: "flex", alignItems: "stretch" }}>
+                      {/* Photo */}
+                      <div style={{ width: 56, height: 56, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: tagInfo?.cardBg || (isDay ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)") }}>
                         {recipe.photo_url
                           ? <img src={recipe.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                           : tagInfo && <div style={{ width: "100%", height: "100%", backgroundColor: tagInfo.cardBg, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5 }} />
@@ -360,8 +371,8 @@ export default function CocktailFinder() {
                       </div>
 
                       {/* Contenu */}
-                      <div style={{ flex: 1, padding: "9px 10px", display: "flex", flexDirection: "column", justifyContent: "space-between", minWidth: 0, gap: 4 }}>
-                        {/* Haut : tag + score */}
+                      <div style={{ flex: 1, padding: "6px 10px 7px", display: "flex", flexDirection: "column", justifyContent: "flex-start", minWidth: 0, gap: 3 }}>
+                        {/* Tag + score sur la même ligne */}
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
                           {tagInfo ? (
                             <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 7px", borderRadius: 8, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.04em", textTransform: "uppercase", flexShrink: 0, lineHeight: 1.4 }}>
@@ -372,7 +383,7 @@ export default function CocktailFinder() {
                             <ScoreCircle have={haveCount} total={totalCount} isDay={isDay} textMuted={textMuted} />
                           )}
                         </div>
-                        {/* Nom */}
+                        {/* Nom — collé sous le tag */}
                         <div style={{ fontSize: 12, fontWeight: 700, color: textMain, letterSpacing: "-0.04em", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {recipe.name}
                         </div>

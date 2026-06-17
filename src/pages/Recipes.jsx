@@ -1,8 +1,9 @@
-import { CATEGORIES, GLACE_TAGS, BOISSON_TAGS, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { CATEGORIES, GLACE_TAGS, BOISSON_TAGS, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER, BOISSON_CARD_BG, BOISSON_CARD_BORDER, BOISSON_CARD_TEXT, BOISSON_CARD_ACTION } from "../tags"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { computeCostDetails } from "../utils/priceEngine"
+import { computeCocktailCost } from "../utils/cocktailPriceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
 import { usePremium } from "../hooks/usePremium"
 import UpgradePopup from "../components/Upgradepopup"
@@ -174,7 +175,7 @@ export default function Recipes({ category = "recette" }) {
         const targetKeys = (category === "glace" ? GLACE_TAGS : BOISSON_TAGS).map(t => t.key)
         const [{ data: publicData }, { data: privateData }] = await Promise.all([
           supabase.from("recipes").select("*").eq("is_public", true).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
-          supabase.from("recipes").select("*").eq("user_id", user.id).eq("is_public", false).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
+          supabase.from("recipes").select("*").eq("user_id", user.id).not("is_public", "is", true).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
         ])
         const seen = new Set()
         const merged = [...(publicData || []), ...(privateData || [])].filter(r => {
@@ -204,12 +205,23 @@ export default function Recipes({ category = "recette" }) {
       const ings = ingsByRecipe[r.id]
       if (!ings?.length) return null
       try {
-        const { total, details } = await computeCostDetails(
-          ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
-          r.servings || null
-        )
-        const hasAnyMatch = details?.some(d => d.found)
-        if (!hasAnyMatch) return null
+        const recipeCategory = getRecipeCategory(r.primary_tag || "")
+        let total, details
+        if (recipeCategory === "boisson") {
+          const res = await computeCocktailCost(
+            ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+            r.servings || null
+          )
+          total = res.total; details = res.details
+          if (total == null) return null
+        } else {
+          const res = await computeCostDetails(
+            ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+            r.servings || null
+          )
+          total = res.total; details = res.details
+          if (!details?.some(d => d.found)) return null
+        }
         await supabase.from("recipes").update({ estimated_total: total }).eq("id", r.id)
         return { id: r.id, total }
       } catch { return null }
@@ -307,13 +319,22 @@ export default function Recipes({ category = "recette" }) {
     let costDetails = null
     if (validIngredients.length > 0) {
       try {
-        const { total, details } = await computeCostDetails(
-          validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
-          parseInt(servings)
-        )
-        const hasAnyMatch = details?.some(d => d.found)
-        estimatedTotal = hasAnyMatch ? total : null
-        costDetails = details
+        if (category === "boisson") {
+          const { total, details } = await computeCocktailCost(
+            validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
+            parseInt(servings)
+          )
+          estimatedTotal = total
+          costDetails = details ?? null
+        } else {
+          const { total, details } = await computeCostDetails(
+            validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) })),
+            parseInt(servings)
+          )
+          const hasAnyMatch = details?.some(d => d.found)
+          estimatedTotal = hasAnyMatch ? total : null
+          costDetails = details
+        }
       } catch (e) {
         // API indisponible en local → null, pas grave
       }
@@ -860,11 +881,14 @@ export default function Recipes({ category = "recette" }) {
             <div className="recipes-grid">
               {filtered.map(recipe => {
                 const primaryTagInfo = categoryTags.find(t => t.value === recipe.primary_tag || t.key === recipe.primary_tag || t.label === recipe.primary_tag)
-                const bg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
-                const border = primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER
-                const textColor = primaryTagInfo?.cardText || getTextColor(bg)
-                const actionBg = primaryTagInfo?.actionBg || (textColor==="#ffffff" ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.09)")
-                const actionText = primaryTagInfo?.actionText || textColor
+                const bg = category === "boisson" ? BOISSON_CARD_BG : (primaryTagInfo?.cardBg || DEFAULT_CARD_BG)
+                const border = category === "boisson" ? BOISSON_CARD_BORDER : (primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER)
+                const textColor = category === "boisson" ? BOISSON_CARD_TEXT : (primaryTagInfo?.cardText || getTextColor(bg))
+                const actionBg = category === "boisson" ? BOISSON_CARD_ACTION : (primaryTagInfo?.actionBg || (textColor==="#ffffff" ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.09)"))
+                const actionText = category === "boisson" ? BOISSON_CARD_TEXT : (primaryTagInfo?.actionText || textColor)
+                const chipBg = category === "boisson" ? "#1E1E1E" : actionBg
+                const chipText = category === "boisson" ? "#ffffff" : bg
+                const chipBtn = category === "boisson" ? "#ffffff" : actionText
                 return (
                   <div key={recipe.id} onClick={() => navigate(`/recipes/${recipe.id}`)}
                     style={{ backgroundColor: bg, border: `3px solid ${border}`, borderRadius: 16, overflow: "visible", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", position: "relative" }}
@@ -891,16 +915,16 @@ export default function Recipes({ category = "recette" }) {
                       <h3 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{recipe.name}</h3>
                       {recipe.duplicated_from && <p style={{ margin: "0 0 4px", fontSize: 10, fontStyle: "italic", opacity: 0.7 }}>📋 copie</p>}
                       <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, marginBottom: 8, flexWrap: "wrap", color: textColor }}>
-                        {recipe.prep_time && <span style={{ opacity: 0.75 }}>⏱ {recipe.prep_time}min</span>}
-                        {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
+                        {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
+                        {recipe.servings && <span>🍽 {recipe.servings}p</span>}
                         {recipe.estimated_total != null && (
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: actionBg, color: bg }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: chipBg, color: chipText }}>
                             <img src="/icons/money.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
                             {recipe.estimated_total.toFixed(2)}€
                           </span>
                         )}
                         {recipe.rating > 0 && (
-                          <span style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: actionBg, color: bg }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 3, padding: "2px 7px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: chipBg, color: chipText }}>
                             ★ {Number(recipe.rating).toFixed(1)}
                           </span>
                         )}
@@ -941,13 +965,13 @@ export default function Recipes({ category = "recette" }) {
                             </span>
                           ) : (
                             <button onClick={e => togglePublic(e, recipe)}
-                              style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center" }}>
+                              style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: chipBg, color: chipBtn, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", display: "flex", alignItems: "center" }}>
                               <img src={recipe.is_public ? "/icons/planet.webp" : "/icons/lock.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                             </button>
                           )
                         )}
                         <button onClick={e => handleDuplicate(e, recipe)} disabled={duplicating===recipe.id}
-                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: actionBg, color: actionText, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1, display: "flex", alignItems: "center" }}>
+                          style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, fontWeight: 700, backgroundColor: chipBg, color: chipBtn, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", opacity: duplicating===recipe.id ? 0.4 : 1, display: "flex", alignItems: "center" }}>
                           <img src={duplicating===recipe.id ? "/icons/hourglass.webp" : "/icons/memo.webp"} alt="" style={{ width: 12, height: 12 }} onError={e => e.target.style.display = "none"} />
                         </button>
                       </div>

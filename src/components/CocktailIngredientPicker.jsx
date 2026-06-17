@@ -18,7 +18,8 @@ const DETECT_ALIASES = [
   { key: "whisky_japonais",   terms: ["whisky japonais"] },
   { key: "bourbon",           terms: ["bourbon américain", "bourbon"] },
   { key: "rye",               terms: ["rye whiskey", "rye"] },
-  { key: "whisky",            terms: ["whisky écossais", "whisky", "whiskey", "scotch"] },
+  { key: "whisky",            terms: ["whisky écossais", "whisky", "whiskey"] },
+  { key: "scotch",            terms: ["scotch"] },
   { key: "cognac",            terms: ["cognac"] },
   { key: "calvados",          terms: ["calvados"] },
   { key: "mezcal",            terms: ["mezcal"] },
@@ -105,6 +106,7 @@ const DETECT_ALIASES = [
   { key: "falernum",          terms: ["falernum"] },
   { key: "grenadine",         terms: ["grenadine"] },
   { key: "miel",              terms: ["miel"] },
+  { key: "sirop_erable",      terms: ["sirop d'érable", "sirop erable", "maple syrup"] },
   // Jus & purées
   { key: "jus_pamplemousse",  terms: ["jus de pamplemousse"] },
   { key: "jus_passion",       terms: ["jus de fruit de la passion", "jus passion"] },

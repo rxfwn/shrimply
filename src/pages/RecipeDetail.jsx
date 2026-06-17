@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { ALL_TAGS, CATEGORIES, getRecipeCategory } from "../tags"
 import { computeCostDetails, shouldSkipIngredient } from "../utils/priceEngine"
+import { computeCocktailCost } from "../utils/cocktailPriceEngine"
 import { useTheme } from "../context/ThemeContext"
 import { safeImageUrl } from "../utils/ui"
 
@@ -297,8 +298,23 @@ export default function RecipeDetail() {
     setRecipe(recipeData); setIngredients(ingredientsData || []); setSteps(stepsData || [])
     setLoading(false)
     if (recipeData?.servings) setCurrentServings(parseInt(recipeData.servings))
-    // Lit les prix stockés en DB — pas d'appel API
-    if (ingredientsData?.some(i => i.estimated_price != null)) {
+    const recipeCategory = getRecipeCategory(recipeData?.primary_tag || "")
+    if (recipeCategory === "boisson" && ingredientsData?.length > 0) {
+      // Prix cocktail — calculé depuis la table DB, pas d'IA
+      try {
+        const { total, per_serving, details } = await computeCocktailCost(ingredientsData, recipeData?.servings)
+        if (total != null) {
+          setCostDetails({ details, total, per_serving })
+          await Promise.allSettled((details || []).map(detail => {
+            const ing = ingredientsData.find(i => i.name === detail.name)
+            if (!ing?.id) return Promise.resolve()
+            return supabase.from("ingredients").update({ estimated_price: detail.found ? detail.estimated_price : null }).eq("id", ing.id)
+          }))
+          await supabase.from("recipes").update({ estimated_total: total }).eq("id", recipeData.id)
+        }
+      } catch (e) { /* ignore */ }
+    } else if (ingredientsData?.some(i => i.estimated_price != null)) {
+      // Lit les prix stockés en DB — pas d'appel API
       const details = ingredientsData.map(i => ({
         name: i.name, quantity: i.quantity, unit: i.unit,
         estimated_price: i.estimated_price ?? 0,
@@ -503,6 +519,7 @@ const handleEstimate = async () => {
     costDetails?.details?.filter(d => estimableIngredients.some(e => e.name === d.name)).every(d => d.found)
 
   const canEstimate = !estimating && cooldown === 0 && !allPricesFound
+  const isBoisson = getRecipeCategory(recipe.primary_tag || "") === "boisson"
 
   const allTagValues = [...new Set([recipe.primary_tag, ...(recipe.tags || [])])].filter(Boolean)
   const validTags = allTagValues.filter(tv => ALL_TAGS.some(t => t.value === tv))
@@ -628,16 +645,18 @@ const handleEstimate = async () => {
 
               <div style={{ flex: 1 }} />
 
-              <button onClick={handleEstimate} disabled={!canEstimate}
-                className="budget-calc-btn"
-                style={{ ...S.btn, padding: "7px 16px", fontSize: 12, backgroundColor: btnBg, color: btnColor, cursor: canEstimate ? "pointer" : "not-allowed", opacity: estimating ? 0.6 : 1, borderRadius: 40, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
-                onMouseEnter={e => { if (canEstimate) e.currentTarget.style.transform = "scale(1.04)" }}
-                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-              >
-                <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
-                {btnLabel}
-              </button>
-              {isAdmin && (
+              {!isBoisson && (
+                <button onClick={handleEstimate} disabled={!canEstimate}
+                  className="budget-calc-btn"
+                  style={{ ...S.btn, padding: "7px 16px", fontSize: 12, backgroundColor: btnBg, color: btnColor, cursor: canEstimate ? "pointer" : "not-allowed", opacity: estimating ? 0.6 : 1, borderRadius: 40, display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
+                  onMouseEnter={e => { if (canEstimate) e.currentTarget.style.transform = "scale(1.04)" }}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  <img src="/icons/calc.png" alt="" style={{ width: 13, height: 13, filter: allPricesFound || cooldown > 0 ? "none" : "brightness(10)" }} onError={e => e.target.style.display = "none"} />
+                  {btnLabel}
+                </button>
+              )}
+              {isAdmin && !isBoisson && (
                 <button onClick={handleForceRecalculate} disabled={estimating} title="Forcer le recalcul (vide le cache)"
                   style={{ ...S.btn, padding: "7px 10px", fontSize: 14, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 40, opacity: estimating ? 0.5 : 1 }}
                   onMouseEnter={e => { if (!estimating) e.currentTarget.style.transform = "scale(1.08)" }}

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { computeCostDetails } from "../utils/priceEngine"
+import { computeCocktailCost } from "../utils/cocktailPriceEngine"
 import ImageUploadCropper from "./ImageUploadCropper"
-import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
+import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER, BOISSON_CARD_BG, BOISSON_CARD_BORDER, BOISSON_CARD_TEXT } from "../tags"
 import { detectCocktailIngs } from "../components/CocktailIngredientPicker"
 import CocktailNameInput from "../components/CocktailNameInput"
 import { useTheme } from "../context/ThemeContext"
@@ -126,13 +127,22 @@ export default function RecipeEdit() {
     const ingredientsChanged = !initialParsed || JSON.stringify(validIngredients.map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit }))) !== JSON.stringify(initialParsed.ingredients.filter(i => i.name?.trim()).map(i => ({ name: i.name, quantity: i.quantity, unit: i.unit })))
     if (validIngredients.length > 0 && (ingredientsChanged || initialEstimatedTotal.current === null)) {
       try {
-        const { total, details } = await computeCostDetails(
-          validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
-          parseInt(servings) || null
-        )
-        const hasAnyMatch = details?.some(d => d.found)
-        estimatedTotal = hasAnyMatch ? total : null
-        costDetails = details
+        if (category === "boisson") {
+          const { total, details } = await computeCocktailCost(
+            validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+            parseInt(servings) || null
+          )
+          estimatedTotal = total
+          costDetails = details ?? null
+        } else {
+          const { total, details } = await computeCostDetails(
+            validIngredients.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+            parseInt(servings) || null
+          )
+          const hasAnyMatch = details?.some(d => d.found)
+          estimatedTotal = hasAnyMatch ? total : null
+          costDetails = details
+        }
       } catch (e) {
         // API indisponible → on garde la valeur existante
       }
@@ -197,9 +207,9 @@ export default function RecipeEdit() {
   }
 
   const primaryTagInfo = categoryTags.find(t => t.value === primaryTag)
-  const cardBg = primaryTagInfo?.cardBg || DEFAULT_CARD_BG
-  const cardBorder = primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER
-  const cardText = getTextColor(cardBg)
+  const cardBg = category === "boisson" ? BOISSON_CARD_BG : (primaryTagInfo?.cardBg || DEFAULT_CARD_BG)
+  const cardBorder = category === "boisson" ? BOISSON_CARD_BORDER : (primaryTagInfo?.cardBorder || DEFAULT_CARD_BORDER)
+  const cardText = category === "boisson" ? BOISSON_CARD_TEXT : getTextColor(cardBg)
 
   const btnBase = { fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "-0.05em", border: "none", cursor: "pointer", borderRadius: 10, transition: "transform 0.15s" }
   const inputStyle = { width: "100%", borderRadius: 10, padding: "10px 14px", fontSize: 13, outline: "none", backgroundColor: "var(--bg-card-2)", border: "1.5px solid var(--input-border)", color: "var(--text-main)", fontFamily: "Poppins, sans-serif", fontWeight: 500, letterSpacing: "-0.05em", boxSizing: "border-box", transition: "border-color 0.15s" }

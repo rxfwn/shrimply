@@ -99,7 +99,12 @@ export default function CocktailFinder() {
     const recipeIngs  = (recipe.tags || []).filter(t => COCKTAIL_KEYS.has(t))
     const missing     = recipeIngs.filter(k => !selected.includes(k))
     return { ...recipe, recipeIngs, missing, missingCount: missing.length }
-  }).sort((a, b) => a.missingCount - b.missingCount)
+  }).sort((a, b) => {
+    const haveA = a.recipeIngs.length - a.missingCount
+    const haveB = b.recipeIngs.length - b.missingCount
+    if (haveB !== haveA) return haveB - haveA
+    return a.missingCount - b.missingCount
+  })
 
   const counts = {
     all:     allResults.length,

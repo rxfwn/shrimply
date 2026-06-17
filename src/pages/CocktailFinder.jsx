@@ -403,11 +403,8 @@ export default function CocktailFinder() {
                 const canMake    = recipe.missingCount === 0 && recipe.recipeIngs.length > 0
                 const haveCount  = recipe.recipeIngs.length - recipe.missingCount
                 const totalCount = recipe.recipeIngs.length
-                const isExpanded = expanded.has(recipe.id)
                 const hasSelection = selected.length > 0
                 const haveNone   = hasSelection && totalCount > 0 && haveCount === 0
-                const cardBg     = surface
-                const cardText   = textMain
                 const cardBorder = hasSelection
                   ? (canMake ? "#CFFF79" : haveCount === 1 && !canMake ? "#9BE7FF" : border)
                   : border
@@ -428,7 +425,7 @@ export default function CocktailFinder() {
                         ? <img src={recipe.photo_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                         : <div style={{ position: "absolute", inset: 0, backgroundColor: tagInfo?.pillBg || (isDay ? "#e5e7eb" : "#1f2937") }} />
                       }
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.06) 0%, transparent 40%, rgba(0,0,0,0.68) 100%)", pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.82) 75%, rgba(0,0,0,0.9) 100%)", pointerEvents: "none" }} />
 
                       {/* Tag pill — haut gauche */}
                       {tagInfo && (

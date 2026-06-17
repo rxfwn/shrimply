@@ -125,6 +125,7 @@ export default function Recipes({ category = "recette" }) {
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
   const [currentUserId, setCurrentUserId] = useState(null)
   const [showMineOnly, setShowMineOnly] = useState(false)
+  const [originFilter, setOriginFilter] = useState("")
 
   const showToast = (type) => {
     setToast({ type, visible: true })
@@ -440,7 +441,10 @@ export default function Recipes({ category = "recette" }) {
       r.primary_tag === activeFilter ||
       (r.tags && r.tags.includes(activeFilter))
     const matchMine = !showMineOnly || r.user_id === currentUserId
-    return matchSearch && matchFilter && matchMine
+    const matchOrigin = originFilter === "" ||
+      (originFilter === "mine" && !r.imported_from) ||
+      (originFilter === "imported" && !!r.imported_from)
+    return matchSearch && matchFilter && matchMine && matchOrigin
   }).sort((a, b) => category === "boisson" ? a.name.localeCompare(b.name, "fr") : 0)
 
   const btnBase = {
@@ -811,11 +815,25 @@ export default function Recipes({ category = "recette" }) {
               `}</style>
               {["filters-recipes", "filters-recipes-mobile"].map(cls => (
                 <div key={cls} className={cls}>
-                  <button onClick={() => { setActiveFilter(activeFilter === "all" ? "" : "all"); setShowMineOnly(false) }}
-                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" && !showMineOnly ? 1 : (activeFilter !== "" || showMineOnly) ? 0.35 : 1, transform: activeFilter === "all" && !showMineOnly ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
+                  <button onClick={() => { setActiveFilter(activeFilter === "all" ? "" : "all"); setShowMineOnly(false); setOriginFilter("") }}
+                    style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", backgroundColor: "#fe7c3e", color: "#510312", flexShrink: 0, opacity: activeFilter === "all" && !showMineOnly && !originFilter ? 1 : (activeFilter !== "" || showMineOnly || originFilter) ? 0.35 : 1, transform: activeFilter === "all" && !showMineOnly && !originFilter ? "scale(1.1)" : "scale(1)", transition: "all 0.2s ease" }}>
                     <img src={`/icons/${catInfo.icon}.webp`} alt="" style={{ width: 16, height: 16 }} onError={e => e.target.style.display="none"} />
                     toutes
                   </button>
+                  {category === "recette" && (
+                    <>
+                      <button onClick={() => setOriginFilter(originFilter === "mine" ? "" : "mine")}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", flexShrink: 0, transition: "all 0.2s ease", backgroundColor: originFilter === "mine" ? "var(--text-main)" : "var(--bg-card-2)", color: originFilter === "mine" ? "var(--bg-main)" : "var(--text-muted)", transform: originFilter === "mine" ? "scale(1.1)" : "scale(1)", opacity: originFilter && originFilter !== "mine" ? 0.35 : 1 }}>
+                        <img src="/icons/book.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+                        mes recettes
+                      </button>
+                      <button onClick={() => setOriginFilter(originFilter === "imported" ? "" : "imported")}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", flexShrink: 0, transition: "all 0.2s ease", backgroundColor: originFilter === "imported" ? "var(--text-main)" : "var(--bg-card-2)", color: originFilter === "imported" ? "var(--bg-main)" : "var(--text-muted)", transform: originFilter === "imported" ? "scale(1.1)" : "scale(1)", opacity: originFilter && originFilter !== "imported" ? 0.35 : 1 }}>
+                        <img src="/icons/globe.webp" alt="" style={{ width: 14, height: 14 }} onError={e => e.target.style.display="none"} />
+                        importées
+                      </button>
+                    </>
+                  )}
                   {category !== "recette" && (
                     <button onClick={() => { setShowMineOnly(!showMineOnly); setActiveFilter("") }}
                       style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.05em", flexShrink: 0, transition: "all 0.2s ease", backgroundColor: showMineOnly ? "var(--text-main)" : "var(--bg-card-2)", color: showMineOnly ? "var(--bg-main)" : "var(--text-muted)", transform: showMineOnly ? "scale(1.1)" : "scale(1)", opacity: !showMineOnly && activeFilter !== "" ? 0.35 : 1 }}>
@@ -825,8 +843,8 @@ export default function Recipes({ category = "recette" }) {
                   )}
                   {categoryTags.map(tag => (
                     <div key={tag.key} style={{ flexShrink: 0 }}>
-                      <TagPill tag={tag} active={activeFilter === tag.key} anyActive={activeFilter !== "" || showMineOnly}
-                        onClick={() => { setActiveFilter(activeFilter === tag.key ? "" : tag.key); setShowMineOnly(false) }} />
+                      <TagPill tag={tag} active={activeFilter === tag.key} anyActive={activeFilter !== "" || showMineOnly || !!originFilter}
+                        onClick={() => { setActiveFilter(activeFilter === tag.key ? "" : tag.key); setShowMineOnly(false); setOriginFilter("") }} />
                     </div>
                   ))}
                 </div>

@@ -141,6 +141,17 @@ export default function RecipeEdit() {
     const autoTags = [...selectedTags]
     if (category === "boisson") {
       detectCocktailIngs(validIngredients).forEach(k => { if (!autoTags.includes(k)) autoTags.push(k) })
+
+      const SUGAR_KEYWORDS = ["sucre", "sirop", "miel", "agave", "grenadine", "caramel", "confiture", "liqueur", "curaçao", "curacao", "amaretto", "baileys", "kahlua", "cointreau", "triple sec"]
+      const hasSugar = validIngredients.some(ing =>
+        SUGAR_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw))
+      )
+      if (!hasSugar) {
+        if (!autoTags.includes("sanssucre")) autoTags.push("sanssucre")
+      } else {
+        const idx = autoTags.indexOf("sanssucre")
+        if (idx !== -1) autoTags.splice(idx, 1)
+      }
     }
 
     if (category === "recette") {

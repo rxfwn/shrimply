@@ -7,9 +7,9 @@ import { useTheme } from "../context/ThemeContext"
 const COCKTAIL_KEYS = new Set(COCKTAIL_INGREDIENTS.map(i => i.key))
 
 const CAT_ICONS = {
-  spiritueux: { type: "img", src: "/icons/alcool.webp" },
+  spiritueux: { type: "img", src: "/icons/vin.webp" },
   liqueur:    { type: "img", src: "/icons/drink.webp" },
-  vin:        { type: "img", src: "/icons/drink.webp" },
+  vin:        { type: "img", src: "/icons/vin.webp" },
   biere:      { type: "img", src: "/icons/fizz.webp" },
   amers:      { type: "img", src: "/icons/herb.webp" },
   sirop:      { type: "img", src: "/icons/sirop.png" },
@@ -349,11 +349,11 @@ export default function CocktailFinder() {
                 const isExpanded = expanded.has(recipe.id)
                 const hasSelection = selected.length > 0
                 const haveNone   = hasSelection && totalCount > 0 && haveCount === 0
-                const cardBg     = tagInfo?.cardBg || surface
-                const cardText   = tagInfo?.cardText || textMain
+                const cardBg     = surface
+                const cardText   = textMain
                 const cardBorder = hasSelection
-                  ? (canMake ? "#CFFF79" : haveCount === 1 && !canMake ? "#9BE7FF" : (tagInfo?.cardBorder || border))
-                  : (tagInfo?.cardBorder || border)
+                  ? (canMake ? "#CFFF79" : haveCount === 1 && !canMake ? "#9BE7FF" : border)
+                  : border
 
                 return (
                   <div key={recipe.id} className="cf-card"
@@ -363,10 +363,10 @@ export default function CocktailFinder() {
                     <div style={{ display: "flex", alignItems: "stretch" }}>
 
                       {/* Photo — prend toute la hauteur de la carte */}
-                      <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: tagInfo?.cardBg || (isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.06)") }}>
+                      <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: isDay ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)" }}>
                         {recipe.photo_url
                           ? <img src={recipe.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                          : <div style={{ width: "100%", height: "100%", background: `linear-gradient(160deg, ${cardText}18 0%, transparent 80%)` }} />
+                          : <div style={{ width: "100%", height: "100%", backgroundColor: tagInfo?.pillBg || (isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)") }} />
                         }
                       </div>
 
@@ -381,27 +381,25 @@ export default function CocktailFinder() {
                             </span>
                           )}
                           {hasSelection && totalCount > 0 && recipe.missingCount > 0 && (
-                            <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 8px", borderRadius: 8, backgroundColor: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.6)", letterSpacing: "-0.02em", flexShrink: 0 }}>
+                            <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 8px", borderRadius: 8, backgroundColor: isDay ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.1)", color: textMuted, letterSpacing: "-0.02em", flexShrink: 0 }}>
                               {recipe.missingCount} manquant{recipe.missingCount > 1 ? "s" : ""}
                             </span>
                           )}
                           {canMake && (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: "#4ade80", letterSpacing: "-0.02em" }}>✓ faisable</span>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: "#16a34a", letterSpacing: "-0.02em" }}>✓ faisable</span>
                           )}
                           <div style={{ flex: 1 }} />
-                          {totalCount > 0 && <ScoreCircle have={haveCount} total={totalCount} isDay={false} textMuted="rgba(255,255,255,0.38)" />}
+                          {totalCount > 0 && <ScoreCircle have={haveCount} total={totalCount} isDay={isDay} textMuted={textMuted} />}
                         </div>
 
                         {/* Ligne 2 : nom + flèche */}
                         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: cardText, letterSpacing: "-0.045em", lineHeight: 1.25, flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: textMain, letterSpacing: "-0.045em", lineHeight: 1.25, flex: 1 }}>
                             {recipe.name}
                           </div>
                           <button
                             onClick={e => { e.stopPropagation(); toggleExpand(recipe.id) }}
-                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: cardText, opacity: 0.55, fontSize: 13, lineHeight: 1, flexShrink: 0, marginTop: 1, transition: "opacity 0.15s" }}
-                            onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                            onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: textMuted, fontSize: 13, lineHeight: 1, flexShrink: 0, marginTop: 1, transition: "opacity 0.15s" }}
                           >
                             {isExpanded ? "∧" : "∨"}
                           </button>
@@ -412,7 +410,7 @@ export default function CocktailFinder() {
 
                     {/* Panneau déplié — liste ingrédients */}
                     {isExpanded && (
-                      <div style={{ borderTop: `1px solid ${cardText}22`, padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 5 }}
+                      <div style={{ borderTop: `1px solid ${border}`, padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 5 }}
                         onClick={e => e.stopPropagation()}
                       >
                         {totalCount > 0 ? recipe.recipeIngs.map(k => {
@@ -420,22 +418,22 @@ export default function CocktailFinder() {
                           const isMissing = recipe.missing.includes(k)
                           return (
                             <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                              <span style={{ fontSize: 11, fontWeight: 500, color: cardText, opacity: isMissing ? 0.38 : 0.9, textDecoration: isMissing ? "line-through" : "none", letterSpacing: "-0.03em" }}>
+                              <span style={{ fontSize: 11, fontWeight: 500, color: textMain, opacity: isMissing ? 0.35 : 0.85, textDecoration: isMissing ? "line-through" : "none", letterSpacing: "-0.03em" }}>
                                 — {ing?.label || k}
                               </span>
                               {isMissing && (
-                                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 20, backgroundColor: "rgba(251,113,133,0.2)", color: "#fb7185", flexShrink: 0, letterSpacing: "-0.01em" }}>
+                                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 20, backgroundColor: "rgba(251,113,133,0.15)", color: "#f43f5e", flexShrink: 0, letterSpacing: "-0.01em" }}>
                                   manquant
                                 </span>
                               )}
                             </div>
                           )
                         }) : (
-                          <span style={{ fontSize: 10, color: cardText, opacity: 0.4, fontStyle: "italic" }}>ingrédients non renseignés</span>
+                          <span style={{ fontSize: 10, color: textMuted, fontStyle: "italic" }}>ingrédients non renseignés</span>
                         )}
                         <button
                           onClick={() => navigate(`/recipes/${recipe.id}`)}
-                          style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 10, color: cardText, opacity: 0.7, letterSpacing: "-0.03em", padding: 0, marginTop: 4 }}
+                          style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 10, color: "#d57bff", letterSpacing: "-0.03em", padding: 0, marginTop: 4 }}
                           onMouseEnter={e => e.currentTarget.style.opacity = "1"}
                           onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}
                         >voir la recette →</button>

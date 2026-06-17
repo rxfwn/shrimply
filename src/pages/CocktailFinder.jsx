@@ -65,8 +65,8 @@ export default function CocktailFinder() {
   const [openCats, setOpenCats]         = useState(() =>
     Object.fromEntries(Object.keys(COCKTAIL_INGREDIENT_CATEGORIES).map(k => [k, false]))
   )
-  const [filter, setFilter]   = useState("all")
-  const [expanded, setExpanded] = useState(new Set())
+  const [filter, setFilter]         = useState("all")
+  const [selectedRecipeId, setSelectedRecipeId] = useState(null)
 
   const fetchRecipes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -88,11 +88,8 @@ export default function CocktailFinder() {
     prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
   )
   const selectFromSearch = (key) => { toggle(key); setSearchIng("") }
-  const toggleCat    = (k) => setOpenCats(p => ({ ...p, [k]: !p[k] }))
-  const toggleExpand = (id) => setExpanded(prev => {
-    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n
-  })
-  const clearAll = () => setSelected([])
+  const toggleCat = (k) => setOpenCats(p => ({ ...p, [k]: !p[k] }))
+  const clearAll  = () => setSelected([])
 
   const bg        = isDay ? "#F5F0E8" : "#111111"
   const surface   = isDay ? "#FFFFFF" : "#1a1a1a"
@@ -125,6 +122,8 @@ export default function CocktailFinder() {
     if (filter === "2") return r.missingCount === 2
     return true
   })
+
+  const selectedRecipe = selectedRecipeId ? allResults.find(r => r.id === selectedRecipeId) ?? null : null
 
   const ingSearchResults = searchIng.trim()
     ? COCKTAIL_INGREDIENTS.filter(i => i.label.toLowerCase().includes(searchIng.toLowerCase().trim()))
@@ -227,77 +226,135 @@ export default function CocktailFinder() {
 
       <div className="cf-body">
 
-        {/* Panneau gauche — sélecteur d'ingrédients */}
+        {/* Panneau gauche — sélecteur OU détail recette */}
         <div className="cf-left">
-          <div style={{ position: "relative", marginBottom: 8 }}>
-            <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.3, pointerEvents: "none" }}>🔍</span>
-            <input value={searchIng} onChange={e => setSearchIng(e.target.value)}
-              placeholder="Chercher un ingrédient..."
-              style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", border: `1.5px solid ${border}`, color: textMain, fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
-              onFocus={e => e.target.style.borderColor = "#d57bff"}
-              onBlur={e => e.target.style.borderColor = border}
-            />
-            {searchIng && (
-              <button onClick={() => setSearchIng("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: textMuted, fontSize: 13, lineHeight: 1, padding: 2 }}>×</button>
-            )}
-          </div>
+          {selectedRecipe ? (
+            /* ── Détail recette ── */
+            <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+              <button onClick={() => setSelectedRecipeId(null)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 11, color: textMuted, padding: 0, marginBottom: 12, letterSpacing: "-0.03em" }}
+              >← ingrédients</button>
 
-          {/* Chips des ingrédients sélectionnés */}
-          {selected.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10, padding: "7px 9px", backgroundColor: isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", borderRadius: 10 }}>
-              {selected.map(key => {
-                const ing = COCKTAIL_INGREDIENTS.find(i => i.key === key)
-                const cat = COCKTAIL_INGREDIENT_CATEGORIES[ing?.category]
-                return (
-                  <div key={key} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "3px 7px 3px 9px", borderRadius: 20, backgroundColor: cat?.bg || "rgba(0,0,0,0.08)", border: `1.5px solid ${cat?.color || border}` }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: cat?.color || textMain, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em" }}>{ing?.label || key}</span>
-                    <button onClick={() => toggle(key)} style={{ background: "none", border: "none", cursor: "pointer", color: cat?.color || textMuted, fontSize: 13, lineHeight: 1, padding: "0 0 0 2px", opacity: 0.55, display: "flex", alignItems: "center" }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                      onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}
-                    >×</button>
+              {selectedRecipe.photo_url && (
+                <div style={{ borderRadius: 10, overflow: "hidden", marginBottom: 12, height: 110, flexShrink: 0 }}>
+                  <img src={selectedRecipe.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
+              )}
+
+              <div style={{ fontSize: 15, fontWeight: 700, color: textMain, letterSpacing: "-0.05em", lineHeight: 1.2, marginBottom: 4 }}>{selectedRecipe.name}</div>
+              {selectedRecipe.description && (
+                <div style={{ fontSize: 11, color: textMuted, lineHeight: 1.4, marginBottom: 12, letterSpacing: "-0.02em" }}>{selectedRecipe.description}</div>
+              )}
+
+              {/* Score */}
+              {selectedRecipe.recipeIngs.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <div style={{ flex: 1, height: 5, borderRadius: 4, backgroundColor: isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                    <div style={{ width: `${selectedRecipe.recipeIngs.length > 0 ? ((selectedRecipe.recipeIngs.length - selectedRecipe.missingCount) / selectedRecipe.recipeIngs.length) * 100 : 0}%`, height: "100%", backgroundColor: selectedRecipe.missingCount === 0 ? "#22c55e" : selectedRecipe.missingCount < selectedRecipe.recipeIngs.length ? "#f3501e" : (isDay ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"), borderRadius: 4 }} />
                   </div>
-                )
-              })}
-            </div>
-          )}
+                  <span style={{ fontSize: 11, fontWeight: 700, color: selectedRecipe.missingCount === 0 ? "#16a34a" : selectedRecipe.missingCount < selectedRecipe.recipeIngs.length ? "#f3501e" : textMuted, flexShrink: 0 }}>
+                    {selectedRecipe.recipeIngs.length - selectedRecipe.missingCount}/{selectedRecipe.recipeIngs.length}
+                  </span>
+                </div>
+              )}
 
-          {/* Résultats de recherche */}
-          {searchIng.trim() ? (
-            ingSearchResults.length > 0 ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                {ingSearchResults.map(ing => <SearchPill key={ing.key} ing={ing} catInfo={COCKTAIL_INGREDIENT_CATEGORIES[ing.category]} />)}
-              </div>
-            ) : (
-              <div style={{ fontSize: 11, color: textMuted, textAlign: "center", padding: "14px 0" }}>aucun résultat</div>
-            )
-          ) : (
-            /* Accordéons catégories */
-            Object.entries(COCKTAIL_INGREDIENT_CATEGORIES).map(([catKey, catInfo]) => {
-              const isOpen     = openCats[catKey]
-              const ings       = COCKTAIL_INGREDIENTS.filter(i => i.category === catKey)
-              const activeCount = ings.filter(i => selected.includes(i.key)).length
-              return (
-                <div key={catKey} style={{ marginBottom: 5, borderRadius: 10, overflow: "hidden", border: `1.5px solid ${isOpen ? catInfo.color + "55" : border}`, transition: "border-color 0.15s" }}>
-                  <button onClick={() => toggleCat(catKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 11px", border: "none", cursor: "pointer", backgroundColor: isOpen ? catInfo.bg + "44" : "transparent", gap: 7 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <CatIcon catKey={catKey} />
-                      <span style={{ fontSize: 10, fontWeight: 700, color: isOpen ? catInfo.color : textMain, fontFamily: "Poppins, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                        {catInfo.label}
+              {/* Liste ingrédients */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, overflowY: "auto" }}>
+                {selectedRecipe.recipeIngs.length > 0 ? selectedRecipe.recipeIngs.map(k => {
+                  const ing = COCKTAIL_INGREDIENTS.find(i => i.key === k)
+                  const cat = COCKTAIL_INGREDIENT_CATEGORIES[ing?.category]
+                  const isMissing = selectedRecipe.missing.includes(k)
+                  return (
+                    <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "6px 10px", borderRadius: 8, backgroundColor: isMissing ? "transparent" : (isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.05)"), border: `1px solid ${isMissing ? border : (cat?.color + "44" || border)}` }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: isMissing ? textMuted : (cat?.color || textMain), letterSpacing: "-0.03em" }}>
+                        {!isMissing && <span style={{ marginRight: 5, fontSize: 10 }}>✓</span>}{ing?.label || k}
                       </span>
-                      {activeCount > 0 && (
-                        <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 10, backgroundColor: catInfo.color, color: "#fff" }}>{activeCount}</span>
+                      {isMissing && (
+                        <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 7px", borderRadius: 20, backgroundColor: "rgba(244,63,94,0.1)", color: "#f43f5e", flexShrink: 0 }}>manquant</span>
                       )}
                     </div>
-                    <span style={{ fontSize: 10, color: isOpen ? catInfo.color : textMuted, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", lineHeight: 1 }}>▾</span>
-                  </button>
-                  {isOpen && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "5px 11px 9px" }}>
-                      {ings.map(ing => <AccordionPill key={ing.key} ing={ing} catInfo={catInfo} />)}
-                    </div>
-                  )}
+                  )
+                }) : (
+                  <span style={{ fontSize: 11, color: textMuted, fontStyle: "italic" }}>ingrédients non renseignés</span>
+                )}
+              </div>
+
+              <button onClick={() => navigate(`/recipes/${selectedRecipe.id}`)}
+                style={{ marginTop: 14, padding: "10px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 11, backgroundColor: "#d57bff", color: "#fff", letterSpacing: "-0.03em" }}
+              >voir la recette →</button>
+            </div>
+
+          ) : (
+            /* ── Sélecteur d'ingrédients ── */
+            <>
+              <div style={{ position: "relative", marginBottom: 8 }}>
+                <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.3, pointerEvents: "none" }}>🔍</span>
+                <input value={searchIng} onChange={e => setSearchIng(e.target.value)}
+                  placeholder="Chercher un ingrédient..."
+                  style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", border: `1.5px solid ${border}`, color: textMain, fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
+                  onFocus={e => e.target.style.borderColor = "#d57bff"}
+                  onBlur={e => e.target.style.borderColor = border}
+                />
+                {searchIng && (
+                  <button onClick={() => setSearchIng("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: textMuted, fontSize: 13, lineHeight: 1, padding: 2 }}>×</button>
+                )}
+              </div>
+
+              {selected.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10, padding: "7px 9px", backgroundColor: isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)", borderRadius: 10 }}>
+                  {selected.map(key => {
+                    const ing = COCKTAIL_INGREDIENTS.find(i => i.key === key)
+                    const cat = COCKTAIL_INGREDIENT_CATEGORIES[ing?.category]
+                    return (
+                      <div key={key} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "3px 7px 3px 9px", borderRadius: 20, backgroundColor: cat?.bg || "rgba(0,0,0,0.08)", border: `1.5px solid ${cat?.color || border}` }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: cat?.color || textMain, fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em" }}>{ing?.label || key}</span>
+                        <button onClick={() => toggle(key)} style={{ background: "none", border: "none", cursor: "pointer", color: cat?.color || textMuted, fontSize: 13, lineHeight: 1, padding: "0 0 0 2px", opacity: 0.55, display: "flex", alignItems: "center" }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                          onMouseLeave={e => e.currentTarget.style.opacity = "0.55"}
+                        >×</button>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })
+              )}
+
+              {searchIng.trim() ? (
+                ingSearchResults.length > 0 ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {ingSearchResults.map(ing => <SearchPill key={ing.key} ing={ing} catInfo={COCKTAIL_INGREDIENT_CATEGORIES[ing.category]} />)}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11, color: textMuted, textAlign: "center", padding: "14px 0" }}>aucun résultat</div>
+                )
+              ) : (
+                Object.entries(COCKTAIL_INGREDIENT_CATEGORIES).map(([catKey, catInfo]) => {
+                  const isOpen     = openCats[catKey]
+                  const ings       = COCKTAIL_INGREDIENTS.filter(i => i.category === catKey)
+                  const activeCount = ings.filter(i => selected.includes(i.key)).length
+                  return (
+                    <div key={catKey} style={{ marginBottom: 5, borderRadius: 10, overflow: "hidden", border: `1.5px solid ${isOpen ? catInfo.color + "55" : border}`, transition: "border-color 0.15s" }}>
+                      <button onClick={() => toggleCat(catKey)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 11px", border: "none", cursor: "pointer", backgroundColor: isOpen ? catInfo.bg + "44" : "transparent", gap: 7 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          <CatIcon catKey={catKey} />
+                          <span style={{ fontSize: 10, fontWeight: 700, color: isOpen ? catInfo.color : textMain, fontFamily: "Poppins, sans-serif", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                            {catInfo.label}
+                          </span>
+                          {activeCount > 0 && (
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 10, backgroundColor: catInfo.color, color: "#fff" }}>{activeCount}</span>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 10, color: isOpen ? catInfo.color : textMuted, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", lineHeight: 1 }}>▾</span>
+                      </button>
+                      {isOpen && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "5px 11px 9px" }}>
+                          {ings.map(ing => <AccordionPill key={ing.key} ing={ing} catInfo={catInfo} />)}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </>
           )}
         </div>
 
@@ -355,94 +412,60 @@ export default function CocktailFinder() {
                   ? (canMake ? "#CFFF79" : haveCount === 1 && !canMake ? "#9BE7FF" : border)
                   : border
 
-                const progressPct  = totalCount > 0 ? (haveCount / totalCount) * 100 : 0
-                const progressColor = canMake ? "#22c55e" : haveCount > 0 ? "#f3501e" : (isDay ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)")
+                const progressPct   = totalCount > 0 ? (haveCount / totalCount) * 100 : 0
+                const progressColor = canMake ? "#22c55e" : haveCount > 0 ? "#f3501e" : (isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)")
                 const scoreColor    = canMake ? "#16a34a" : haveCount > 0 ? "#f3501e" : textMuted
+                const isActive      = selectedRecipeId === recipe.id
 
                 return (
                   <div key={recipe.id} className="cf-card"
-                    style={{ border: `1.5px solid ${cardBorder}`, opacity: haveNone ? 0.4 : 1 }}
+                    style={{ border: `1.5px solid ${isActive ? "#d57bff" : cardBorder}`, opacity: haveNone ? 0.4 : 1, cursor: "pointer", boxShadow: isActive ? "0 0 0 3px rgba(213,123,255,0.2)" : "none" }}
+                    onClick={() => setSelectedRecipeId(isActive ? null : recipe.id)}
                   >
                     {/* Zone photo + overlays */}
-                    <div style={{ position: "relative", paddingTop: "62%" }}>
+                    <div style={{ position: "relative", paddingTop: "75%" }}>
                       {recipe.photo_url
                         ? <img src={recipe.photo_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                         : <div style={{ position: "absolute", inset: 0, backgroundColor: tagInfo?.pillBg || (isDay ? "#e5e7eb" : "#1f2937") }} />
                       }
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.06) 0%, transparent 40%, rgba(0,0,0,0.68) 100%)", pointerEvents: "none" }} />
 
-                      {/* Gradient sombre en bas pour lisibilité du texte */}
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 35%, rgba(0,0,0,0.72) 100%)", pointerEvents: "none" }} />
-
-                      {/* Tag pill — en haut à gauche */}
+                      {/* Tag pill — haut gauche */}
                       {tagInfo && (
-                        <span style={{ position: "absolute", top: 10, left: 10, fontSize: 9, fontWeight: 700, padding: "4px 10px", borderRadius: 20, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1 }}>
+                        <span style={{ position: "absolute", top: 9, left: 9, fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 20, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1 }}>
                           {tagInfo.label}
                         </span>
                       )}
 
-                      {/* Nom + description — en bas */}
-                      <div style={{ position: "absolute", bottom: 10, left: 12, right: 12 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.045em", lineHeight: 1.2, marginBottom: 3, textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
+                      {/* Badge manquants — haut droite */}
+                      {hasSelection && recipe.missingCount > 0 && !canMake && (
+                        <span style={{ position: "absolute", top: 9, right: 9, fontSize: 9, fontWeight: 700, padding: "3px 9px", borderRadius: 20, backgroundColor: "#f43f5e", color: "#fff", letterSpacing: "-0.02em", lineHeight: 1 }}>
+                          {recipe.missingCount} manquant{recipe.missingCount > 1 ? "s" : ""}
+                        </span>
+                      )}
+
+                      {/* Nom + description — bas */}
+                      <div style={{ position: "absolute", bottom: 9, left: 10, right: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: "-0.045em", lineHeight: 1.2, marginBottom: 2, textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
                           {recipe.name}
                         </div>
                         {recipe.description && (
-                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", letterSpacing: "-0.02em", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: "-0.02em", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
                             {recipe.description}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Barre du bas : progress + score + flèche */}
-                    <div style={{ padding: "9px 12px", display: "flex", alignItems: "center", gap: 10, backgroundColor: surface }}>
-                      {/* Barre de progression */}
-                      <div style={{ flex: 1, height: 4, borderRadius: 4, backgroundColor: isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                        <div style={{ width: `${progressPct}%`, height: "100%", backgroundColor: progressColor, borderRadius: 4, transition: "width 0.3s ease" }} />
+                    {/* Barre du bas : progress + score */}
+                    <div style={{ padding: "8px 10px", display: "flex", alignItems: "center", gap: 8, backgroundColor: surface }}>
+                      <div style={{ flex: 1, height: 3, borderRadius: 3, backgroundColor: isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                        <div style={{ width: `${progressPct}%`, height: "100%", backgroundColor: progressColor, borderRadius: 3, transition: "width 0.3s ease" }} />
                       </div>
-
-                      {/* Score X/Y */}
-                      <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor, letterSpacing: "-0.02em", flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: scoreColor, letterSpacing: "-0.02em", flexShrink: 0 }}>
                         {haveCount}/{totalCount}
                       </span>
-
-                      {/* Flèche expand */}
-                      <button
-                        onClick={e => { e.stopPropagation(); toggleExpand(recipe.id) }}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: textMuted, fontSize: 12, lineHeight: 1, flexShrink: 0 }}
-                      >
-                        {isExpanded ? "∧" : "∨"}
-                      </button>
                     </div>
-
-                    {/* Panneau déplié — liste ingrédients */}
-                    {isExpanded && (
-                      <div style={{ borderTop: `1px solid ${border}`, padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 5, backgroundColor: surface }}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {totalCount > 0 ? recipe.recipeIngs.map(k => {
-                          const ing = COCKTAIL_INGREDIENTS.find(i => i.key === k)
-                          const isMissing = recipe.missing.includes(k)
-                          return (
-                            <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                              <span style={{ fontSize: 11, fontWeight: 500, color: textMain, opacity: isMissing ? 0.35 : 0.85, textDecoration: isMissing ? "line-through" : "none", letterSpacing: "-0.03em" }}>
-                                — {ing?.label || k}
-                              </span>
-                              {isMissing && (
-                                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 20, backgroundColor: "rgba(244,63,94,0.1)", color: "#f43f5e", flexShrink: 0 }}>
-                                  manquant
-                                </span>
-                              )}
-                            </div>
-                          )
-                        }) : (
-                          <span style={{ fontSize: 10, color: textMuted, fontStyle: "italic" }}>ingrédients non renseignés</span>
-                        )}
-                        <button
-                          onClick={() => navigate(`/recipes/${recipe.id}`)}
-                          style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 10, color: "#d57bff", letterSpacing: "-0.03em", padding: 0, marginTop: 4 }}
-                        >voir la recette →</button>
-                      </div>
-                    )}
                   </div>
                 )
               })}

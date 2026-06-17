@@ -401,7 +401,7 @@ export default function Recipes({ category = "recette" }) {
     r.primary_tag === activeFilter ||
     (r.tags && r.tags.includes(activeFilter))
   return matchSearch && matchFilter
-  })
+  }).sort((a, b) => category === "boisson" ? a.name.localeCompare(b.name, "fr") : 0)
 
   const btnBase = {
     fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13,

@@ -71,8 +71,8 @@ export default function CocktailFinder() {
   const fetchRecipes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     const [{ data: publicData }, { data: privateData }] = await Promise.all([
-      supabase.from("recipes").select("id, name, primary_tag, tags, photo_url, user_id").eq("is_public", true),
-      supabase.from("recipes").select("id, name, primary_tag, tags, photo_url, user_id").eq("user_id", user.id).not("is_public", "is", true),
+      supabase.from("recipes").select("id, name, description, primary_tag, tags, photo_url, user_id").eq("is_public", true),
+      supabase.from("recipes").select("id, name, description, primary_tag, tags, photo_url, user_id").eq("user_id", user.id).not("is_public", "is", true),
     ])
     const seen = new Set()
     const merged = [...(publicData || []), ...(privateData || [])].filter(r => {
@@ -178,9 +178,9 @@ export default function CocktailFinder() {
         .cf-body { display: flex; gap: 0; flex: 1; overflow: hidden; }
         .cf-left { width: 300px; flex-shrink: 0; border-right: 1px solid ${border}; padding: 14px 14px; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; align-self: flex-start; box-sizing: border-box; }
         .cf-right { flex: 1; padding: 12px 14px; min-width: 0; overflow-y: auto; }
-        .cf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .cf-card { background: ${surface}; border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.12s, box-shadow 0.12s; display: flex; flex-direction: column; }
-        .cf-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.09); }
+        .cf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .cf-card { background: ${surface}; border-radius: 14px; overflow: hidden; transition: transform 0.12s, box-shadow 0.12s; display: flex; flex-direction: column; }
+        .cf-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.13); }
         .cf-left::-webkit-scrollbar { width: 3px; }
         .cf-left::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
         @media (max-width: 900px) { .cf-grid { grid-template-columns: repeat(2,1fr); } }
@@ -355,62 +355,68 @@ export default function CocktailFinder() {
                   ? (canMake ? "#CFFF79" : haveCount === 1 && !canMake ? "#9BE7FF" : border)
                   : border
 
+                const progressPct  = totalCount > 0 ? (haveCount / totalCount) * 100 : 0
+                const progressColor = canMake ? "#22c55e" : haveCount > 0 ? "#f3501e" : (isDay ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)")
+                const scoreColor    = canMake ? "#16a34a" : haveCount > 0 ? "#f3501e" : textMuted
+
                 return (
                   <div key={recipe.id} className="cf-card"
-                    style={{ border: `1.5px solid ${cardBorder}`, backgroundColor: cardBg, opacity: haveNone ? 0.38 : 1 }}
+                    style={{ border: `1.5px solid ${cardBorder}`, opacity: haveNone ? 0.4 : 1 }}
                   >
-                    {/* Ligne principale — photo full-height + contenu */}
-                    <div style={{ display: "flex", alignItems: "stretch" }}>
+                    {/* Zone photo + overlays */}
+                    <div style={{ position: "relative", paddingTop: "62%" }}>
+                      {recipe.photo_url
+                        ? <img src={recipe.photo_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        : <div style={{ position: "absolute", inset: 0, backgroundColor: tagInfo?.pillBg || (isDay ? "#e5e7eb" : "#1f2937") }} />
+                      }
 
-                      {/* Photo — prend toute la hauteur de la carte */}
-                      <div style={{ width: 72, flexShrink: 0, position: "relative", overflow: "hidden", backgroundColor: isDay ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)" }}>
-                        {recipe.photo_url
-                          ? <img src={recipe.photo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                          : <div style={{ width: "100%", height: "100%", backgroundColor: tagInfo?.pillBg || (isDay ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)") }} />
-                        }
-                      </div>
+                      {/* Gradient sombre en bas pour lisibilité du texte */}
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 35%, rgba(0,0,0,0.72) 100%)", pointerEvents: "none" }} />
 
-                      {/* Contenu */}
-                      <div style={{ flex: 1, padding: "10px 12px 10px", display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                      {/* Tag pill — en haut à gauche */}
+                      {tagInfo && (
+                        <span style={{ position: "absolute", top: 10, left: 10, fontSize: 9, fontWeight: 700, padding: "4px 10px", borderRadius: 20, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1 }}>
+                          {tagInfo.label}
+                        </span>
+                      )}
 
-                        {/* Ligne 1 : tag pill + manquants + score */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {tagInfo && (
-                            <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 8, backgroundColor: tagInfo.pillBg, color: tagInfo.pillText, letterSpacing: "0.05em", textTransform: "uppercase", lineHeight: 1.5, flexShrink: 0 }}>
-                              {tagInfo.label}
-                            </span>
-                          )}
-                          {hasSelection && totalCount > 0 && recipe.missingCount > 0 && (
-                            <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 8px", borderRadius: 8, backgroundColor: isDay ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.1)", color: textMuted, letterSpacing: "-0.02em", flexShrink: 0 }}>
-                              {recipe.missingCount} manquant{recipe.missingCount > 1 ? "s" : ""}
-                            </span>
-                          )}
-                          {canMake && (
-                            <span style={{ fontSize: 9, fontWeight: 700, color: "#16a34a", letterSpacing: "-0.02em" }}>✓ faisable</span>
-                          )}
-                          <div style={{ flex: 1 }} />
-                          {totalCount > 0 && <ScoreCircle have={haveCount} total={totalCount} isDay={isDay} textMuted={textMuted} />}
+                      {/* Nom + description — en bas */}
+                      <div style={{ position: "absolute", bottom: 10, left: 12, right: 12 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.045em", lineHeight: 1.2, marginBottom: 3, textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
+                          {recipe.name}
                         </div>
-
-                        {/* Ligne 2 : nom + flèche */}
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: textMain, letterSpacing: "-0.045em", lineHeight: 1.25, flex: 1 }}>
-                            {recipe.name}
+                        {recipe.description && (
+                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", letterSpacing: "-0.02em", lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                            {recipe.description}
                           </div>
-                          <button
-                            onClick={e => { e.stopPropagation(); toggleExpand(recipe.id) }}
-                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: textMuted, fontSize: 13, lineHeight: 1, flexShrink: 0, marginTop: 1, transition: "opacity 0.15s" }}
-                          >
-                            {isExpanded ? "∧" : "∨"}
-                          </button>
-                        </div>
-
+                        )}
                       </div>
+                    </div>
+
+                    {/* Barre du bas : progress + score + flèche */}
+                    <div style={{ padding: "9px 12px", display: "flex", alignItems: "center", gap: 10, backgroundColor: surface }}>
+                      {/* Barre de progression */}
+                      <div style={{ flex: 1, height: 4, borderRadius: 4, backgroundColor: isDay ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                        <div style={{ width: `${progressPct}%`, height: "100%", backgroundColor: progressColor, borderRadius: 4, transition: "width 0.3s ease" }} />
+                      </div>
+
+                      {/* Score X/Y */}
+                      <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor, letterSpacing: "-0.02em", flexShrink: 0 }}>
+                        {haveCount}/{totalCount}
+                      </span>
+
+                      {/* Flèche expand */}
+                      <button
+                        onClick={e => { e.stopPropagation(); toggleExpand(recipe.id) }}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: textMuted, fontSize: 12, lineHeight: 1, flexShrink: 0 }}
+                      >
+                        {isExpanded ? "∧" : "∨"}
+                      </button>
                     </div>
 
                     {/* Panneau déplié — liste ingrédients */}
                     {isExpanded && (
-                      <div style={{ borderTop: `1px solid ${border}`, padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 5 }}
+                      <div style={{ borderTop: `1px solid ${border}`, padding: "10px 12px 12px", display: "flex", flexDirection: "column", gap: 5, backgroundColor: surface }}
                         onClick={e => e.stopPropagation()}
                       >
                         {totalCount > 0 ? recipe.recipeIngs.map(k => {
@@ -422,7 +428,7 @@ export default function CocktailFinder() {
                                 — {ing?.label || k}
                               </span>
                               {isMissing && (
-                                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 20, backgroundColor: "rgba(251,113,133,0.15)", color: "#f43f5e", flexShrink: 0, letterSpacing: "-0.01em" }}>
+                                <span style={{ fontSize: 8, fontWeight: 700, padding: "2px 8px", borderRadius: 20, backgroundColor: "rgba(244,63,94,0.1)", color: "#f43f5e", flexShrink: 0 }}>
                                   manquant
                                 </span>
                               )}
@@ -434,8 +440,6 @@ export default function CocktailFinder() {
                         <button
                           onClick={() => navigate(`/recipes/${recipe.id}`)}
                           style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 10, color: "#d57bff", letterSpacing: "-0.03em", padding: 0, marginTop: 4 }}
-                          onMouseEnter={e => e.currentTarget.style.opacity = "1"}
-                          onMouseLeave={e => e.currentTarget.style.opacity = "0.7"}
                         >voir la recette →</button>
                       </div>
                     )}

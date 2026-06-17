@@ -168,4 +168,7 @@ if (isPrerenderedRoute && hasPrerender) {
   hydrateRoot(rootEl, app)
 } else {
   createRoot(rootEl).render(app)
+  // LCP shell is only needed on the pre-rendered landing/blog pages.
+  // For all other routes (auth, app), remove it immediately after first paint.
+  requestAnimationFrame(() => document.getElementById("lcp-shell")?.remove())
 }

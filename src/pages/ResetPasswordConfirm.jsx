@@ -13,8 +13,11 @@ export default function ResetPasswordConfirm() {
   // Si Supabase renvoie une erreur dans le hash (#error=...&error_code=otp_expired...),
   // le lien est déjà invalide : pas besoin d'attendre la vérification de session
   const [linkErrorCode] = useState(() => {
+    // Check both hash fragment (implicit flow) and query params (PKCE flow)
     const hashParams = new URLSearchParams(window.location.hash.slice(1))
-    return hashParams.get("error") ? (hashParams.get("error_code") || "access_denied") : null
+    const queryParams = new URLSearchParams(window.location.search)
+    const src = hashParams.get("error") ? hashParams : queryParams.get("error") ? queryParams : null
+    return src ? (src.get("error_code") || "access_denied") : null
   })
   const [sessionReady, setSessionReady] = useState(false)
   const [checking, setChecking] = useState(!linkErrorCode)
@@ -40,8 +43,8 @@ export default function ResetPasswordConfirm() {
         setSessionReady(true)
         setChecking(false)
       } else {
-        // Laisse un peu de temps à Supabase pour traiter le hash de l'URL
-        setTimeout(() => setChecking(false), 2000)
+        // Laisse du temps à Supabase pour traiter le token (PKCE ou hash)
+        setTimeout(() => setChecking(false), 5000)
       }
     })
 

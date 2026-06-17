@@ -452,6 +452,8 @@ export const COCKTAIL_INGREDIENTS = [
   { key: "jus_peche",         label: "Jus de pêche",          category: "jus" },
   { key: "jus_pomme",         label: "Jus de pomme",          category: "jus" },
   { key: "jus_tomate",        label: "Jus de tomate",         category: "jus" },
+  { key: "jus_goyave",        label: "Jus de goyave",         category: "jus" },
+  { key: "manzana",           label: "Manzana",               category: "liqueur" },
   { key: "puree_peche",       label: "Purée de pêche blanche",category: "jus" },
   { key: "puree_fraise",      label: "Purée de fraise",       category: "jus" },
   { key: "puree_framboise",   label: "Purée de framboise",    category: "jus" },

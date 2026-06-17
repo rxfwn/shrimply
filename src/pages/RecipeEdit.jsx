@@ -7,6 +7,7 @@ import { CATEGORIES, getRecipeCategory, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } f
 import { detectCocktailIngs } from "../components/CocktailIngredientPicker"
 import CocktailNameInput from "../components/CocktailNameInput"
 import { useTheme } from "../context/ThemeContext"
+import Toast from "../components/Toast"
 
 function getTextColor(hex) {
   if (!hex) return "#111111"
@@ -253,11 +254,7 @@ export default function RecipeEdit() {
         </div>
       )}
 
-      {success && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
-          ✅ recette modifiée !
-        </div>
-      )}
+      <Toast visible={success} message="recette modifiée" duration={1500} />
 
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>

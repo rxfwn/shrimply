@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
+import Toast from "../components/Toast"
 
 const TYPES = [
   { value: "bug", label: "Bug", icon: "bug.webp", bg: "#2d0a0a", color: "#fca5a5", border: "rgba(239,68,68,0.3)" },
@@ -90,11 +91,7 @@ export default function Suggestions() {
       transition: "background-color 0.3s ease",
     }}>
 
-      {success && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
-          ✅ ticket envoyé, merci !
-        </div>
-      )}
+      <Toast visible={success} message="ticket envoyé, merci !" duration={3000} />
 
       {/* HEADER */}
       <div style={{ marginBottom: 24 }}>

@@ -15,6 +15,36 @@ function NavIcon({ name, size = 18 }) {
   )
 }
 
+function IOSInstallBanner() {
+  const [show, setShow] = useState(() => {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+    const isSafari = /safari/i.test(navigator.userAgent) && !/crios|fxios|opios/i.test(navigator.userAgent)
+    const isStandalone = window.navigator.standalone === true
+    const dismissed = localStorage.getItem("ios_banner_dismissed")
+    return isIOS && isSafari && !isStandalone && !dismissed
+  })
+
+  if (!show) return null
+
+  return (
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 3000, backgroundColor: "#091718", borderTop: "1px solid rgba(255,255,255,0.1)", padding: "14px 20px 24px", display: "flex", alignItems: "flex-start", gap: 14, fontFamily: "Poppins, sans-serif", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
+      <img src="/icons/shrim.webp" alt="" style={{ width: 36, height: 36, borderRadius: 8, flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#ffffff", letterSpacing: "-0.03em" }}>
+          installe Shrimply sur ton iPhone
+        </p>
+        <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.5 }}>
+          appuie sur <span style={{ display: "inline-block", backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>⎙ partager</span> puis <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>"Sur l'écran d'accueil"</span>
+        </p>
+      </div>
+      <button
+        onClick={() => { localStorage.setItem("ios_banner_dismissed", "1"); setShow(false) }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 20, lineHeight: 1, padding: 4, flexShrink: 0 }}
+      >✕</button>
+    </div>
+  )
+}
+
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -233,6 +263,7 @@ export default function Layout() {
 
         <Outlet />
       </div>
+      <IOSInstallBanner />
     </div>
   )
 }

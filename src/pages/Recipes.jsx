@@ -121,6 +121,7 @@ export default function Recipes({ category = "recette" }) {
   const [tagPopup, setTagPopup] = useState(null)
   const [activeFilter, setActiveFilter] = useState("")
   const [toast, setToast] = useState({ type: "saved", visible: false })
+  const [showCancelPopup, setShowCancelPopup] = useState(false)
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
 
   const showToast = (type) => {
@@ -407,6 +408,8 @@ export default function Recipes({ category = "recette" }) {
   }
 
   const resetForm = () => { setShowForm(false); setErrors({}); hasShownDraftPopup.current=false; setPhotoUrl(""); setRecipeColor("") }
+  const hasFormContent = () => name.trim() || description.trim() || ingredients.some(i => i.name.trim()) || steps.some(s => s.description.trim())
+  const tryCancel = () => { if (hasFormContent()) setShowCancelPopup(true); else resetForm() }
 
   const categoryRecipes = recipes.filter(r => getRecipeCategory(r.primary_tag) === category)
 
@@ -474,6 +477,24 @@ export default function Recipes({ category = "recette" }) {
       )}
 
       <DraftToast type="added" visible={!!success} msg={typeof success === "string" ? success : `${catInfo.itemLabel} ajoutée !`} />
+
+      {showCancelPopup && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 2000, backgroundColor: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 20, padding: "28px 24px", maxWidth: 340, width: "100%", textAlign: "center", border: "1px solid var(--border)", boxShadow: "0 16px 48px rgba(0,0,0,0.35)" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>✋</div>
+            <h2 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.04em" }}>abandonner la recette ?</h2>
+            <p style={{ margin: "0 0 24px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.6 }}>tu as du contenu non enregistré. si tu quittes maintenant, il sera perdu.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowCancelPopup(false)} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", letterSpacing: "-0.04em" }}>
+                continuer
+              </button>
+              <button onClick={() => { setShowCancelPopup(false); resetForm() }} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 13, backgroundColor: "#f87171", color: "#ffffff", letterSpacing: "-0.04em" }}>
+                quitter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <DraftToast type="error" visible={!!dupError} msg={dupError} />
 
       {tagPopup && (
@@ -503,7 +524,7 @@ export default function Recipes({ category = "recette" }) {
                   vider le brouillon
                 </button>
               )}
-              <button onClick={() => { setShowForm(false); setErrors({}) }} style={{ fontSize: 13, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
+              <button onClick={tryCancel} style={{ fontSize: 13, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700 }}>
                 retour
               </button>
             </div>
@@ -696,7 +717,7 @@ export default function Recipes({ category = "recette" }) {
             {/* Boutons sticky */}
             <div style={{ position: "sticky", bottom: 24, zIndex: 40, display: "flex", justifyContent: "center", marginTop: 8 }}>
               <div style={{ display: "flex", gap: 14, backgroundColor: "var(--bg-main)", boxShadow: "0 4px 20px rgba(0,0,0,0.2)", padding: "16px 24px", borderRadius: 10, width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
-                <button onClick={resetForm}
+                <button onClick={tryCancel}
                   style={{ ...btnBase, flex: 1, padding: "10px", backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 6 }}
                   onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
                   onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}

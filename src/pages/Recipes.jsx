@@ -159,7 +159,7 @@ export default function Recipes({ category = "recette" }) {
     } catch {}
   }
 
-  useEffect(() => { fetchRecipes() }, [])
+  useEffect(() => { setRecipes([]); setActiveFilter(""); setSearch(""); fetchRecipes() }, [category])
 
   const fetchRecipes = async () => {
     try {

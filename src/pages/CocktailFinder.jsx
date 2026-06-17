@@ -70,10 +70,15 @@ export default function CocktailFinder() {
 
   const fetchRecipes = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase.from("recipes")
-      .select("id, name, primary_tag, tags, photo_url")
-      .eq("user_id", user.id)
-    setRecipes((data || []).filter(r => getRecipeCategory(r.primary_tag) === "boisson"))
+    const [{ data: publicData }, { data: privateData }] = await Promise.all([
+      supabase.from("recipes").select("id, name, primary_tag, tags, photo_url, user_id").eq("is_public", true),
+      supabase.from("recipes").select("id, name, primary_tag, tags, photo_url, user_id").eq("user_id", user.id).not("is_public", "is", true),
+    ])
+    const seen = new Set()
+    const merged = [...(publicData || []), ...(privateData || [])].filter(r => {
+      if (seen.has(r.id)) return false; seen.add(r.id); return true
+    })
+    setRecipes(merged.filter(r => getRecipeCategory(r.primary_tag) === "boisson"))
     setLoading(false)
   }
 

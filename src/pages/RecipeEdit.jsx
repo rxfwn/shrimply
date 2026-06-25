@@ -211,19 +211,23 @@ export default function RecipeEdit() {
     }
 
     await supabase.from("recipes").update({ name, description, prep_time: parseInt(prepTime) || null, servings: parseInt(servings) || null, primary_tag: primaryTag || null, tags: autoTags, photo_url: photoUrl || null, estimated_total: estimatedTotal }).eq("id", id)
-    await supabase.from("ingredients").delete().eq("recipe_id", id)
-    if (validIngredients.length > 0) {
-      const rows = validIngredients.map(i => ({ recipe_id: id, name: i.name, quantity: parseFloat(i.quantity) || null, unit: i.unit }))
-      const { data: inserted } = await supabase.from("ingredients").insert(rows).select()
-      // Mise à jour du prix estimé séparément (ne bloque pas si la colonne n'existe pas encore)
-      if (inserted && costDetails) {
-        await Promise.allSettled(inserted.map(ing => {
-          const detail = costDetails.find(d => d.name.toLowerCase() === ing.name.toLowerCase())
-          if (!detail?.found) return Promise.resolve()
-          return supabase.from("ingredients").update({ estimated_price: detail.estimated_price }).eq("id", ing.id)
-        }))
+
+    // Ne toucher aux ingrédients que s'ils ont réellement changé — évite de perdre les estimated_price
+    if (ingredientsChanged) {
+      await supabase.from("ingredients").delete().eq("recipe_id", id)
+      if (validIngredients.length > 0) {
+        const rows = validIngredients.map(i => ({ recipe_id: id, name: i.name, quantity: parseFloat(i.quantity) || null, unit: i.unit }))
+        const { data: inserted } = await supabase.from("ingredients").insert(rows).select()
+        if (inserted && costDetails) {
+          await Promise.allSettled(inserted.map(ing => {
+            const detail = costDetails.find(d => d.name.toLowerCase() === ing.name.toLowerCase())
+            if (!detail?.found) return Promise.resolve()
+            return supabase.from("ingredients").update({ estimated_price: detail.estimated_price }).eq("id", ing.id)
+          }))
+        }
       }
     }
+
     await supabase.from("steps").delete().eq("recipe_id", id)
     const validSteps = steps.filter(s => s.description.trim())
     if (validSteps.length > 0) await supabase.from("steps").insert(validSteps.map((s, idx) => ({ recipe_id: id, step_number: idx + 1, description: s.description })))

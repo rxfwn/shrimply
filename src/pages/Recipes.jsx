@@ -693,7 +693,7 @@ export default function Recipes({ category = "recette" }) {
                 tags secondaires <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— optionnels</span>
               </label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {categoryTags.filter(tag => tag.key !== primaryTag).map(tag => (
+                {categoryTags.filter(tag => tag.key !== primaryTag && tag.key !== "rapide").map(tag => (
                   <TagPill key={tag.key} tag={tag} active={selectedTags.includes(tag.key)}
                     anyActive={selectedTags.length > 0} onClick={() => toggleTag(tag.key)} />
                 ))}

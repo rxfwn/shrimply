@@ -168,7 +168,10 @@ export default function Recipes({ category = "recette" }) {
       setCurrentUserId(user.id)
 
       if (category === "recette") {
-        const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false })
+        const excludeKeys = [...GLACE_TAGS, ...BOISSON_TAGS].map(t => t.key)
+        const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id)
+          .or(`primary_tag.is.null,primary_tag.not.in.(${excludeKeys.join(",")})`)
+          .order("created_at", { ascending: false })
         if (error) return
         if (data) { setRecipes(data); recomputeMissingPrices(data) }
       } else {
@@ -480,10 +483,10 @@ export default function Recipes({ category = "recette" }) {
   const categoryRecipes = recipes.filter(r => getRecipeCategory(r.primary_tag) === category)
 
   const filtered = categoryRecipes.filter(r => {
-    const matchSearch = r.name.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = (r.name || "").toLowerCase().includes(search.toLowerCase())
     const matchFilter = activeFilter === "all" || activeFilter === "" ||
       r.primary_tag === activeFilter ||
-      (r.tags && r.tags.includes(activeFilter))
+      (Array.isArray(r.tags) && r.tags.includes(activeFilter))
     const matchMine = !showMineOnly || r.user_id === currentUserId
     const matchOrigin = originFilter === "" ||
       (originFilter === "mine" && !r.imported_from) ||

@@ -34,6 +34,55 @@ function NavIcon({ name, size = 18 }) {
   )
 }
 
+function NotifList({ notifs, notifProfiles, onClose, navigate }) {
+  if (notifs.length === 0) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, padding: 32 }}>
+        <img src="/icons/bell.webp" alt="" style={{ width: 32, height: 32, opacity: 0.15 }} onError={e => e.target.style.display = "none"} />
+        <p style={{ margin: 0, fontSize: 12, color: "rgba(255,255,255,0.25)", fontFamily: "Poppins, sans-serif", fontWeight: 500 }}>aucune notification</p>
+      </div>
+    )
+  }
+  return (
+    <div style={{ flex: 1, overflowY: "auto" }}>
+      {notifs.map(n => {
+        const p = notifProfiles[n.from_user_id]
+        const clickable = n.type === "follow" && n.from_user_id
+        return (
+          <div key={n.id}
+            onClick={() => { if (clickable) { navigate(`/profile/${n.from_user_id}`); onClose() } }}
+            style={{
+              padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              backgroundColor: n.read ? "transparent" : "rgba(243,80,30,0.06)",
+              cursor: clickable ? "pointer" : "default", transition: "background-color 0.15s",
+            }}
+            onMouseEnter={e => { if (clickable) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)" }}
+            onMouseLeave={e => { e.currentTarget.style.backgroundColor = n.read ? "transparent" : "rgba(243,80,30,0.06)" }}
+          >
+            <div style={{ width: 38, height: 38, borderRadius: "50%", backgroundColor: "#1e1e1e", flexShrink: 0, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.08)" }}>
+              {p?.avatar_url
+                ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <img src="/icons/profile.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.target.style.display = "none"} />
+              }
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: "0 0 3px", fontSize: 12, fontWeight: 600, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.4 }}>
+                <span style={{ color: "#f3501e" }}>{p?.username || "quelqu'un"}</span>
+                {n.type === "follow" ? " a commencé à te suivre" : " a importé ta recette"}
+              </p>
+              <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "Poppins, sans-serif" }}>
+                {timeAgo(n.created_at)}
+              </p>
+            </div>
+            {!n.read && <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#f3501e", flexShrink: 0 }} />}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -259,90 +308,35 @@ export default function Layout() {
 
       {/* PANEL NOTIFICATIONS */}
       {showNotifPanel && (
-        <div onClick={() => setShowNotifPanel(false)} style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.4)" }}>
-          <div onClick={e => e.stopPropagation()} style={{
-            position: "fixed", left: 208, top: 0, bottom: 0, width: 300,
-            backgroundColor: "#091718", borderRight: "1px solid rgba(255,255,255,0.08)",
-            display: "flex", flexDirection: "column", zIndex: 201,
-          }}
-            className="hidden md:flex"
-          >
-            <div style={{ padding: "20px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" }}>notifications</span>
-              <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1 }}>×</button>
+        <div onClick={() => setShowNotifPanel(false)} style={{ position: "fixed", inset: 0, zIndex: 200, backgroundColor: "rgba(0,0,0,0.5)" }}>
+          {/* Desktop : panneau à droite de la sidebar */}
+          {window.innerWidth >= 768 ? (
+            <div onClick={e => e.stopPropagation()} style={{
+              position: "fixed", left: 208, top: 0, bottom: 0, width: 300,
+              backgroundColor: "#111111", borderRight: "1px solid rgba(255,255,255,0.07)",
+              display: "flex", flexDirection: "column",
+            }}>
+              <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" }}>notifications</span>
+                <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 2 }}>×</button>
+              </div>
+              <NotifList notifs={notifs} notifProfiles={notifProfiles} onClose={() => setShowNotifPanel(false)} navigate={navigate} />
             </div>
-            <div style={{ flex: 1, overflowY: "auto" }}>
-              {notifs.length === 0 ? (
-                <div style={{ padding: "40px 16px", textAlign: "center" }}>
-                  <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.25)", fontFamily: "Poppins, sans-serif" }}>aucune notification</p>
-                </div>
-              ) : notifs.map(n => {
-                const p = notifProfiles[n.from_user_id]
-                return (
-                  <div key={n.id} onClick={() => { if (n.type === "follow" && n.from_user_id) { navigate(`/profile/${n.from_user_id}`); setShowNotifPanel(false) } }}
-                    style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", backgroundColor: n.read ? "transparent" : "rgba(243,80,30,0.07)", display: "flex", alignItems: "center", gap: 12, cursor: n.type === "follow" ? "pointer" : "default", transition: "background-color 0.15s" }}
-                    onMouseEnter={e => { if (n.type === "follow") e.currentTarget.style.backgroundColor = n.read ? "rgba(255,255,255,0.03)" : "rgba(243,80,30,0.12)" }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = n.read ? "transparent" : "rgba(243,80,30,0.07)" }}
-                  >
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: "#2d2d2d", flexShrink: 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {p?.avatar_url
-                        ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <img src="/icons/profile.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.target.style.display = "none"} />
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.4 }}>
-                        {notifMessage(n, p)}
-                      </p>
-                      <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "Poppins, sans-serif" }}>
-                        {timeAgo(n.created_at)}
-                      </p>
-                    </div>
-                    {!n.read && <div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: "#f3501e", flexShrink: 0 }} />}
-                  </div>
-                )
-              })}
+          ) : (
+            /* Mobile : bottom sheet */
+            <div onClick={e => e.stopPropagation()} style={{
+              position: "fixed", left: 0, right: 0, bottom: 0,
+              maxHeight: "75vh", backgroundColor: "#111111",
+              borderRadius: "20px 20px 0 0",
+              display: "flex", flexDirection: "column",
+            }}>
+              <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" }}>notifications</span>
+                <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.35)", fontSize: 18, cursor: "pointer" }}>×</button>
+              </div>
+              <NotifList notifs={notifs} notifProfiles={notifProfiles} onClose={() => setShowNotifPanel(false)} navigate={navigate} />
             </div>
-          </div>
-
-          {/* Mobile : bottom sheet */}
-          <div onClick={e => e.stopPropagation()} style={{
-            position: "fixed", left: 0, right: 0, bottom: 0,
-            maxHeight: "75vh", backgroundColor: "#091718",
-            borderRadius: "20px 20px 0 0", display: "flex", flexDirection: "column",
-          }}
-            className="md:hidden"
-          >
-            <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em" }}>notifications</span>
-              <button onClick={() => setShowNotifPanel(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer" }}>×</button>
-            </div>
-            <div style={{ flex: 1, overflowY: "auto" }}>
-              {notifs.length === 0 ? (
-                <div style={{ padding: "40px 16px", textAlign: "center" }}>
-                  <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.25)", fontFamily: "Poppins, sans-serif" }}>aucune notification</p>
-                </div>
-              ) : notifs.map(n => {
-                const p = notifProfiles[n.from_user_id]
-                return (
-                  <div key={n.id} onClick={() => { if (n.type === "follow" && n.from_user_id) { navigate(`/profile/${n.from_user_id}`); setShowNotifPanel(false) } }}
-                    style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", backgroundColor: n.read ? "transparent" : "rgba(243,80,30,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: "#2d2d2d", flexShrink: 0, overflow: "hidden" }}>
-                      {p?.avatar_url
-                        ? <img src={p.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <img src="/icons/profile.webp" alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => e.target.style.display = "none"} />
-                      }
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 700, color: "#fff", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.4 }}>{notifMessage(n, p)}</p>
-                      <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "Poppins, sans-serif" }}>{timeAgo(n.created_at)}</p>
-                    </div>
-                    {!n.read && <div style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: "#f3501e", flexShrink: 0 }} />}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          )}
         </div>
       )}
 

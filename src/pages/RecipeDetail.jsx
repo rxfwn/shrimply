@@ -656,7 +656,7 @@ const handleEstimate = async () => {
                   {btnLabel}
                 </button>
               )}
-              {isAdmin && !isBoisson && (
+              {(isAdmin || recipe?.user_id === currentUserId) && !isBoisson && (
                 <button onClick={handleForceRecalculate} disabled={estimating} title="Forcer le recalcul (vide le cache)"
                   style={{ ...S.btn, padding: "7px 10px", fontSize: 14, backgroundColor: "var(--bg-card-2)", color: "var(--text-muted)", borderRadius: 40, opacity: estimating ? 0.5 : 1 }}
                   onMouseEnter={e => { if (!estimating) e.currentTarget.style.transform = "scale(1.08)" }}
@@ -696,7 +696,7 @@ const handleEstimate = async () => {
                     {formatQuantity(item.quantity)} {item.unit}
                   </span>
                   {item.found && <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E" }}>{item.estimated_price.toFixed(2)}€</span>}
-                  {isAdmin && !shouldSkipIngredient(item.name, item.unit) && (
+                  {(isAdmin || recipe?.user_id === currentUserId) && !shouldSkipIngredient(item.name, item.unit) && (
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                       {editingPriceIngredient === item.name ? (
                         <input

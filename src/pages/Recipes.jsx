@@ -201,32 +201,37 @@ export default function Recipes({ category = "recette" }) {
     if (!allIngs?.length) return
     const ingsByRecipe = {}
     allIngs.forEach(i => { if (!ingsByRecipe[i.recipe_id]) ingsByRecipe[i.recipe_id] = []; ingsByRecipe[i.recipe_id].push(i) })
-    const updates = await Promise.allSettled(missing.map(async r => {
-      const ings = ingsByRecipe[r.id]
-      if (!ings?.length) return null
-      try {
-        const recipeCategory = getRecipeCategory(r.primary_tag || "")
-        let total, details
-        if (recipeCategory === "boisson") {
-          const res = await computeCocktailCost(
-            ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
-            r.servings || null
-          )
-          total = res.total; details = res.details
-          if (total == null) return null
-        } else {
-          const res = await computeCostDetails(
-            ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
-            r.servings || null
-          )
-          total = res.total; details = res.details
-          if (!details?.some(d => d.found)) return null
-        }
-        await supabase.from("recipes").update({ estimated_total: total }).eq("id", r.id)
-        return { id: r.id, total }
-      } catch { return null }
-    }))
-    const computed = updates.map(u => u.status === "fulfilled" ? u.value : null).filter(Boolean)
+    const BATCH = 5
+    const computed = []
+    for (let i = 0; i < missing.length; i += BATCH) {
+      const batch = missing.slice(i, i + BATCH)
+      const results = await Promise.allSettled(batch.map(async r => {
+        const ings = ingsByRecipe[r.id]
+        if (!ings?.length) return null
+        try {
+          const recipeCategory = getRecipeCategory(r.primary_tag || "")
+          let total, details
+          if (recipeCategory === "boisson") {
+            const res = await computeCocktailCost(
+              ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+              r.servings || null
+            )
+            total = res.total; details = res.details
+            if (total == null) return null
+          } else {
+            const res = await computeCostDetails(
+              ings.map(i => ({ ...i, quantity: parseFloat(i.quantity) || null })),
+              r.servings || null
+            )
+            total = res.total; details = res.details
+            if (!details?.some(d => d.found)) return null
+          }
+          await supabase.from("recipes").update({ estimated_total: total }).eq("id", r.id)
+          return { id: r.id, total }
+        } catch { return null }
+      }))
+      computed.push(...results.map(u => u.status === "fulfilled" ? u.value : null).filter(Boolean))
+    }
     if (computed.length > 0) {
       setRecipes(prev => prev.map(r => {
         const found = computed.find(c => c.id === r.id)

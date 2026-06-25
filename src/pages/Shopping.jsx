@@ -183,6 +183,7 @@ export default function Shopping() {
   const [loading, setLoading] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [errorMsg, setErrorMsg] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
   const [dragTargetCat, setDragTargetCat] = useState(null)
   const { isDay } = useTheme()
@@ -204,6 +205,7 @@ export default function Shopping() {
   sunday.setDate(sunday.getDate() + 6)
   const weekLabel = `${monday.getDate()} — ${sunday.getDate()} ${sunday.toLocaleString("fr-FR", { month: "long" })} ${sunday.getFullYear()}`
 
+  // eslint-disable-next-line react-hooks/immutability, react-hooks/exhaustive-deps
   useEffect(() => { fetchItems() }, [])
 
   const fetchItems = async () => {
@@ -218,15 +220,25 @@ export default function Shopping() {
     setGenerating(true)
     const { data: { user } } = await supabase.auth.getUser()
     const { data: meals } = await supabase.from("meal_plan").select("recipe_id").eq("user_id", user.id).gte("date", formatDate(monday)).lte("date", formatDate(sunday))
-    if (!meals || meals.length === 0) { setGenerating(false); return alert("Aucun repas planifié cette semaine !") }
+    if (!meals || meals.length === 0) {
+      setGenerating(false)
+      setErrorMsg("Aucun repas planifié cette semaine !")
+      setTimeout(() => setErrorMsg(""), 3000)
+      return
+    }
     const recipeCount = {}
     meals.forEach(m => { recipeCount[m.recipe_id] = (recipeCount[m.recipe_id] || 0) + 1 })
     const recipeIds = Object.keys(recipeCount)
     const { data: ingredients } = await supabase.from("ingredients").select("*").in("recipe_id", recipeIds)
-    if (!ingredients || ingredients.length === 0) { setGenerating(false); return alert("Aucun ingrédient trouvé !") }
+    if (!ingredients || ingredients.length === 0) {
+      setGenerating(false)
+      setErrorMsg("Aucun ingrédient trouvé pour ces recettes !")
+      setTimeout(() => setErrorMsg(""), 3000)
+      return
+    }
     const merged = {}
     ingredients.forEach(ing => {
-      const key = ing.name.toLowerCase().trim()
+      const key = normalizeStr(ing.name)
       const occurrences = recipeCount[ing.recipe_id] || 1
       const totalQty = (ing.quantity || 0) * occurrences
       if (merged[key]) merged[key].quantity = (merged[key].quantity || 0) + totalQty
@@ -281,6 +293,11 @@ export default function Shopping() {
       {success && (
         <div style={{ position: "fixed", top: 24, right: 24, zIndex: 50, backgroundColor: "#34d399", color: "#064e3b", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
           ✅ liste générée !
+        </div>
+      )}
+      {errorMsg && (
+        <div style={{ position: "fixed", top: 24, right: 24, zIndex: 50, backgroundColor: "#f87171", color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 13, fontWeight: 700 }}>
+          {errorMsg}
         </div>
       )}
 

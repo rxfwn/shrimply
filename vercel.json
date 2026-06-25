@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/:path*", "destination": "https://shrimply.app/:path*", "permanent": true, "has": [{ "type": "host", "value": "www.shrimply.app" }] }
+  ],
   "rewrites": [
     { "source": "/google7d69f80b431c47bc.html", "destination": "/google7d69f80b431c47bc.html" },
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },

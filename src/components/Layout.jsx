@@ -50,7 +50,7 @@ export default function Layout() {
 
   const navLinkStyle = (isActive) => ({
     display: "flex", alignItems: "center", gap: 8,
-    padding: "10px 14px", borderRadius: 10,
+    padding: "7px 14px", borderRadius: 10,
     fontFamily: "'Poppins', sans-serif", fontWeight: 700,
     fontSize: 13, letterSpacing: "-0.05em",
     textDecoration: "none",
@@ -112,13 +112,12 @@ export default function Layout() {
       <div className="mx-4 mb-2 h-px bg-white/8 flex-shrink-0" />
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-2 flex flex-col gap-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-1 flex flex-col gap-0.5 overflow-y-auto">
         {navItem("/calendar",    "calendar", "calendrier",              "nav-calendar")}
         {navItem("/recipes",     "book",     "mes recettes",            "nav-recipes")}
         {navItem("/glaces",      "icecream", "glaces")}
         {navItem("/boissons",    "drink",    "boissons")}
         {navItem("/shopping",    "kart",     "courses",                 "nav-shopping")}
-        {navItem("/fridge",      "ice",      "mon frigo")}
         {navItem("/friends",     "friends",  "amis")}
         {navItem("/discover",    "spark",    "découvrir",               "nav-discover")}
         {navItem("/nutrition",   "chart",    "bilan nutrition")}

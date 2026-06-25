@@ -72,6 +72,7 @@ export default function Discover() {
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
   const [tagTooltip, setTagTooltip] = useState(null) // { tags, x, y }
 
+  // eslint-disable-next-line react-hooks/immutability
   useEffect(() => { fetchRecipes(0) }, [])
 
   const fetchRecipes = async (pageIndex, append = false) => {
@@ -172,7 +173,7 @@ export default function Discover() {
       user_id: user.id, name: recipe.name, description: recipe.description,
       prep_time: recipe.prep_time, servings: recipe.servings, tags: recipe.tags,
       primary_tag: recipe.primary_tag || null,
-      is_public: false, photo_url: recipe.photo_url || null,
+      is_public: false, photo_url: null,
       imported_from: recipe.id,
       estimated_total: recipe.estimated_total ?? null,
     }).select().single()

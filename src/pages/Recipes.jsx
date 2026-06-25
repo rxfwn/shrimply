@@ -653,7 +653,7 @@ export default function Recipes({ category = "recette" }) {
                 border: errors.primaryTag ? "1.5px solid rgba(239,68,68,0.5)" : "1.5px solid transparent",
                 transition: "border-color 0.15s",
               }}>
-                {categoryTags.map(tag => {
+                {categoryTags.filter(tag => tag.key !== "rapide").map(tag => {
                   const isMain = primaryTag === tag.key
                   return (
                     <button key={tag.key}

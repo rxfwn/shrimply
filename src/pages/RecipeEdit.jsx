@@ -342,7 +342,7 @@ export default function RecipeEdit() {
             tag principal <span style={{ fontWeight: 400, color: "var(--text-ghost)", textTransform: "none", letterSpacing: "normal" }}>— détermine la couleur de la carte</span>
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-            {categoryTags.map(tag => {
+            {categoryTags.filter(tag => tag.value !== "rapide").map(tag => {
               const isMain = primaryTag === tag.value
               return (
                 <button key={tag.value} onClick={() => setPrimaryTag(isMain ? "" : tag.value)}

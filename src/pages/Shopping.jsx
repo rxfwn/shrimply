@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
+import { lookupIngredientPrices, computeItemCost } from "../utils/priceEngine"
 
 const CATEGORIES = [
   { id: "legumes_fruits", label: "Fruits & Légumes", icon: "/icons/herb.webp" },
@@ -186,6 +187,7 @@ export default function Shopping() {
   const [errorMsg, setErrorMsg] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
   const [dragTargetCat, setDragTargetCat] = useState(null)
+  const [estimatedTotal, setEstimatedTotal] = useState(null)
   const { isDay } = useTheme()
 
   const bg = isDay ? "#F5F0E8" : "#111111"
@@ -212,7 +214,17 @@ export default function Shopping() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase.from("shopping_list").select("*").eq("user_id", user.id).eq("week_start", formatDate(monday)).order("checked")
-    if (data) setItems(data)
+    if (data) {
+      setItems(data)
+      if (data.length > 0) {
+        lookupIngredientPrices(data).then(cacheMap => {
+          const total = data.reduce((sum, item) => sum + computeItemCost(item, cacheMap), 0)
+          setEstimatedTotal(Number(total.toFixed(2)))
+        })
+      } else {
+        setEstimatedTotal(null)
+      }
+    }
     setLoading(false)
   }
 
@@ -308,7 +320,14 @@ export default function Shopping() {
             <img src="/icons/kart.webp" alt="" style={{ width: 22, height: 22 }} />
             courses
           </h1>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: textMuted }}>semaine du {weekLabel}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: textMuted, display: "flex", alignItems: "center", gap: 8 }}>
+            semaine du {weekLabel}
+            {estimatedTotal !== null && estimatedTotal > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#f3501e", backgroundColor: isDay ? "rgba(243,80,30,0.08)" : "rgba(243,80,30,0.15)", padding: "2px 8px", borderRadius: 20 }}>
+                ≈ {estimatedTotal.toFixed(0)}€ estimés
+              </span>
+            )}
+          </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowAddModal(true)}

@@ -371,6 +371,24 @@ export default function Recipes({ category = "recette" }) {
         else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
       }
 
+      // Tag viande automatique
+      const VIANDE_KEYWORDS = ["poulet","boeuf","bœuf","porc","veau","agneau","dinde","canard","lapin","jambon","lardons","bacon","chorizo","saucisse","merguez","steak","escalope","côte","côtelette","rôti","roti","magret","confit","foie","boudin","andouille","viande"]
+      const hasViande = validIngredients.some(ing => VIANDE_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw)))
+      if (hasViande) {
+        if (!autoTags.includes("viande")) autoTags.push("viande")
+      } else {
+        const idx = autoTags.indexOf("viande"); if (idx !== -1) autoTags.splice(idx, 1)
+      }
+
+      // Tag poisson automatique
+      const POISSON_KEYWORDS = ["saumon","thon","cabillaud","truite","sardine","crevette","moule","huître","huitre","homard","calmar","merlan","sole","dorade","bar","lieu","hareng","maquereau","anchois","gambas","langoustine","seiche","pieuvre","poulpe","poisson","fruits de mer","crabe","tourteau"]
+      const hasPoisson = validIngredients.some(ing => POISSON_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw)))
+      if (hasPoisson) {
+        if (!autoTags.includes("poisson")) autoTags.push("poisson")
+      } else {
+        const idx = autoTags.indexOf("poisson"); if (idx !== -1) autoTags.splice(idx, 1)
+      }
+
       // Tag rapide automatique (≤ 20 min)
       if (parseInt(prepTime) > 0 && parseInt(prepTime) <= 20) {
         if (!autoTags.includes("rapide")) autoTags.push("rapide")

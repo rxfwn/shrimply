@@ -87,6 +87,27 @@ function computeIngredientCost(normalizedPrice, normalizedUnit, quantity, ingred
   return normalizedPrice;
 }
 
+// ── Lookup cache uniquement (pas d'appel API) ────────────────────────────────
+// Retourne un map { cacheKey → { price, unit } } pour une liste d'ingrédients.
+export async function lookupIngredientPrices(items) {
+  const toProcess = (items || []).filter(i => i.name && !shouldSkipIngredient(i.name, i.unit))
+  if (toProcess.length === 0) return {}
+  const uniqueKeys = [...new Set(toProcess.map(i => getCacheKey(i.name, i.unit)))]
+  const { data: cached } = await supabase.from("ingredient_prices").select("name, price, unit").in("name", uniqueKeys)
+  const map = {}
+  ;(cached || []).forEach(c => { map[c.name.toLowerCase()] = c })
+  return map
+}
+
+// Calcule le coût d'un article depuis le cacheMap retourné par lookupIngredientPrices.
+export function computeItemCost(item, cacheMap) {
+  if (!item?.name || shouldSkipIngredient(item.name, item.unit)) return 0
+  const entry = cacheMap[getCacheKey(item.name, item.unit)]
+  if (!entry) return 0
+  const normIng = normalizeIngredientUnit(item)
+  return Number(computeIngredientCost(entry.price, entry.unit, normIng.quantity, normIng.unit).toFixed(2))
+}
+
 export async function computeCostDetails(ingredientsData, servings) {
   console.log(`[computeCostDetails] 🌐 ${ingredientsData.length} ingrédient(s)`);
 

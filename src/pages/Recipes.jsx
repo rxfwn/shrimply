@@ -168,9 +168,7 @@ export default function Recipes({ category = "recette" }) {
       setCurrentUserId(user.id)
 
       if (category === "recette") {
-        const excludeKeys = [...GLACE_TAGS, ...BOISSON_TAGS].map(t => t.key)
         const { data, error } = await supabase.from("recipes").select("*").eq("user_id", user.id)
-          .or(`primary_tag.is.null,primary_tag.not.in.(${excludeKeys.join(",")})`)
           .order("created_at", { ascending: false })
         if (error) return
         if (data) { setRecipes(data); recomputeMissingPrices(data) }

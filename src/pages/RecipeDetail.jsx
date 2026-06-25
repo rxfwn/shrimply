@@ -231,6 +231,9 @@ export default function RecipeDetail() {
   const [manualPriceValue, setManualPriceValue] = useState("")
   const [timers, setTimers] = useState({})
   const timerIntervals = useRef({})
+  const [cookMode, setCookMode] = useState(false)
+  const [cookStep, setCookStep] = useState(0)
+  const wakeLockRef = useRef(null)
 
   useEffect(() => () => { Object.values(timerIntervals.current).forEach(clearInterval) }, [])
 
@@ -262,6 +265,19 @@ export default function RecipeDetail() {
     clearInterval(timerIntervals.current[i])
     delete timerIntervals.current[i]
     setTimers(prev => ({ ...prev, [i]: { total, remaining: total, running: false, done: false } }))
+  }
+
+  const openCookMode = async () => {
+    setCookStep(0)
+    setCookMode(true)
+    document.body.style.overflow = "hidden"
+    try { if ("wakeLock" in navigator) wakeLockRef.current = await navigator.wakeLock.request("screen") } catch {}
+  }
+
+  const closeCookMode = async () => {
+    setCookMode(false)
+    document.body.style.overflow = ""
+    try { if (wakeLockRef.current) { await wakeLockRef.current.release(); wakeLockRef.current = null } } catch {}
   }
 
   const handleShare = async () => {
@@ -546,6 +562,81 @@ const handleEstimate = async () => {
       <CopyToast visible={copied} />
       {showDeleteModal && <DeleteConfirmModal onConfirm={handleDelete} onCancel={() => setShowDeleteModal(false)} />}
 
+      {/* ── COOK MODE ── */}
+      {cookMode && steps.length > 0 && (() => {
+        const step = steps[cookStep]
+        const duration = parseStepDuration(step.description)
+        const timer = timers[cookStep]
+        const isLast = cookStep === steps.length - 1
+        return (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, backgroundColor: "#090c0e", display: "flex", flexDirection: "column", fontFamily: "Poppins, sans-serif", touchAction: "manipulation" }}>
+
+            {/* Barre du haut */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 20px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: "-0.02em" }}>
+                étape {cookStep + 1} / {steps.length}
+              </span>
+              <button onClick={closeCookMode} style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: "rgba(255,255,255,0.08)", border: "none", cursor: "pointer", color: "#fff", fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* Barre de progression */}
+            <div style={{ height: 3, backgroundColor: "rgba(255,255,255,0.07)", flexShrink: 0 }}>
+              <div style={{ height: "100%", width: `${((cookStep + 1) / steps.length) * 100}%`, backgroundColor: "#f3501e", transition: "width 0.35s ease" }} />
+            </div>
+
+            {/* Contenu */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "32px 24px 20px", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: "#f3501e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 28, flexShrink: 0 }}>
+                {cookStep + 1}
+              </div>
+
+              <p style={{ margin: "0 0 32px", fontSize: 24, lineHeight: 1.55, fontWeight: 500, color: "#ffffff", letterSpacing: "-0.02em" }}>
+                {step.description}
+              </p>
+
+              {/* Timer */}
+              {!timer && duration && (
+                <button onClick={() => startTimer(cookStep, duration)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 22px", borderRadius: 14, backgroundColor: "rgba(243,80,30,0.1)", border: "1.5px solid rgba(243,80,30,0.3)", color: "#f3501e", fontSize: 18, fontWeight: 700, fontFamily: "Poppins, sans-serif", cursor: "pointer", letterSpacing: "-0.03em" }}>
+                  ⏱ {formatTime(duration)}
+                </button>
+              )}
+              {timer && (
+                <div style={{ padding: "20px 22px", borderRadius: 16, backgroundColor: timer.done ? "rgba(34,197,94,0.08)" : "rgba(243,80,30,0.07)", border: `1.5px solid ${timer.done ? "rgba(34,197,94,0.35)" : "rgba(243,80,30,0.25)"}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 48, fontWeight: 900, letterSpacing: "-0.05em", color: timer.done ? "#22C55E" : "#f3501e", lineHeight: 1 }}>
+                    {formatTime(timer.remaining)}
+                  </span>
+                  <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                    {!timer.done && (
+                      <button onClick={() => timer.running ? pauseTimer(cookStep) : startTimer(cookStep, timer.total)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 30, color: "#f3501e", lineHeight: 1 }}>
+                        {timer.running ? "⏸" : "▶"}
+                      </button>
+                    )}
+                    <button onClick={() => resetTimer(cookStep, timer.total)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "rgba(255,255,255,0.4)", lineHeight: 1 }}>↺</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Boutons de navigation */}
+            <div style={{ padding: "14px 20px 36px", borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", gap: 12, flexShrink: 0 }}>
+              {cookStep > 0 && (
+                <button onClick={() => setCookStep(s => s - 1)} style={{ flex: "0 0 auto", padding: "0 22px", height: 68, borderRadius: 16, border: "1.5px solid rgba(255,255,255,0.12)", backgroundColor: "transparent", color: "rgba(255,255,255,0.65)", fontSize: 16, fontWeight: 700, fontFamily: "Poppins, sans-serif", cursor: "pointer", letterSpacing: "-0.03em", whiteSpace: "nowrap" }}>
+                  ← retour
+                </button>
+              )}
+              <button
+                onClick={() => isLast ? closeCookMode() : setCookStep(s => s + 1)}
+                style={{ flex: 1, height: 68, borderRadius: 16, border: "none", backgroundColor: isLast ? "#22C55E" : "#f3501e", color: "#fff", fontSize: 20, fontWeight: 900, fontFamily: "Poppins, sans-serif", cursor: "pointer", letterSpacing: "-0.04em", transition: "transform 0.1s" }}
+                onTouchStart={e => e.currentTarget.style.transform = "scale(0.97)"}
+                onTouchEnd={e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                {isLast ? "🎉 terminé !" : "étape suivante →"}
+              </button>
+            </div>
+          </div>
+        )
+      })()}
+
       <style>{`
         .hero-card {
           display: flex; align-items: stretch;
@@ -558,6 +649,7 @@ const handleEstimate = async () => {
         .hero-right { flex: 1; min-width: 0; padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between; }
         .budget-bar { display: flex; align-items: center; gap: 8px; background: var(--bg-card-2); border-radius: 40px; padding: 7px 12px; }
         .budget-chip { display: flex; align-items: center; gap: 6px; background: ${isDay ? "#E8E1D5" : "rgba(255,255,255,0.1)"}; border-radius: 40px; padding: 5px 12px; }
+        .cook-btn { display: none; }
         @media (max-width: 640px) {
           .hero-card { height: auto; flex-direction: column; }
           .hero-photo { width: 100%; height: 200px; }
@@ -567,6 +659,11 @@ const handleEstimate = async () => {
           .budget-chip { padding: 4px 8px; }
           .budget-chip span:first-child { font-size: 12px !important; }
           .budget-calc-btn { width: 100%; justify-content: center; border-radius: 8px !important; }
+          .cook-btn { display: flex; }
+          .ing-name { font-size: 15px !important; }
+          .ing-qty { font-size: 13px !important; }
+          .step-text { font-size: 15px !important; line-height: 1.65 !important; }
+          .step-num-circle { width: 28px !important; height: 28px !important; font-size: 13px !important; }
         }
       `}</style>
 
@@ -669,6 +766,14 @@ const handleEstimate = async () => {
         </div>
       </div>
 
+      {steps.length > 0 && (
+        <button onClick={openCookMode} className="cook-btn"
+          style={{ width: "100%", marginBottom: 12, padding: "16px 20px", borderRadius: 14, border: "none", cursor: "pointer", backgroundColor: "#f3501e", color: "#fff", fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 16, letterSpacing: "-0.04em", alignItems: "center", justifyContent: "center", gap: 10 }}
+        >
+          <span style={{ fontSize: 20 }}>🍳</span> commencer la recette
+        </button>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
 
         <div style={{ backgroundColor: "var(--bg-card)", borderRadius: 14, border: "1px solid var(--border)", padding: 18 }}>
@@ -690,9 +795,9 @@ const handleEstimate = async () => {
             const isScaled = activeServings !== baseServings
             return (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "9px 0", borderBottom: i < scaledIngredients.length - 1 ? "1px solid var(--border)" : "none" }}>
-                <span style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{item.name}</span>
+                <span className="ing-name" style={{ fontSize: 13, color: "var(--text-main)", fontWeight: 500 }}>{item.name}</span>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0, marginLeft: 12 }}>
-                  <span style={{ fontSize: 11, fontWeight: isScaled ? 800 : 500, color: isScaled ? "#CE80FF" : "var(--text-muted)", transition: "color 0.2s, font-weight 0.2s" }}>
+                  <span className="ing-qty" style={{ fontSize: 11, fontWeight: isScaled ? 800 : 500, color: isScaled ? "#CE80FF" : "var(--text-muted)", transition: "color 0.2s, font-weight 0.2s" }}>
                     {formatQuantity(item.quantity)} {item.unit}
                   </span>
                   {item.found && <span style={{ fontSize: 11, fontWeight: 700, color: "#22C55E" }}>{item.estimated_price.toFixed(2)}€</span>}
@@ -750,11 +855,11 @@ const handleEstimate = async () => {
                 <div key={i} style={{ display: "flex", flexDirection: "column", gap: 7 }}>
                   <div onClick={() => setCheckedSteps(prev => ({ ...prev, [i]: !prev[i] }))}
                     style={{ display: "flex", gap: 12, cursor: "pointer", opacity: checkedSteps[i] ? 0.35 : 1, transition: "opacity 0.2s" }}>
-                    <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1, backgroundColor: checkedSteps[i] ? "#22C55E" : "var(--bg-card-2)", color: checkedSteps[i] ? "#fff" : "var(--text-muted)", transition: "all 0.2s" }}>
+                    <div className="step-num-circle" style={{ flexShrink: 0, width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, marginTop: 1, backgroundColor: checkedSteps[i] ? "#22C55E" : "var(--bg-card-2)", color: checkedSteps[i] ? "#fff" : "var(--text-muted)", transition: "all 0.2s" }}>
                       {checkedSteps[i] ? "✓" : i + 1}
                     </div>
                     <div style={{ flex: 1, display: "flex", alignItems: "flex-start", gap: 8 }}>
-                      <p style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>
+                      <p className="step-text" style={{ margin: 0, flex: 1, fontSize: 13, lineHeight: 1.6, color: "var(--text-main)", fontWeight: 500, textDecoration: checkedSteps[i] ? "line-through" : "none" }}>
                         {step.description}
                       </p>
                       {duration && !timer && (

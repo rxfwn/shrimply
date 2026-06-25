@@ -102,32 +102,39 @@ export default function Layout() {
   useEffect(() => {
     if (!user?.id) return
     fetchNotifs(user.id)
-    const channel = supabase
-      .channel("notifs-" + user.id)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        async (payload) => {
-          const n = payload.new
-          setNotifs(prev => [n, ...prev])
-          if (n.from_user_id) {
-            const { data } = await supabase.from("profiles").select("id, username, avatar_url").eq("id", n.from_user_id).single()
-            if (data) setNotifProfiles(prev => ({ ...prev, [data.id]: data }))
-          }
-        })
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    let channel
+    try {
+      channel = supabase
+        .channel("notifs-" + user.id)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+          async (payload) => {
+            try {
+              const n = payload.new
+              setNotifs(prev => [n, ...prev])
+              if (n.from_user_id) {
+                const { data } = await supabase.from("profiles").select("id, username, avatar_url").eq("id", n.from_user_id).single()
+                if (data) setNotifProfiles(prev => ({ ...prev, [data.id]: data }))
+              }
+            } catch {}
+          })
+        .subscribe()
+    } catch {}
+    return () => { try { if (channel) supabase.removeChannel(channel) } catch {} }
   }, [user?.id])
 
   const fetchNotifs = async (userId) => {
-    const { data } = await supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(30)
-    if (!data) return
-    setNotifs(data)
-    const ids = [...new Set(data.map(n => n.from_user_id).filter(Boolean))]
-    if (ids.length > 0) {
-      const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", ids)
-      const map = {}
-      ;(profiles || []).forEach(p => { map[p.id] = p })
-      setNotifProfiles(map)
-    }
+    try {
+      const { data } = await supabase.from("notifications").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(30)
+      if (!data) return
+      setNotifs(data)
+      const ids = [...new Set(data.map(n => n.from_user_id).filter(Boolean))]
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, username, avatar_url").in("id", ids)
+        const map = {}
+        ;(profiles || []).forEach(p => { map[p.id] = p })
+        setNotifProfiles(map)
+      }
+    } catch {}
   }
 
   const openNotifPanel = () => {

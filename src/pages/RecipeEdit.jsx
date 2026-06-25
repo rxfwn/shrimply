@@ -173,6 +173,31 @@ export default function RecipeEdit() {
         else if (perServing >= ECONOMIC_THRESHOLD) { const idx = autoTags.indexOf("economique"); if (idx !== -1) autoTags.splice(idx, 1) }
       }
 
+      // Tag rapide automatique (≤ 20 min)
+      if (parseInt(prepTime) > 0 && parseInt(prepTime) <= 20) {
+        if (!autoTags.includes("rapide")) autoTags.push("rapide")
+      } else {
+        const idx = autoTags.indexOf("rapide"); if (idx !== -1) autoTags.splice(idx, 1)
+      }
+
+      // Tag viande automatique
+      const VIANDE_KEYWORDS = ["poulet","boeuf","bœuf","porc","veau","agneau","dinde","canard","lapin","jambon","lardons","bacon","chorizo","saucisse","merguez","steak","escalope","côte","rôti","roti","magret","confit","foie","boudin","andouille","viande"]
+      const hasViande = validIngredients.some(ing => VIANDE_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw)))
+      if (hasViande) { if (!autoTags.includes("viande")) autoTags.push("viande") }
+      else { const idx2 = autoTags.indexOf("viande"); if (idx2 !== -1) autoTags.splice(idx2, 1) }
+
+      // Tag poisson automatique
+      const POISSON_KEYWORDS = ["saumon","thon","cabillaud","truite","sardine","crevette","moule","huître","huitre","homard","calmar","merlan","sole","dorade","bar","lieu","hareng","maquereau","anchois","gambas","langoustine","seiche","poulpe","poisson","fruits de mer","crabe"]
+      const hasPoisson = validIngredients.some(ing => POISSON_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw)))
+      if (hasPoisson) { if (!autoTags.includes("poisson")) autoTags.push("poisson") }
+      else { const idx3 = autoTags.indexOf("poisson"); if (idx3 !== -1) autoTags.splice(idx3, 1) }
+
+      // Tag sans gluten automatique
+      const GLUTEN_KEYWORDS = ["farine","blé","ble","pain","pâtes","pates","semoule","orge","seigle","avoine","couscous","chapelure","brioche","panure","croûton","crouton","filo","brick","biscuit","pita","naan","tortilla","vermicelle","gnocchi","tagliatelle","lasagne","ravioli"]
+      const hasGluten = validIngredients.some(ing => GLUTEN_KEYWORDS.some(kw => ing.name.toLowerCase().includes(kw)))
+      if (!hasGluten) { if (!autoTags.includes("sansgluten")) autoTags.push("sansgluten") }
+      else { const idx4 = autoTags.indexOf("sansgluten"); if (idx4 !== -1) autoTags.splice(idx4, 1) }
+
       // Tag sans-four automatique (aucune mention du four dans nom, description ou étapes)
       const FOUR_KEYWORDS = ["four", "préchauffer", "préchauffé", "préchauffée", "enfourner", "enfournez", "enfourne", "gratin", "gratiner", "rôtir", "rotir"]
       const allText = [name, description, ...steps.map(s => s.description)].join(" ").toLowerCase()

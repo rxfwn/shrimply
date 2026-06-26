@@ -320,14 +320,7 @@ export default function Shopping() {
             <img src="/icons/kart.webp" alt="" style={{ width: 22, height: 22 }} />
             courses
           </h1>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: textMuted, display: "flex", alignItems: "center", gap: 8 }}>
-            semaine du {weekLabel}
-            {estimatedTotal !== null && estimatedTotal > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#f3501e", backgroundColor: isDay ? "rgba(243,80,30,0.08)" : "rgba(243,80,30,0.15)", padding: "2px 8px", borderRadius: 20 }}>
-                ≈ {estimatedTotal.toFixed(0)}€ estimés
-              </span>
-            )}
-          </p>
+          <p style={{ margin: "4px 0 0", fontSize: 12, color: textMuted }}>semaine du {weekLabel}</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setShowAddModal(true)}
@@ -398,6 +391,26 @@ export default function Shopping() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Total estimé — barre fixe en bas */}
+      {estimatedTotal !== null && estimatedTotal > 0 && (
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+          backgroundColor: isDay ? "#FFFFFF" : "#1a1a1a",
+          borderTop: isDay ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
+          padding: "14px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          fontFamily: "Poppins, sans-serif",
+        }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: isDay ? "rgba(0,0,0,0.4)" : "rgba(255,255,255,0.4)", letterSpacing: "-0.02em" }}>budget estimé cette semaine</p>
+            <p style={{ margin: "2px 0 0", fontSize: 22, fontWeight: 800, color: "#f3501e", letterSpacing: "-0.05em", lineHeight: 1 }}>
+              ≈ {estimatedTotal.toFixed(2)}€
+            </p>
+          </div>
+          <img src="/icons/money.webp" alt="" style={{ width: 32, height: 32, opacity: 0.15 }} onError={e => e.target.style.display = "none"} />
         </div>
       )}
     </div>

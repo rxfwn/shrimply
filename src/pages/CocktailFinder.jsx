@@ -253,7 +253,7 @@ export default function CocktailFinder() {
               <button key={catKey} onClick={() => setActiveCategory(catKey)} style={{
                 width: "100%", padding: "8px 10px", marginBottom: 4, cursor: "pointer", display: "flex",
                 alignItems: "center", gap: 7, fontFamily: "Poppins, sans-serif", borderRadius: 10,
-                backgroundColor: isActive ? catInfo.bg : catInfo.bg + (isDay ? "55" : "22"),
+                backgroundColor: catInfo.bg,
                 border: "none",
                 transition: "all 0.15s", boxSizing: "border-box",
               }}>

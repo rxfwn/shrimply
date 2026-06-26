@@ -292,7 +292,7 @@ export default function CocktailFinder() {
             <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.3, pointerEvents: "none" }}>🔍</span>
             <input value={searchIng} onChange={e => setSearchIng(e.target.value)}
               placeholder="Rechercher..."
-              style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", border: `1.5px solid ${border}`, color: textMain, fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
+              style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: "rgba(255,255,255,0.75)", border: "none", color: "#111111", fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
               onFocus={e => e.target.style.borderColor = "#d57bff"}
               onBlur={e => e.target.style.borderColor = border}
             />
@@ -351,7 +351,7 @@ export default function CocktailFinder() {
             <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.3, pointerEvents: "none" }}>🔍</span>
             <input value={searchCocktail} onChange={e => setSearchCocktail(e.target.value)}
               placeholder="Chercher un cocktail..."
-              style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: isDay ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.06)", border: `1.5px solid ${border}`, color: textMain, fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
+              style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: "rgba(255,255,255,0.75)", border: "none", color: "#111111", fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
               onFocus={e => e.target.style.borderColor = "#d57bff"}
               onBlur={e => e.target.style.borderColor = border}
             />

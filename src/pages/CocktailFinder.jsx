@@ -7,7 +7,7 @@ import { useTheme } from "../context/ThemeContext"
 const COCKTAIL_KEYS = new Set(COCKTAIL_INGREDIENTS.map(i => i.key))
 
 const CAT_ICONS = {
-  spiritueux: { type: "img", src: "/icons/vin.webp" },
+  spiritueux: { type: "emoji", val: "🥃" },
   liqueur:    { type: "img", src: "/icons/drink.webp" },
   vin:        { type: "img", src: "/icons/vin.webp" },
   biere:      { type: "img", src: "/icons/fizz.webp" },

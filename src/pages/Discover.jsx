@@ -83,7 +83,7 @@ export default function Discover() {
       const from = pageIndex * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
-      const recipeTagFilter = `primary_tag.is.null,primary_tag.in.(${TAGS.map(t => t.key).join(",")})`
+      const recipeTagFilter = `primary_tag.in.(${TAGS.map(t => t.key).join(",")})`
 
       const { data } = await supabase
         .from("recipes")

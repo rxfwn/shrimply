@@ -1,5 +1,5 @@
 import { TAGS, ALL_TAGS, DEFAULT_CARD_BG, DEFAULT_CARD_BORDER } from "../tags"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { supabase } from "../supabase"
 import { useTheme } from "../context/ThemeContext"
@@ -71,9 +71,26 @@ export default function Discover() {
   const [checkedSteps, setCheckedSteps] = useState({})
   const [showUpgradePopup, setShowUpgradePopup] = useState(false)
   const [tagTooltip, setTagTooltip] = useState(null) // { tags, x, y }
+  const sentinelRef = useRef(null)
 
   // eslint-disable-next-line react-hooks/immutability
   useEffect(() => { fetchRecipes(0) }, [])
+
+  // Scroll infini — observe le sentinel en bas de grille
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+        const nextPage = page + 1
+        setPage(nextPage)
+        setLoadingMore(true)
+        fetchRecipes(nextPage, true)
+      }
+    }, { rootMargin: "200px" })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loadingMore, loading, page])
 
   const fetchRecipes = async (pageIndex, append = false) => {
     try {
@@ -567,7 +584,7 @@ export default function Discover() {
                         ? <img src={recipe.profiles.avatar_url} alt="avatar" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ fontSize: 9 }}>👤</span>}
                     </div>
-                    <span style={{ fontSize: 10, color: textColor, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, textDecoration: "underline", textUnderlineOffset: 2 }}>
+                    <span style={{ fontSize: 10, color: textColor, opacity: 0.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                       {recipe.profiles?.username || "Utilisateur"}
                     </span>
                     {recipe.profiles?.is_official && <OfficialBadge small />}
@@ -578,8 +595,8 @@ export default function Discover() {
                   </h3>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 7, flexWrap: "wrap", fontSize: 11, color: textColor }}>
-                    {recipe.prep_time && <span style={{ opacity: 0.75 }}>⏱ {recipe.prep_time}min</span>}
-                    {recipe.servings && <span style={{ opacity: 0.75 }}>🍽 {recipe.servings}p</span>}
+                    {recipe.prep_time && <span>⏱ {recipe.prep_time}min</span>}
+                    {recipe.servings && <span>🍽 {recipe.servings}p</span>}
                     {recipe.estimatedTotal != null && (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 20, fontWeight: 700, fontSize: 10, backgroundColor: actionBg, color: bg }}>
                         <img src="/icons/money.webp" alt="" style={{ width: 10, height: 10 }} onError={e => e.target.style.display = "none"} />
@@ -630,17 +647,11 @@ export default function Discover() {
         </div>
       )}
 
-      {!loading && hasMore && filteredRecipes.length > 0 && !search && filter === "all" && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
-          <button
-            onClick={handleLoadMore}
-            disabled={loadingMore}
-            style={{ ...btnBase, padding: "10px 28px", backgroundColor: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)", fontSize: 13, opacity: loadingMore ? 0.5 : 1 }}
-            onMouseEnter={e => { if (!loadingMore) e.currentTarget.style.transform = "scale(1.02)" }}
-            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-          >
-            {loadingMore ? "chargement..." : "charger plus"}
-          </button>
+      {/* Sentinel pour le scroll infini */}
+      <div ref={sentinelRef} style={{ height: 1 }} />
+      {loadingMore && (
+        <div style={{ display: "flex", justifyContent: "center", padding: "16px 0", color: "var(--text-faint)", fontSize: 12, fontFamily: "Poppins, sans-serif" }}>
+          chargement...
         </div>
       )}
     </div>

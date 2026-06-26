@@ -337,15 +337,15 @@ export const FILTER_ALL_TEXT = "#510312"
 // Catégories d'ingrédients cocktail (inspiré Difford's Guide, en français)
 // ─────────────────────────────────────────────────────────────────
 export const COCKTAIL_INGREDIENT_CATEGORIES = {
-  spiritueux: { label: "spiritueux de base", color: "#78350f", bg: "#fde68a" },
+  spiritueux: { label: "spiritueux de base", color: "#FFF4C7", bg: "#E49300" },
   liqueur:    { label: "liqueur",            color: "#130b2d", bg: "#d57bff" },
   vin:        { label: "vin & vermouth",     color: "#510312", bg: "#ffb9e1" },
-  biere:      { label: "bière & cidre",      color: "#a16207", bg: "#FFF4C7" },
+  biere:      { label: "bière & cidre",      color: "#E49300", bg: "#FFF4C7" },
   amers:      { label: "amers & bitter",     color: "#091718", bg: "#cfff79" },
-  sirop:      { label: "sirops",             color: "#4c1d95", bg: "#e9d5ff" },
+  sirop:      { label: "sirops",             color: "#9be7ff", bg: "#03225c" },
   jus:        { label: "jus",               color: "#03225c", bg: "#9be7ff" },
-  mixeur:     { label: "mixeurs",            color: "#14532d", bg: "#bbf7d0" },
-  frigo:      { label: "frigo & placard",    color: "#0c4a6e", bg: "#bae6fd" },
+  mixeur:     { label: "mixeurs",            color: "#cfff79", bg: "#091718" },
+  frigo:      { label: "frigo & placard",    color: "#ffb9e1", bg: "#510312" },
 }
 
 // ─────────────────────────────────────────────────────────────────

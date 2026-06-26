@@ -154,12 +154,13 @@ export default function CocktailFinder() {
     const active = selected.includes(ing.key)
     return (
       <button onClick={() => toggle(ing.key)} style={{
-        padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+        padding: "6px 13px", borderRadius: 20, fontSize: 11, fontWeight: 700,
         fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em", cursor: "pointer",
         transition: "all 0.12s",
-        border: `1.5px solid ${active ? catInfo.color : border}`,
-        backgroundColor: active ? catInfo.bg : "transparent",
-        color: active ? catInfo.color : textMuted,
+        border: "none",
+        backgroundColor: active ? catInfo.color : "#FFFFFF",
+        color: active ? "#fff" : "#1a1a1a",
+        boxShadow: active ? "none" : "0 1px 3px rgba(0,0,0,0.12)",
       }}>
         {ing.label}
       </button>
@@ -189,15 +190,15 @@ export default function CocktailFinder() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", backgroundColor: bg, fontFamily: "Poppins, sans-serif" }}>
       <style>{`
         .cf-body { display: flex; gap: 0; flex: 1; overflow: hidden; }
-        .cf-nav { width: 150px; flex-shrink: 0; border-right: 1px solid ${border}; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; padding: 8px 8px; }
-        .cf-left { width: 270px; flex-shrink: 0; border-right: 1px solid ${border}; padding: 12px 12px; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; }
+        .cf-nav { width: 185px; flex-shrink: 0; border-right: 1px solid ${border}; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; padding: 8px 8px; }
+        .cf-left { width: 280px; flex-shrink: 0; border-right: 1px solid ${border}; padding: 14px 14px; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; }
         .cf-right { flex: 1; padding: 12px 14px; min-width: 0; overflow-y: auto; }
         .cf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .cf-card { background: ${surface}; border-radius: 14px; overflow: hidden; transition: transform 0.12s, box-shadow 0.12s; display: flex; flex-direction: column; }
         .cf-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.13); }
         .cf-nav::-webkit-scrollbar, .cf-left::-webkit-scrollbar { width: 3px; }
         .cf-nav::-webkit-scrollbar-thumb, .cf-left::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
-        @media (max-width: 1000px) { .cf-grid { grid-template-columns: repeat(2,1fr); } .cf-nav { width: 110px; } .cf-left { width: 230px; } }
+        @media (max-width: 1000px) { .cf-grid { grid-template-columns: repeat(2,1fr); } .cf-nav { width: 150px; } .cf-left { width: 240px; } }
         @media (max-width: 680px) {
           .cf-body { flex-direction: column; overflow: visible; }
           .cf-nav { width: 100%; display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden; position: static; max-height: none; border-right: none; border-bottom: 1px solid ${border}; padding: 6px; gap: 4px; }
@@ -223,7 +224,7 @@ export default function CocktailFinder() {
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
             {tabs.map(tab => (
               <button key={tab.key} onClick={() => setFilter(tab.key)} style={{
-                padding: "4px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700,
+                padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700,
                 border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", letterSpacing: "-0.04em",
                 backgroundColor: filter === tab.key ? "#CFFF79" : isDay ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.08)",
                 color: filter === tab.key ? "#091718" : textMuted,
@@ -257,7 +258,7 @@ export default function CocktailFinder() {
                 transition: "all 0.15s", boxSizing: "border-box",
               }}>
                 <CatIcon catKey={catKey} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: catInfo.color, opacity: isActive ? 1 : 0.7, flex: 1, textAlign: "left", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: catInfo.color, flex: 1, textAlign: "left", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {catInfo.label}
                 </span>
                 {activeCount > 0 && (
@@ -274,7 +275,7 @@ export default function CocktailFinder() {
         </div>
 
         {/* Panneau gauche — sélecteur d'ingrédients */}
-        <div className="cf-left">
+        <div className="cf-left" style={{ backgroundColor: COCKTAIL_INGREDIENT_CATEGORIES[activeCategory].bg }}>
           {/* Titre catégorie active */}
           {(() => {
             const catInfo = COCKTAIL_INGREDIENT_CATEGORIES[activeCategory]
@@ -391,7 +392,7 @@ export default function CocktailFinder() {
 
                 const progressPct   = totalCount > 0 ? (haveCount / totalCount) * 100 : 0
                 const progressColor = canMake ? "#22c55e" : haveCount > 0 ? "#f3501e" : (isDay ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.12)")
-                const scoreColor    = canMake ? "#16a34a" : haveCount > 0 ? "#f3501e" : textMuted
+                const scoreColor    = canMake ? "#16a34a" : haveCount > 0 ? "#f3501e" : (isDay ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.55)")
                 const isActive      = selectedRecipeId === recipe.id
 
                 return (

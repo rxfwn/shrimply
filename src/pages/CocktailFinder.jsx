@@ -191,7 +191,7 @@ export default function CocktailFinder() {
       <style>{`
         .cf-body { display: flex; gap: 0; flex: 1; overflow: hidden; }
         .cf-nav { width: 185px; flex-shrink: 0; border-right: 1px solid ${border}; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; padding: 8px; }
-        .cf-left { width: 280px; flex-shrink: 0; border-right: 1px solid ${border}; padding: 14px 14px; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; }
+        .cf-left { width: 280px; flex-shrink: 0; border-right: 1px solid ${border}; padding: 14px 14px; overflow-y: auto; position: sticky; top: 0; height: 100vh; box-sizing: border-box; }
         .cf-right { flex: 1; padding: 12px 14px; min-width: 0; overflow-y: auto; }
         .cf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
         .cf-card { background: ${surface}; border-radius: 14px; overflow: hidden; transition: transform 0.12s, box-shadow 0.12s; display: flex; flex-direction: column; }
@@ -321,7 +321,10 @@ export default function CocktailFinder() {
           {/* Sélectionnés */}
           {selected.length > 0 && (
             <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${border}` }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: textMuted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>Sélectionnés ({selected.length})</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, color: textMuted, letterSpacing: "0.06em", textTransform: "uppercase" }}>Sélectionnés ({selected.length})</span>
+                <button onClick={clearAll} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 9, color: "#f3501e", padding: 0, letterSpacing: "-0.02em" }}>tout effacer</button>
+              </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {selected.map(key => {
                   const ing = COCKTAIL_INGREDIENTS.find(i => i.key === key)

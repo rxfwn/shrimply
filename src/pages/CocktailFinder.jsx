@@ -277,18 +277,7 @@ export default function CocktailFinder() {
 
         {/* Panneau gauche — sélecteur d'ingrédients */}
         <div className="cf-left" style={{ backgroundColor: COCKTAIL_INGREDIENT_CATEGORIES[activeCategory].bg }}>
-          {/* Titre catégorie active */}
-          {(() => {
-            const catInfo = COCKTAIL_INGREDIENT_CATEGORIES[activeCategory]
-            return (
-              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
-                <CatIcon catKey={activeCategory} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: catInfo.color, letterSpacing: "-0.04em", fontFamily: "Poppins, sans-serif" }}>{catInfo.label}</span>
-              </div>
-            )
-          })()}
-
-          {/* Recherche — au-dessus du titre de catégorie */}
+          {/* Recherche */}
           <div style={{ position: "relative", marginBottom: 12 }}>
             <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.4, pointerEvents: "none" }}>🔍</span>
             <input value={searchIng} onChange={e => setSearchIng(e.target.value)}
@@ -299,6 +288,17 @@ export default function CocktailFinder() {
               <button onClick={() => setSearchIng("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#555", fontSize: 13, lineHeight: 1, padding: 2 }}>×</button>
             )}
           </div>
+
+          {/* Titre catégorie active */}
+          {!searchIng.trim() && (() => {
+            const catInfo = COCKTAIL_INGREDIENT_CATEGORIES[activeCategory]
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+                <CatIcon catKey={activeCategory} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: catInfo.color, letterSpacing: "-0.04em", fontFamily: "Poppins, sans-serif" }}>{catInfo.label}</span>
+              </div>
+            )
+          })()}
 
           {/* Pills ingrédients OU résultats de recherche */}
           {searchIng.trim() ? (

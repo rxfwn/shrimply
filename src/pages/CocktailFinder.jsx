@@ -190,7 +190,7 @@ export default function CocktailFinder() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", backgroundColor: bg, fontFamily: "Poppins, sans-serif" }}>
       <style>{`
         .cf-body { display: flex; gap: 0; flex: 1; overflow: hidden; }
-        .cf-nav { width: 185px; flex-shrink: 0; border-right: 1px solid ${border}; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; padding: 8px 8px; }
+        .cf-nav { width: 185px; flex-shrink: 0; border-right: 1px solid ${border}; overflow-y: auto; position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
         .cf-left { width: 280px; flex-shrink: 0; border-right: 1px solid ${border}; padding: 14px 14px; overflow-y: auto; align-self: flex-start; position: sticky; top: 0; max-height: 100vh; box-sizing: border-box; }
         .cf-right { flex: 1; padding: 12px 14px; min-width: 0; overflow-y: auto; }
         .cf-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -251,9 +251,9 @@ export default function CocktailFinder() {
             const isActive = activeCategory === catKey
             return (
               <button key={catKey} onClick={() => setActiveCategory(catKey)} style={{
-                width: "100%", padding: "8px 10px", marginBottom: 4, cursor: "pointer", display: "flex",
+                width: "100%", flex: 1, padding: "8px 10px", cursor: "pointer", display: "flex",
                 alignItems: "center", gap: 7, fontFamily: "Poppins, sans-serif", borderRadius: 10,
-                backgroundColor: isActive ? catInfo.bg : catInfo.bg + (isDay ? "66" : "33"),
+                backgroundColor: isActive ? catInfo.bg : catInfo.bg + (isDay ? "55" : "22"),
                 border: "none",
                 transition: "all 0.15s", boxSizing: "border-box",
               }}>

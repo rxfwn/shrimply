@@ -343,9 +343,9 @@ export const COCKTAIL_INGREDIENT_CATEGORIES = {
   biere:      { label: "bière & cidre",      color: "#E49300", bg: "#FFF4C7" },
   amers:      { label: "amers & bitter",     color: "#091718", bg: "#cfff79" },
   sirop:      { label: "sirops",             color: "#9be7ff", bg: "#03225c" },
-  jus:        { label: "jus",               color: "#03225c", bg: "#9be7ff" },
+  jus:        { label: "jus",               color: "#ffb9e1", bg: "#510312" },
   mixeur:     { label: "mixeurs",            color: "#cfff79", bg: "#091718" },
-  frigo:      { label: "frigo & placard",    color: "#ffb9e1", bg: "#510312" },
+  frigo:      { label: "frigo & placard",    color: "#03225c", bg: "#9be7ff" },
 }
 
 // ─────────────────────────────────────────────────────────────────

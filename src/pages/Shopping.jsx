@@ -395,9 +395,10 @@ export default function Shopping() {
       )}
 
       {/* Total estimé — barre fixe en bas */}
+      <style>{`.shopping-total { left: 0; } @media (min-width: 768px) { .shopping-total { left: 208px; } }`}</style>
       {estimatedTotal !== null && estimatedTotal > 0 && (
-        <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+        <div className="shopping-total" style={{
+          position: "fixed", bottom: 0, right: 0, zIndex: 50,
           backgroundColor: isDay ? "#FFFFFF" : "#1a1a1a",
           borderTop: isDay ? "1px solid rgba(0,0,0,0.08)" : "1px solid rgba(255,255,255,0.08)",
           padding: "14px 24px",

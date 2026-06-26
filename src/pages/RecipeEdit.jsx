@@ -30,7 +30,7 @@ function TagPill({ tag, active, onClick, anyActive = false }) {
   )
 }
 
-const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce","selon goût"]
+const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","bouteille","tranche","pièce","selon goût"]
 
 export default function RecipeEdit() {
   const { id } = useParams()

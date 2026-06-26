@@ -11,7 +11,7 @@ import { detectCocktailIngs } from "../components/CocktailIngredientPicker"
 import CocktailNameInput from "../components/CocktailNameInput"
 import { getTextColor } from "../utils/ui"
 
-const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","tranche","pièce","selon goût"]
+const UNITS = ["g","kg","ml","cl","L","c. à café","c. à soupe","pincée","poignée","paquet","boîte","bouteille","tranche","pièce","selon goût"]
 
 // ── Bloque tout sauf chiffres pour entiers (temps, portions) ──
 function handleIntegerKeyDown(e) {

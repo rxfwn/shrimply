@@ -239,6 +239,20 @@ export default function CocktailFinder() {
             )}
           </div>
         </div>
+
+        {/* Recherche ingrédients — toutes catégories */}
+        <div style={{ position: "relative", marginTop: 10, maxWidth: 340 }}>
+          <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.35, pointerEvents: "none" }}>🔍</span>
+          <input value={searchIng} onChange={e => setSearchIng(e.target.value)}
+            placeholder="Chercher un ingrédient..."
+            style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 28px 7px 28px", fontSize: 11, outline: "none", backgroundColor: "var(--bg-card-2)", border: `1px solid ${border}`, color: textMain, fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
+            onFocus={e => e.target.style.borderColor = "#d57bff"}
+            onBlur={e => e.target.style.borderColor = border}
+          />
+          {searchIng && (
+            <button onClick={() => setSearchIng("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: textMuted, fontSize: 13, lineHeight: 1, padding: 2 }}>×</button>
+          )}
+        </div>
       </div>
 
       <div className="cf-body">
@@ -286,20 +300,6 @@ export default function CocktailFinder() {
               </div>
             )
           })()}
-
-          {/* Recherche */}
-          <div style={{ position: "relative", marginBottom: 10 }}>
-            <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", fontSize: 11, opacity: 0.3, pointerEvents: "none" }}>🔍</span>
-            <input value={searchIng} onChange={e => setSearchIng(e.target.value)}
-              placeholder="Rechercher..."
-              style={{ width: "100%", boxSizing: "border-box", borderRadius: 10, padding: "7px 26px 7px 28px", fontSize: 11, outline: "none", backgroundColor: "rgba(255,255,255,0.75)", border: "none", color: "#111111", fontFamily: "Poppins, sans-serif", fontWeight: 500 }}
-              onFocus={e => e.target.style.borderColor = "#d57bff"}
-              onBlur={e => e.target.style.borderColor = border}
-            />
-            {searchIng && (
-              <button onClick={() => setSearchIng("")} style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: textMuted, fontSize: 13, lineHeight: 1, padding: 2 }}>×</button>
-            )}
-          </div>
 
           {/* Pills ingrédients OU résultats de recherche */}
           {searchIng.trim() ? (

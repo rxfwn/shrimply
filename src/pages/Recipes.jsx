@@ -174,12 +174,14 @@ export default function Recipes({ category = "recette" }) {
         if (data) { setRecipes(data); recomputeMissingPrices(data) }
       } else {
         const targetKeys = (category === "glace" ? GLACE_TAGS : BOISSON_TAGS).map(t => t.key)
-        const [{ data: publicData }, { data: privateData }] = await Promise.all([
-          supabase.from("recipes").select("*").eq("is_public", true).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
-          supabase.from("recipes").select("*").eq("user_id", user.id).not("is_public", "is", true).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
+        const [{ data: publicData }, { data: ownData }] = await Promise.all([
+          supabase.from("recipes").select("*").eq("is_public", true).neq("user_id", user.id).in("primary_tag", targetKeys).order("created_at", { ascending: false }),
+          supabase.from("recipes").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         ])
+        // Filtre les recettes perso côté client selon la catégorie (primary_tag OU tags)
+        const ownInCategory = (ownData || []).filter(r => getRecipeCategory(r.primary_tag, r.tags) === category)
         const seen = new Set()
-        const merged = [...(publicData || []), ...(privateData || [])].filter(r => {
+        const merged = [...(publicData || []), ...ownInCategory].filter(r => {
           if (seen.has(r.id)) return false; seen.add(r.id); return true
         })
         const uids = [...new Set(merged.map(r => r.user_id))]
@@ -478,7 +480,7 @@ export default function Recipes({ category = "recette" }) {
   const hasFormContent = () => name.trim() || description.trim() || ingredients.some(i => i.name.trim()) || steps.some(s => s.description.trim())
   const tryCancel = () => { if (hasFormContent()) setShowCancelPopup(true); else resetForm() }
 
-  const categoryRecipes = recipes.filter(r => getRecipeCategory(r.primary_tag) === category)
+  const categoryRecipes = recipes.filter(r => getRecipeCategory(r.primary_tag, r.tags) === category)
 
   const filtered = categoryRecipes.filter(r => {
     const matchSearch = (r.name || "").toLowerCase().includes(search.toLowerCase())

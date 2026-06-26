@@ -304,9 +304,14 @@ export const CATEGORIES = {
 }
 
 // Détermine la catégorie d'une recette à partir de son tag principal
-export function getRecipeCategory(primaryTag) {
+export function getRecipeCategory(primaryTag, tags) {
   if (GLACE_TAGS.some(t => t.key === primaryTag)) return "glace"
   if (BOISSON_TAGS.some(t => t.key === primaryTag)) return "boisson"
+  // Fallback : regarder dans le tableau tags si primary_tag absent
+  if (!primaryTag && Array.isArray(tags)) {
+    if (GLACE_TAGS.some(t => tags.includes(t.key))) return "glace"
+    if (BOISSON_TAGS.some(t => tags.includes(t.key))) return "boisson"
+  }
   return "recette"
 }
 

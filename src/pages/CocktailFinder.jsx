@@ -76,7 +76,7 @@ export default function CocktailFinder() {
     const merged = [...(publicData || []), ...(privateData || [])].filter(r => {
       if (seen.has(r.id)) return false; seen.add(r.id); return true
     })
-    setRecipes(merged.filter(r => getRecipeCategory(r.primary_tag) === "boisson"))
+    setRecipes(merged.filter(r => getRecipeCategory(r.primary_tag, r.tags) === "boisson"))
     setLoading(false)
   }
 
@@ -252,12 +252,12 @@ export default function CocktailFinder() {
               <button key={catKey} onClick={() => setActiveCategory(catKey)} style={{
                 width: "100%", padding: "8px 10px", marginBottom: 4, cursor: "pointer", display: "flex",
                 alignItems: "center", gap: 7, fontFamily: "Poppins, sans-serif", borderRadius: 10,
-                backgroundColor: isActive ? (isDay ? catInfo.bg : catInfo.bg + "55") : (isDay ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.04)"),
-                border: `1.5px solid ${isActive ? catInfo.color : border}`,
+                backgroundColor: isActive ? catInfo.bg : catInfo.bg + (isDay ? "66" : "33"),
+                border: "none",
                 transition: "all 0.15s", boxSizing: "border-box",
               }}>
                 <CatIcon catKey={catKey} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? catInfo.color : textMuted, flex: 1, textAlign: "left", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: catInfo.color, opacity: isActive ? 1 : 0.7, flex: 1, textAlign: "left", letterSpacing: "-0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {catInfo.label}
                 </span>
                 {activeCount > 0 && (

@@ -8,7 +8,7 @@ Quand tu sais à l'avance ce que tu vas manger, plusieurs choses se passent auto
 
 - Tu **arrêtes d'improviser** au dernier moment, donc de commander par flemme
 - Tu **achètes exactement ce qu'il faut**, donc moins de gaspillage
-- Tu **économises** : un repas livré coûte souvent 15 à 25€, contre 3 à 5€ pour un repas fait maison
+- Tu **[économises](/blog/reduire-budget-courses-alimentaires)** : un repas livré coûte souvent 15 à 25€, contre 3 à 5€ pour un repas fait maison
 - Tu **libères de la charge mentale** — une décision en moins à prendre chaque jour
 
 ## La méthode en 3 étapes
@@ -23,7 +23,7 @@ Plutôt que de tout garder dans ta tête (ou sur un post-it qui finira à la pou
 
 ### 3. Génère ta liste de courses automatiquement
 
-C'est l'étape que tout le monde déteste faire à la main : ouvrir chaque recette, noter les ingrédients, vérifier ce qu'il reste dans le placard... Si tes recettes sont déjà structurées avec leurs ingrédients et leurs quantités, cette liste devrait se générer **toute seule**, regroupée par rayon.
+C'est l'étape que tout le monde déteste faire à la main : ouvrir chaque recette, noter les ingrédients, vérifier ce qu'il reste dans le placard... Si tes recettes sont déjà structurées avec leurs ingrédients et leurs quantités, [cette liste devrait se générer toute seule](/blog/liste-de-courses-automatique-application), regroupée par rayon.
 
 ## Le vrai piège à éviter
 

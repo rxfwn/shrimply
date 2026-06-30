@@ -6,7 +6,7 @@ Résultat : tu achètes au feeling, tu oublies la moitié de ce qu'il te faut, e
 
 La liste de courses "dans la tête", ça ne marche pas. Le cerveau n'est pas fait pour mémoriser 23 ingrédients répartis sur 7 repas de la semaine. Et la liste écrite à la main sur un bout de papier qu'on oublie sur le plan de travail, c'est à peine mieux.
 
-Le vrai problème, c'est que la liste est déconnectée des repas. On essaie de se rappeler ce dont on a besoin sans avoir planifié ce qu'on va manger — donc on oublie forcément des choses.
+Le vrai problème, c'est que la liste est déconnectée des repas. On essaie de se rappeler ce dont on a besoin sans avoir [planifié ce qu'on va manger](/blog/comment-organiser-ses-repas-de-la-semaine) — donc on oublie forcément des choses.
 
 ## La solution : générer la liste depuis les repas, pas l'inverse
 
@@ -20,7 +20,7 @@ C'est ce que font les applications de liste de courses automatique : tu planifie
 - Zéro doublon — les ingrédients communs à plusieurs recettes sont regroupés
 - Liste toujours sur toi — tu l'ouvres sur ton téléphone au supermarché
 - Moins de gaspillage — tu n'achètes que ce que tu vas vraiment utiliser
-- Des économies réelles — en moyenne 50 à 100€ par mois
+- [Des économies réelles](/blog/reduire-budget-courses-alimentaires) — en moyenne 50 à 100€ par mois
 
 ## Comment ça marche avec Shrimply ?
 

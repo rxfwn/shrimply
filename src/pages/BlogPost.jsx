@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { useNavigate, useParams, Link, Navigate } from "react-router-dom"
 import { marked } from "marked"
-import { getPostBySlug, getPostContent } from "../content/blog"
+import { getPostBySlug, getPostContent, getAllPosts } from "../content/blog"
 
 const syne = { fontFamily: "'Syne', sans-serif" }
 const inst = { fontFamily: "'Instrument Sans', sans-serif" }
@@ -62,6 +62,7 @@ export default function BlogPost({ embedded = false }) {
   }
 
   const html = marked.parse(getPostContent(slug))
+  const relatedPosts = getAllPosts().filter(p => p.slug !== slug).slice(0, 3)
 
   return (
     <div style={{ background: "#f2ede4", color: D, minHeight: "100vh" }}>
@@ -106,6 +107,24 @@ export default function BlogPost({ embedded = false }) {
         </h1>
 
         <div className="blog-content" dangerouslySetInnerHTML={{ __html: html }} />
+
+        {/* ── À LIRE AUSSI ── */}
+        {relatedPosts.length > 0 && (
+          <div style={{ marginTop: 48, paddingTop: 32, borderTop: "1px solid rgba(17,17,17,.08)" }}>
+            <span style={{ ...inst, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(17,17,17,.4)", marginBottom: 16, display: "block" }}>
+              à lire aussi
+            </span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {relatedPosts.map(p => (
+                <Link key={p.slug} to={`${blogHome}/${p.slug}`}
+                  style={{ display: "block", background: "#fff", borderRadius: 14, padding: "16px 18px", textDecoration: "none", border: "1px solid rgba(17,17,17,.06)" }}>
+                  <div style={{ ...syne, fontWeight: 700, fontSize: 15, color: D, letterSpacing: "-.02em", marginBottom: 4 }}>{p.title}</div>
+                  <div style={{ ...inst, fontSize: 13, color: "rgba(17,17,17,.5)", lineHeight: 1.5 }}>{p.excerpt}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── CTA ── */}
         {!embedded && (

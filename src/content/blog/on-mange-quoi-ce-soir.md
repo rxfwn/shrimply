@@ -12,14 +12,14 @@ Résultat : on tourne en rond sur les mêmes 5 recettes, on commande en livraiso
 
 La planification de repas, ça fait peur. On imagine des tableurs Excel compliqués ou des heures passées à organiser. En réalité, 5 minutes par semaine suffisent.
 
-Le principe : le dimanche (ou le jour qui te convient), tu places tes repas de la semaine sur un calendrier. Tu n'as plus à y penser au quotidien. Ta liste de courses se génère automatiquement. Tu ouvres l'app au supermarché et c'est tout.
+Le principe : le dimanche (ou le jour qui te convient), tu places tes repas de la semaine sur un calendrier. Tu n'as plus à y penser au quotidien. [Ta liste de courses se génère automatiquement](/blog/liste-de-courses-automatique-application). Tu ouvres l'app au supermarché et c'est tout.
 
 ## Ce que ça change concrètement
 
 - Plus de "on mange quoi" à 18h30
 - Plus d'oublis en courses
 - Moins de gaspillage
-- Des économies réelles (50 à 100€/mois en moyenne)
+- [Des économies réelles](/blog/reduire-budget-courses-alimentaires) (50 à 100€/mois en moyenne)
 - Une tête libérée pour le reste
 
 ## Shrimply : l'app pensée pour les gens qui veulent que ça soit simple

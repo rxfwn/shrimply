@@ -33,7 +33,7 @@ Le secret c'est la **parallélisation** — ne jamais attendre qu'une chose soit
 
 ## Le vrai bloquant : la liste de courses
 
-Même avec la meilleure volonté du monde, si tu arrives au dimanche sans avoir fait les courses, la session tombe à l'eau. C'est pour ça que la planification doit se faire en amont — idéalement le vendredi ou le samedi — avec une liste de courses claire, regroupée par rayon, pour ne rien oublier.
+Même avec la meilleure volonté du monde, si tu arrives au dimanche sans avoir fait les courses, la session tombe à l'eau. C'est pour ça que [la planification](/blog/comment-organiser-ses-repas-de-la-semaine) doit se faire en amont — idéalement le vendredi ou le samedi — avec [une liste de courses claire](/blog/liste-de-courses-automatique-application), regroupée par rayon, pour ne rien oublier.
 
 ## En résumé
 

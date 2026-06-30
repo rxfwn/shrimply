@@ -14,7 +14,7 @@ Trois fuites silencieuses expliquent la majorité des dépassements de budget :
 
 ## La méthode qui change vraiment la donne
 
-Le levier le plus efficace, ce n'est pas de "faire attention" — c'est de planifier ses repas avant de faire les courses.
+Le levier le plus efficace, ce n'est pas de "faire attention" — c'est de [planifier ses repas](/blog/comment-organiser-ses-repas-de-la-semaine) avant de faire les courses.
 
 Concrètement : tu décides à l'avance ce que tu vas manger sur la semaine. Tu en déduis une liste précise, sans surplus, sans oubli. Tu achètes exactement ce dont tu as besoin, pas plus.
 
@@ -29,6 +29,6 @@ En moyenne, les foyers qui planifient leurs repas économisent entre 50 et 100�
 
 ## Comment Shrimply t'aide à passer à l'action
 
-Avec Shrimply, tu planifies tes repas de la semaine en glissant tes recettes sur un calendrier. Ta liste de courses se génère automatiquement depuis les ingrédients — rien à recopier, rien à oublier.
+Avec Shrimply, tu planifies tes repas de la semaine en glissant tes recettes sur un calendrier. [Ta liste de courses se génère automatiquement](/blog/liste-de-courses-automatique-application) depuis les ingrédients — rien à recopier, rien à oublier.
 
 Chaque recette affiche aussi un prix estimé, pour que tu saches exactement où va ton budget avant même d'aller faire les courses.

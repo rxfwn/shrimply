@@ -43,6 +43,8 @@ export default function Register() {
 
     if (data.user) {
       await supabase.from("profiles").insert({ id: data.user.id, username })
+      // Email de bienvenue — fire & forget, ne bloque jamais l'inscription
+      supabase.functions.invoke("send-welcome-email", { body: { email, username } }).catch(() => {})
     }
 
     navigate("/calendar")

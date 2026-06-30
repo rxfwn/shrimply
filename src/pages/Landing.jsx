@@ -273,13 +273,20 @@ export default function Landing() {
               repas planifiés, courses générées.<br />
               <strong style={{ color: "rgba(17,17,17,0.85)" }}>5 minutes par semaine.</strong>
             </p>
-            <div className="fade3 stat-blocks" style={{ display: "flex", gap: 8, marginBottom: 28, justifyContent: "center" }}>
+            <div className="fade3 stat-blocks" style={{ display: "flex", gap: 8, marginBottom: 14, justifyContent: "center" }}>
               {statBlocks.map(g => (
                 <div key={g.n} style={{ background: g.bg, borderRadius: 12, padding: "7px 12px", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
                   <span style={{ ...syne, fontSize: 18, fontWeight: 800, color: g.textN, letterSpacing: "-.04em", lineHeight: 1 }}>{g.n}</span>
                   <span style={{ ...inst, fontSize: 9, color: g.textL, fontWeight: 500, lineHeight: 1.2 }}>{g.l}</span>
                 </div>
               ))}
+            </div>
+
+            <div className="fade3" style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+              <div style={{ background: "#fff", borderRadius: 100, padding: "8px 14px", display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 4px 16px rgba(0,0,0,.08)" }}>
+                <img src="/icons/money.webp" alt="" width={16} height={16} style={{ width: 16, height: 16, objectFit: "contain" }} />
+                <span style={{ ...inst, fontSize: 12, fontWeight: 600, color: D }}>8,85€ <span style={{ opacity: .5, fontWeight: 500 }}>pour 2 pers. — calculé auto</span></span>
+              </div>
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", position: "relative", overflow: "hidden", maxHeight: 190 }}>
@@ -367,6 +374,15 @@ export default function Landing() {
                   <div>
                     <div style={{ ...inst, fontSize: 11, fontWeight: 700, color: D }}>Liste générée ✓</div>
                     <div style={{ ...inst, fontSize: 9, color: "rgba(45,45,45,.4)" }}>23 ingrédients · auto</div>
+                  </div>
+                </div>
+                <div style={{ position: "absolute", top: 330, right: -90, zIndex: 3, background: "var(--white)", borderRadius: 18, padding: "10px 14px", boxShadow: "0 14px 40px rgba(0,0,0,.16)", display: "flex", alignItems: "center", gap: 10, border: "1px solid rgba(45,45,45,.06)" }}>
+                  <div style={{ width: 36, height: 36, background: "rgba(243,80,30,.14)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <img src="/icons/money.webp" alt="" width={20} height={20} style={{ width: 20, height: 20, objectFit: "contain" }} />
+                  </div>
+                  <div>
+                    <div style={{ ...inst, fontSize: 11, fontWeight: 700, color: D }}>8,85€ <span style={{ fontWeight: 500, opacity: .45 }}>· 2 pers.</span></div>
+                    <div style={{ ...inst, fontSize: 9, color: "rgba(45,45,45,.4)" }}>budget calculé auto</div>
                   </div>
                 </div>
                 <div style={{ borderRadius: 46, position: "relative" }}>
@@ -595,9 +611,13 @@ export default function Landing() {
             le prix d'un café par semaine…<br />
             <span style={{ color: R }}>pour un mois sans prise de tête.</span>
           </h2>
-          <p style={{ ...inst, fontSize: 14, color: "rgba(45,45,45,.5)", maxWidth: 400, margin: "0 auto 40px", lineHeight: 1.75 }}>
+          <p style={{ ...inst, fontSize: 14, color: "rgba(45,45,45,.5)", maxWidth: 400, margin: "0 auto 10px", lineHeight: 1.75 }}>
             la plupart économisent <strong style={{ color: D }}>50 à 100€ par mois</strong> — soit 10 à 20x l'abonnement.
           </p>
+          <button onClick={() => navigate("/blog/reduire-budget-courses-alimentaires")}
+            style={{ ...inst, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: R, fontWeight: 600, marginBottom: 40, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            → comment on calcule tes économies
+          </button>
           <div className="pricing-g" style={{ display: "grid", gap: 16, maxWidth: 780, margin: "0 auto" }}>
             <div className="card-hover" style={{ background: "var(--white)", borderRadius: 24, padding: 28, textAlign: "left", border: "1.5px solid rgba(45,45,45,.09)", boxShadow: "0 6px 28px rgba(0,0,0,.06)" }}>
               <div style={{ ...inst, fontSize: 11, color: "rgba(45,45,45,.38)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>free</div>
@@ -622,7 +642,11 @@ export default function Landing() {
               <div style={{ ...inst, fontSize: 11, color: "rgba(255,255,255,.32)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 8 }}>premium</div>
               <div style={{ ...inst, fontSize: 12, color: R, fontWeight: 600, marginBottom: 10 }}>Pour ne plus jamais réfléchir</div>
               <div style={{ ...syne, fontSize: 48, fontWeight: 800, letterSpacing: "-.06em", lineHeight: 1, color: "#fff", marginBottom: 4 }}>4,99€</div>
-              <div style={{ ...inst, fontSize: 12, color: "rgba(255,255,255,.38)", marginBottom: 22 }}>/mois — moins d'un café par semaine</div>
+              <div style={{ ...inst, fontSize: 12, color: "rgba(255,255,255,.38)", marginBottom: 16 }}>/mois — moins d'un café par semaine</div>
+              <div style={{ ...inst, fontSize: 12.5, color: "#cfff79", fontWeight: 600, background: "rgba(207,255,121,.12)", border: "1px solid rgba(207,255,121,.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 22, lineHeight: 1.5, display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <span style={{ flexShrink: 0 }}>💰</span>
+                <span>économise 50 à 100€/mois sur tes courses — l'abonnement se rembourse tout seul.</span>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 22 }}>
                 {["recettes illimitées","planification illimitée","liste de courses auto","import de recettes","partage public + profil","nouvelles features en avant-première"].map(l => (
                   <div key={l} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 13, color: "#fff", fontWeight: 500, ...inst }}>
